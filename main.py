@@ -18,11 +18,11 @@ def parse_duration(iso_duration):
     total_minutes = total_seconds // 60
     remaining_seconds = total_seconds % 60
 
-    # Retourne MM:SS, où MM peut dépasser 60 si plus d'une heure
+    # Retourne MM:SS (MM pouvant être > 60)
     return f"{total_minutes}:{remaining_seconds:02d}"
 
 def get_duration_category(duration):
-    # duration est maintenant au format MM:SS
+    # duration est au format MM:SS
     parts = duration.split(":")
     if len(parts) != 2:
         return "Inconnue"
@@ -32,7 +32,7 @@ def get_duration_category(duration):
     except ValueError:
         return "Inconnue"
 
-    # Catégories
+    # Catégories par durée
     if total_seconds <= 300:       # <=5min
         return "0-5min"
     elif total_seconds <= 600:     # <=10min
@@ -90,9 +90,9 @@ for item in data.get('items', []):
     video_id = item['contentDetails']['videoId']
     published_at = item['snippet']['publishedAt']
 
-    # Format date sans heure
+    # Date sans heure
     dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
-    published_at_formatted = dt.strftime("%d/%m/%Y")  # Affichage JJ/MM/AAAA sans l'heure
+    published_at_formatted = dt.strftime("%d/%m/%Y")  # JJ/MM/AAAA sans heure
 
     video_link = f"https://www.youtube.com/watch?v={video_id}"
 
@@ -139,13 +139,7 @@ for category, videos in videos_by_category.items():
 
     sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
-    # Avant d'écrire, on efface les anciennes données (A2:E1000) pour éviter toute donnée résiduelle
-    service.spreadsheets().values().clear(
-        spreadsheetId=SPREADSHEET_ID,
-        range=f"'{category}'!A2:E1000"
-    ).execute()
-
-    # Écrire les nouvelles vidéos
+    # Écriture des vidéos dans la feuille
     body = {'values': videos}
     service.spreadsheets().values().update(
         spreadsheetId=SPREADSHEET_ID,
@@ -156,7 +150,7 @@ for category, videos in videos_by_category.items():
 
     num_rows = len(videos)
     if num_rows > 0 and sheet_id is not None:
-        # Appliquer des bordures
+        # Appliquer des bordures sur le tableau
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
             body={
@@ -201,29 +195,9 @@ for category, videos in videos_by_category.items():
                                 "color": {"red": 0, "green": 0, "blue": 0}
                             }
                         }
-                    },
-                    # Forcer le format texte sur les colonnes afin d'éviter tout affichage d'heures
-                    {
-                        "repeatCell": {
-                            "range": {
-                                "sheetId": sheet_id,
-                                "startRowIndex": 1,
-                                "endRowIndex": 1 + num_rows,
-                                "startColumnIndex": 0,
-                                "endColumnIndex": 5
-                            },
-                            "cell": {
-                                "userEnteredFormat": {
-                                    "numberFormat": {
-                                        "type": "TEXT"
-                                    }
-                                }
-                            },
-                            "fields": "userEnteredFormat.numberFormat"
-                        }
                     }
                 ]
             }
         ).execute()
 
-print("Synchronisation terminée, sans affichage d'heures, avec bordures et données nettoyées.")
+print("Synchronisation terminée, sans affichage d'heures dans la date ou la durée, avec bordures, sans suppression de lignes.")
