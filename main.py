@@ -2,6 +2,7 @@ import os
 import requests
 import re
 import time
+import random
 from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -121,7 +122,6 @@ def sync_videos():
             video_duration = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(video_data)
 
-            # Date de mise en ligne originale de la vidéo
             original_published_at = snippet['publishedAt']
             dt = datetime.strptime(original_published_at, "%Y-%m-%dT%H:%M:%SZ")
             published_at_formatted = dt.strftime("%d/%m/%Y")
@@ -135,12 +135,22 @@ def sync_videos():
             thumbnail_formula = ""
 
         category = get_duration_category(video_duration)
-        # A=Miniature, B=Titre, C=Lien, D=Chaîne, E=Date de mise en ligne, F=Durée
-        videos_by_category[category].append([thumbnail_formula, title, video_link, channel, published_at_formatted, video_duration])
+        videos_by_category[category].append([
+            thumbnail_formula,
+            title,
+            video_link,
+            channel,
+            published_at_formatted,
+            video_duration
+        ])
 
     for category, videos in videos_by_category.items():
+        # Mélange aléatoire des vidéos de la catégorie
+        random.shuffle(videos)
+
         RANGE_NAME = f"'{category}'!A2:F"
 
+        # Création de la feuille si elle n’existe pas
         try:
             service.spreadsheets().batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
@@ -181,36 +191,12 @@ def sync_videos():
                             "startColumnIndex": 0,
                             "endColumnIndex": 6
                         },
-                        "top": {
-                            "style": "SOLID",
-                            "width": 1,
-                            "color": {"red": 0, "green": 0, "blue": 0}
-                        },
-                        "bottom": {
-                            "style": "SOLID",
-                            "width": 1,
-                            "color": {"red": 0, "green": 0, "blue": 0}
-                        },
-                        "left": {
-                            "style": "SOLID",
-                            "width": 1,
-                            "color": {"red": 0, "green": 0, "blue": 0}
-                        },
-                        "right": {
-                            "style": "SOLID",
-                            "width": 1,
-                            "color": {"red": 0, "green": 0, "blue": 0}
-                        },
-                        "innerHorizontal": {
-                            "style": "SOLID",
-                            "width": 1,
-                            "color": {"red": 0, "green": 0, "blue": 0}
-                        },
-                        "innerVertical": {
-                            "style": "SOLID",
-                            "width": 1,
-                            "color": {"red": 0, "green": 0, "blue": 0}
-                        }
+                        "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                        "bottom": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                        "left": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                        "right": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                        "innerHorizontal": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                        "innerVertical": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}
                     }
                 },
                 {
@@ -248,7 +234,7 @@ def sync_videos():
                 body={"requests": batch_requests}
             ).execute()
 
-    print("Synchronisation terminée. La date de mise en ligne de la vidéo est maintenant affichée dans la colonne E.")
+    print("Synchronisation terminée. Les vidéos sont désormais affichées dans un ordre aléatoire par catégorie.")
 
 while True:
     sync_videos()
