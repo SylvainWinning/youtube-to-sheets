@@ -127,9 +127,8 @@ def sync_videos():
             like_count = stats.get('likeCount', 'N/A')
             comment_count = stats.get('commentCount', 'N/A')
 
+            # On ne tronque plus la description
             short_description = snippet.get('description', '')
-            if len(short_description) > 100:
-                short_description = short_description[:100] + '...'
 
             tags = snippet.get('tags', [])
             tags_str = ", ".join(tags)
@@ -208,7 +207,7 @@ def sync_videos():
             body={'values': [headers]}
         ).execute()
 
-        # Rendre les en-têtes en gras
+        # Mettre les en-têtes en gras
         bold_request = {
             "requests": [
                 {
@@ -232,77 +231,63 @@ def sync_videos():
                 }
             ]
         }
-
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
             body=bold_request
         ).execute()
 
         # Insertion des vidéos
-        body = {'values': videos}
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
             range=RANGE_NAME_DATA,
             valueInputOption='USER_ENTERED',
-            body=body
+            body={'values': videos}
         ).execute()
 
-        num_rows = len(videos)
-        if num_rows > 0 and sheet_id is not None:
-            batch_requests = [
+        # Mettre le texte en mode wrapping (pour éviter la troncature visuelle)
+        wrap_request = {
+            "requests": [
                 {
-                    "updateBorders": {
+                    "repeatCell": {
                         "range": {
-                            "sheetId": sheet_id,
-                            "startRowIndex": 1,
-                            "endRowIndex": 1 + num_rows,
-                            "startColumnIndex": 0,
-                            "endColumnIndex": 11
+                            "sheetId": sheet_id
                         },
-                        "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
-                        "bottom": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
-                        "left": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
-                        "right": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
-                        "innerHorizontal": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
-                        "innerVertical": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}
-                    }
-                },
-                {
-                    "updateDimensionProperties": {
-                        "range": {
-                            "sheetId": sheet_id,
-                            "dimension": "ROWS",
-                            "startIndex": 1,
-                            "endIndex": 1 + num_rows
+                        "cell": {
+                            "userEnteredFormat": {
+                                "wrapStrategy": "WRAP"
+                            }
                         },
-                        "properties": {
-                            "pixelSize": 200
-                        },
-                        "fields": "pixelSize"
-                    }
-                },
-                {
-                    "updateDimensionProperties": {
-                        "range": {
-                            "sheetId": sheet_id,
-                            "dimension": "COLUMNS",
-                            "startIndex": 0,
-                            "endIndex": 1
-                        },
-                        "properties": {
-                            "pixelSize": 200
-                        },
-                        "fields": "pixelSize"
+                        "fields": "userEnteredFormat.wrapStrategy"
                     }
                 }
             ]
+        }
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body=wrap_request
+        ).execute()
 
-            service.spreadsheets().batchUpdate(
-                spreadsheetId=SPREADSHEET_ID,
-                body={"requests": batch_requests}
-            ).execute()
+        # Auto-redimensionner les colonnes pour s'adapter au contenu
+        auto_resize_request = {
+            "requests": [
+                {
+                    "autoResizeDimensions": {
+                        "dimensions": {
+                            "sheetId": sheet_id,
+                            "dimension": "COLUMNS",
+                            "startIndex": 0,
+                            "endIndex": 11
+                        }
+                    }
+                }
+            ]
+        }
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body=auto_resize_request
+        ).execute()
 
-    print("Synchronisation terminée. Les vidéos, les titres en gras et la mise en forme ont été ajoutés.")
+    print("Synchronisation terminée. Les vidéos, les titres en gras, sans troncature et avec wrapping sont ajoutés.")
 
 while True:
     sync_videos()
