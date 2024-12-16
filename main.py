@@ -23,7 +23,7 @@ for item in data.get('items', []):
     title = item['snippet']['title']
     video_id = item['contentDetails']['videoId']
     channel = item['snippet']['channelTitle']
-    published_at = item['contentDetails']['videoPublishedAt']
+    published_at = item['snippet']['publishedAt']
     video_link = f"https://www.youtube.com/watch?v={video_id}"
     videos.append([title, video_link, channel, published_at])
 
