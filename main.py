@@ -127,12 +127,10 @@ def sync_videos():
             like_count = stats.get('likeCount', 'N/A')
             comment_count = stats.get('commentCount', 'N/A')
 
-            # Description courte (on tronque si trop long)
             short_description = snippet.get('description', '')
             if len(short_description) > 100:
                 short_description = short_description[:100] + '...'
 
-            # Tags
             tags = snippet.get('tags', [])
             tags_str = ", ".join(tags)
 
@@ -168,11 +166,17 @@ def sync_videos():
             tags_str
         ])
 
+    # Titres des colonnes
+    headers = [
+        "Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée",
+        "Vues", "J'aime", "Commentaires", "Description courte", "Tags"
+    ]
+
     for category, videos in videos_by_category.items():
         # Mélange aléatoire des vidéos de la catégorie
         random.shuffle(videos)
 
-        # Ajustez la plage (maintenant on a plus de colonnes, de A à K => 11 colonnes)
+        # Ajustez la plage (A à K)
         RANGE_NAME = f"'{category}'!A2:K"
 
         # Création de la feuille si elle n’existe pas
@@ -196,6 +200,15 @@ def sync_videos():
 
         sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
+        # Insertion des en-têtes
+        service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"'{category}'!A1:K1",
+            valueInputOption='USER_ENTERED',
+            body={'values': [headers]}
+        ).execute()
+
+        # Insertion des vidéos
         body = {'values': videos}
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
@@ -212,7 +225,7 @@ def sync_videos():
                         "range": {
                             "sheetId": sheet_id,
                             "startRowIndex": 1,
-                            "endRowIndex": 1 + num_rows,
+                            "endRowIndex": 1 + num_rows,  # les vidéos
                             "startColumnIndex": 0,
                             "endColumnIndex": 11
                         },
@@ -259,7 +272,7 @@ def sync_videos():
                 body={"requests": batch_requests}
             ).execute()
 
-    print("Synchronisation terminée. Les vidéos sont désormais affichées avec leurs informations supplémentaires.")
+    print("Synchronisation terminée. Les vidéos et les titres des colonnes ont été ajoutés.")
 
 while True:
     sync_videos()
