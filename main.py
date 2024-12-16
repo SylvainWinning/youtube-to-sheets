@@ -109,18 +109,32 @@ def sync_videos():
 
         YT_VIDEO_API_URL = (
             f"https://www.googleapis.com/youtube/v3/videos"
-            f"?part=snippet,contentDetails&id={video_id}&key={YOUTUBE_API_KEY}"
+            f"?part=snippet,contentDetails,statistics&id={video_id}&key={YOUTUBE_API_KEY}"
         )
         video_response = requests.get(YT_VIDEO_API_URL)
         video_data = video_response.json()
 
         if 'items' in video_data and len(video_data['items']) > 0:
             snippet = video_data['items'][0]['snippet']
+            stats = video_data['items'][0].get('statistics', {})
             title = snippet['title']
             channel = snippet['channelTitle']
             duration_iso = video_data['items'][0]['contentDetails']['duration']
             video_duration = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(video_data)
+
+            view_count = stats.get('viewCount', 'N/A')
+            like_count = stats.get('likeCount', 'N/A')
+            comment_count = stats.get('commentCount', 'N/A')
+
+            # Description courte (on tronque si trop long)
+            short_description = snippet.get('description', '')
+            if len(short_description) > 100:
+                short_description = short_description[:100] + '...'
+
+            # Tags
+            tags = snippet.get('tags', [])
+            tags_str = ", ".join(tags)
 
             original_published_at = snippet['publishedAt']
             dt = datetime.strptime(original_published_at, "%Y-%m-%dT%H:%M:%SZ")
@@ -133,6 +147,11 @@ def sync_videos():
             video_duration = "Inconnue"
             published_at_formatted = ""
             thumbnail_formula = ""
+            view_count = "N/A"
+            like_count = "N/A"
+            comment_count = "N/A"
+            short_description = ""
+            tags_str = ""
 
         category = get_duration_category(video_duration)
         videos_by_category[category].append([
@@ -141,14 +160,20 @@ def sync_videos():
             video_link,
             channel,
             published_at_formatted,
-            video_duration
+            video_duration,
+            view_count,
+            like_count,
+            comment_count,
+            short_description,
+            tags_str
         ])
 
     for category, videos in videos_by_category.items():
         # Mélange aléatoire des vidéos de la catégorie
         random.shuffle(videos)
 
-        RANGE_NAME = f"'{category}'!A2:F"
+        # Ajustez la plage (maintenant on a plus de colonnes, de A à K => 11 colonnes)
+        RANGE_NAME = f"'{category}'!A2:K"
 
         # Création de la feuille si elle n’existe pas
         try:
@@ -189,7 +214,7 @@ def sync_videos():
                             "startRowIndex": 1,
                             "endRowIndex": 1 + num_rows,
                             "startColumnIndex": 0,
-                            "endColumnIndex": 6
+                            "endColumnIndex": 11
                         },
                         "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
                         "bottom": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
@@ -234,7 +259,7 @@ def sync_videos():
                 body={"requests": batch_requests}
             ).execute()
 
-    print("Synchronisation terminée. Les vidéos sont désormais affichées dans un ordre aléatoire par catégorie.")
+    print("Synchronisation terminée. Les vidéos sont désormais affichées avec leurs informations supplémentaires.")
 
 while True:
     sync_videos()
