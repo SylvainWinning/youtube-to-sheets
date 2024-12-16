@@ -176,8 +176,8 @@ def sync_videos():
         # Mélange aléatoire des vidéos de la catégorie
         random.shuffle(videos)
 
-        # Ajustez la plage (A à K)
-        RANGE_NAME = f"'{category}'!A2:K"
+        RANGE_NAME_DATA = f"'{category}'!A2:K"
+        RANGE_NAME_HEADERS = f"'{category}'!A1:K1"
 
         # Création de la feuille si elle n’existe pas
         try:
@@ -203,16 +203,46 @@ def sync_videos():
         # Insertion des en-têtes
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"'{category}'!A1:K1",
+            range=RANGE_NAME_HEADERS,
             valueInputOption='USER_ENTERED',
             body={'values': [headers]}
+        ).execute()
+
+        # Rendre les en-têtes en gras
+        bold_request = {
+            "requests": [
+                {
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": 0,
+                            "endRowIndex": 1,
+                            "startColumnIndex": 0,
+                            "endColumnIndex": 11
+                        },
+                        "cell": {
+                            "userEnteredFormat": {
+                                "textFormat": {
+                                    "bold": True
+                                }
+                            }
+                        },
+                        "fields": "userEnteredFormat.textFormat.bold"
+                    }
+                }
+            ]
+        }
+
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body=bold_request
         ).execute()
 
         # Insertion des vidéos
         body = {'values': videos}
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
-            range=RANGE_NAME,
+            range=RANGE_NAME_DATA,
             valueInputOption='USER_ENTERED',
             body=body
         ).execute()
@@ -225,7 +255,7 @@ def sync_videos():
                         "range": {
                             "sheetId": sheet_id,
                             "startRowIndex": 1,
-                            "endRowIndex": 1 + num_rows,  # les vidéos
+                            "endRowIndex": 1 + num_rows,
                             "startColumnIndex": 0,
                             "endColumnIndex": 11
                         },
@@ -272,7 +302,7 @@ def sync_videos():
                 body={"requests": batch_requests}
             ).execute()
 
-    print("Synchronisation terminée. Les vidéos et les titres des colonnes ont été ajoutés.")
+    print("Synchronisation terminée. Les vidéos, les titres en gras et la mise en forme ont été ajoutés.")
 
 while True:
     sync_videos()
