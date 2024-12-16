@@ -32,7 +32,7 @@ for item in data.get('items', []):
 
     video_link = f"https://www.youtube.com/watch?v={video_id}"
 
-    # Nouvel appel pour récupérer les infos de la vidéo
+    # Nouvel appel pour récupérer les infos de la vidéo (pour le channel)
     YT_VIDEO_API_URL = (
         f"https://www.googleapis.com/youtube/v3/videos"
         f"?part=snippet&id={video_id}&key={YOUTUBE_API_KEY}"
@@ -40,7 +40,6 @@ for item in data.get('items', []):
     video_response = requests.get(YT_VIDEO_API_URL)
     video_data = video_response.json()
 
-    # Récupérer le channelTitle de la vidéo elle-même
     if 'items' in video_data and len(video_data['items']) > 0:
         channel = video_data['items'][0]['snippet']['channelTitle']
     else:
@@ -53,6 +52,7 @@ body = {
     'values': videos
 }
 
+# Mise à jour des données dans le Google Sheet
 result = service.spreadsheets().values().update(
     spreadsheetId=SPREADSHEET_ID,
     range=RANGE_NAME,
@@ -61,3 +61,60 @@ result = service.spreadsheets().values().update(
 ).execute()
 
 print(f"{result.get('updatedCells')} cellules mises à jour.")
+
+# Ajout des bordures autour du tableau
+num_rows = len(videos)
+requests = [
+    {
+        "updateBorders": {
+            "range": {
+                "sheetId": 0,  # ID de la feuille (en général 0 pour la première)
+                "startRowIndex": 1,  # La ligne 2 (A2) correspond à l'index 1 (ligne 1 = A1)
+                "endRowIndex": 1 + num_rows,
+                "startColumnIndex": 0, # Colonne A = index 0
+                "endColumnIndex": 4    # A=0, B=1, C=2, D=3, endColumnIndex = 4 car non inclusif
+            },
+            "top": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {"red": 0, "green": 0, "blue": 0}
+            },
+            "bottom": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {"red": 0, "green": 0, "blue": 0}
+            },
+            "left": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {"red": 0, "green": 0, "blue": 0}
+            },
+            "right": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {"red": 0, "green": 0, "blue": 0}
+            },
+            "innerHorizontal": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {"red": 0, "green": 0, "blue": 0}
+            },
+            "innerVertical": {
+                "style": "SOLID",
+                "width": 1,
+                "color": {"red": 0, "green": 0, "blue": 0}
+            }
+        }
+    }
+]
+
+format_body = {
+    "requests": requests
+}
+
+response = service.spreadsheets().batchUpdate(
+    spreadsheetId=SPREADSHEET_ID,
+    body=format_body
+).execute()
+
+print("Bordures ajoutées aux cellules.")
