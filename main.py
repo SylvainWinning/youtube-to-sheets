@@ -2,26 +2,28 @@ import os
 import requests
 import re
 import time
-import sys
-import select
 from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 def parse_duration(iso_duration):
+    # Exemple : "PT4M13S", "PT1H2M3S"
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
     hours = int(match.group(1)) if match.group(1) else 0
     minutes = int(match.group(2)) if match.group(2) else 0
     seconds = int(match.group(3)) if match.group(3) else 0
 
+    # Conversion en secondes totales
     total_seconds = hours * 3600 + minutes * 60 + seconds
     total_minutes = total_seconds // 60
     remaining_seconds = total_seconds % 60
 
+    # Retourne MM:SS (MM pouvant être > 60)
     return f"{total_minutes}:{remaining_seconds:02d}"
 
 def get_duration_category(duration):
+    # duration est au format MM:SS
     parts = duration.split(":")
     if len(parts) != 2:
         return "Inconnue"
@@ -31,19 +33,19 @@ def get_duration_category(duration):
     except ValueError:
         return "Inconnue"
 
-    if total_seconds <= 300:
+    if total_seconds <= 300:       # <=5min
         return "0-5min"
-    elif total_seconds <= 600:
+    elif total_seconds <= 600:     # <=10min
         return "5-10min"
-    elif total_seconds <= 1200:
+    elif total_seconds <= 1200:    # <=20min
         return "10-20min"
-    elif total_seconds <= 1800:
+    elif total_seconds <= 1800:    # <=30min
         return "20-30min"
-    elif total_seconds <= 2400:
+    elif total_seconds <= 2400:    # <=40min
         return "30-40min"
-    elif total_seconds <= 3000:
+    elif total_seconds <= 3000:    # <=50min
         return "40-50min"
-    elif total_seconds <= 3600:
+    elif total_seconds <= 3600:    # <=60min
         return "50-60min"
     else:
         return "60+min"
@@ -76,12 +78,12 @@ def fetch_all_playlist_items(playlist_id, api_key):
     return all_items
 
 def get_thumbnail_url(video_data):
-    # Essayer la meilleure miniature
+    # Essayer d'obtenir la meilleure miniature disponible
     thumb_info = video_data['items'][0]['snippet'].get('thumbnails', {})
     for quality in ['high', 'standard', 'medium', 'default']:
         if quality in thumb_info:
             return thumb_info[quality]['url']
-    return ""
+    return ""  # Si aucune miniature disponible
 
 def sync_videos():
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
@@ -111,10 +113,13 @@ def sync_videos():
         video_id = item['contentDetails']['videoId']
         published_at = item['snippet']['publishedAt']
 
+        # Date sans heure
         dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
         published_at_formatted = dt.strftime("%d/%m/%Y")
 
         video_link = f"https://www.youtube.com/watch?v={video_id}"
+
+        # Récupérer infos supplémentaires de la vidéo
         YT_VIDEO_API_URL = (
             f"https://www.googleapis.com/youtube/v3/videos"
             f"?part=snippet,contentDetails&id={video_id}&key={YOUTUBE_API_KEY}"
@@ -133,8 +138,10 @@ def sync_videos():
             thumbnail_url = ""
 
         category = get_duration_category(video_duration)
+        # Maintenant nous avons 6 colonnes : Titre, Lien, Chaîne, Date, Durée, Miniature
         videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration, thumbnail_url])
 
+    # Mise à jour des onglets
     for category, videos in videos_by_category.items():
         RANGE_NAME = f"'{category}'!A2:F"
 
@@ -155,10 +162,12 @@ def sync_videos():
                 }
             ).execute()
         except Exception:
+            # L'onglet existe déjà, pas grave
             pass
 
         sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
+        # Écriture/mise à jour des vidéos dans la feuille
         body = {'values': videos}
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
@@ -169,6 +178,7 @@ def sync_videos():
 
         num_rows = len(videos)
         if num_rows > 0 and sheet_id is not None:
+            # Appliquer des bordures sur les nouvelles données (A-F = endColumnIndex = 6)
             service.spreadsheets().batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
                 body={
@@ -180,7 +190,7 @@ def sync_videos():
                                     "startRowIndex": 1,       # A partir de la ligne 2
                                     "endRowIndex": 1 + num_rows,
                                     "startColumnIndex": 0,    # A=0
-                                    "endColumnIndex": 6       # F = 5, endColumnIndex = 6
+                                    "endColumnIndex": 6       # F=5, endColumnIndex est exclusif, donc 6
                                 },
                                 "top": {
                                     "style": "SOLID",
@@ -218,21 +228,9 @@ def sync_videos():
                 }
             ).execute()
 
-    print("Synchronisation terminée. Toutes les vidéos sont présentes, avec miniature, sans affichage d'heures, bordures ajoutées.")
+    print("Synchronisation terminée. Toutes les vidéos de la playlist sont présentes, sans affichage d'heures, avec bordures, et incluant la miniature.")
 
-# Boucle pour synchroniser toutes les heures ou manuellement
+# Boucle pour synchroniser toutes les heures
 while True:
     sync_videos()
-    print("En attente pour la prochaine synchronisation. Appuyez sur Entrée pour synchroniser immédiatement, ou attendez 1 heure...")
-    # Attendre soit une entrée manuelle (Entrée) soit 1 heure
-    # On utilise select.select pour attendre l'entrée standard pendant 3600 secondes
-    rlist, _, _ = select.select([sys.stdin], [], [], 3600)
-    if rlist:
-        # L'utilisateur a appuyé sur Entrée -> synchronisation immédiate, ensuite la boucle reprend
-        input()  # lire la ligne vide
-        print("Synchronisation manuelle demandée.")
-        # La boucle reprend et relance sync_videos() immédiatement
-        continue
-    else:
-        # 1 heure s'est écoulée, on relance la boucle pour la synchro automatique
-        pass
+    time.sleep(3600)  # Attendre une heure avant la prochaine synchronisation
