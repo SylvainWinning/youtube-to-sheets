@@ -1,6 +1,7 @@
 import os
 import requests
 import re
+import time
 from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -56,16 +57,6 @@ def get_sheet_id(spreadsheet_id, sheet_title, service):
             return sheet["properties"]["sheetId"]
     return None
 
-YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
-SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
-
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SERVICE_ACCOUNT_FILE = 'service_account.json'
-creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-service = build('sheets', 'v4', credentials=creds)
-
-PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
-
 def fetch_all_playlist_items(playlist_id, api_key):
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
@@ -86,133 +77,148 @@ def fetch_all_playlist_items(playlist_id, api_key):
             break
     return all_items
 
-items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
+def sync_videos():
+    YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
+    SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
 
-videos_by_category = {
-    "0-5min": [],
-    "5-10min": [],
-    "10-20min": [],
-    "20-30min": [],
-    "30-40min": [],
-    "40-50min": [],
-    "50-60min": [],
-    "60+min": []
-}
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+    SERVICE_ACCOUNT_FILE = 'service_account.json'
+    creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    service = build('sheets', 'v4', credentials=creds)
 
-for item in items:
-    title = item['snippet']['title']
-    video_id = item['contentDetails']['videoId']
-    published_at = item['snippet']['publishedAt']
+    PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
+    items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
 
-    # Date sans heure
-    dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
-    published_at_formatted = dt.strftime("%d/%m/%Y")  # JJ/MM/AAAA
+    videos_by_category = {
+        "0-5min": [],
+        "5-10min": [],
+        "10-20min": [],
+        "20-30min": [],
+        "30-40min": [],
+        "40-50min": [],
+        "50-60min": [],
+        "60+min": []
+    }
 
-    video_link = f"https://www.youtube.com/watch?v={video_id}"
+    for item in items:
+        title = item['snippet']['title']
+        video_id = item['contentDetails']['videoId']
+        published_at = item['snippet']['publishedAt']
 
-    # Récupérer infos supplémentaires de la vidéo
-    YT_VIDEO_API_URL = (
-        f"https://www.googleapis.com/youtube/v3/videos"
-        f"?part=snippet,contentDetails&id={video_id}&key={YOUTUBE_API_KEY}"
-    )
-    video_response = requests.get(YT_VIDEO_API_URL)
-    video_data = video_response.json()
+        # Date sans heure
+        dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
+        published_at_formatted = dt.strftime("%d/%m/%Y")  # JJ/MM/AAAA
 
-    if 'items' in video_data and len(video_data['items']) > 0:
-        channel = video_data['items'][0]['snippet']['channelTitle']
-        duration_iso = video_data['items'][0]['contentDetails']['duration']
-        video_duration = parse_duration(duration_iso)
-    else:
-        channel = "Inconnu"
-        video_duration = "Inconnue"
+        video_link = f"https://www.youtube.com/watch?v={video_id}"
 
-    category = get_duration_category(video_duration)
-    videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration])
+        # Récupérer infos supplémentaires de la vidéo
+        YT_VIDEO_API_URL = (
+            f"https://www.googleapis.com/youtube/v3/videos"
+            f"?part=snippet,contentDetails&id={video_id}&key={YOUTUBE_API_KEY}"
+        )
+        video_response = requests.get(YT_VIDEO_API_URL)
+        video_data = video_response.json()
 
-for category, videos in videos_by_category.items():
-    RANGE_NAME = f"'{category}'!A2:E"
+        if 'items' in video_data and len(video_data['items']) > 0:
+            channel = video_data['items'][0]['snippet']['channelTitle']
+            duration_iso = video_data['items'][0]['contentDetails']['duration']
+            video_duration = parse_duration(duration_iso)
+        else:
+            channel = "Inconnu"
+            video_duration = "Inconnue"
 
-    # Créer l'onglet s'il n'existe pas
-    try:
-        service.spreadsheets().batchUpdate(
-            spreadsheetId=SPREADSHEET_ID,
-            body={
-                "requests": [
-                    {
-                        "addSheet": {
-                            "properties": {
-                                "title": category
+        category = get_duration_category(video_duration)
+        videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration])
+
+    for category, videos in videos_by_category.items():
+        RANGE_NAME = f"'{category}'!A2:E"
+
+        # Créer l'onglet s'il n'existe pas
+        try:
+            service.spreadsheets().batchUpdate(
+                spreadsheetId=SPREADSHEET_ID,
+                body={
+                    "requests": [
+                        {
+                            "addSheet": {
+                                "properties": {
+                                    "title": category
+                                }
                             }
                         }
-                    }
-                ]
-            }
-        ).execute()
-    except Exception as e:
-        # L'onglet existe déjà, pas de problème
-        pass
+                    ]
+                }
+            ).execute()
+        except Exception:
+            # L'onglet existe déjà
+            pass
 
-    sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
+        sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
-    # Écriture/mise à jour des vidéos dans la feuille (sans suppression)
-    body = {'values': videos}
-    service.spreadsheets().values().update(
-        spreadsheetId=SPREADSHEET_ID,
-        range=RANGE_NAME,
-        valueInputOption='RAW',
-        body=body
-    ).execute()
-
-    num_rows = len(videos)
-    if num_rows > 0 and sheet_id is not None:
-        # Appliquer des bordures sur les nouvelles données
-        service.spreadsheets().batchUpdate(
+        # Écriture/mise à jour des vidéos dans la feuille (sans suppression)
+        body = {'values': videos}
+        service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
-            body={
-                "requests": [
-                    {
-                        "updateBorders": {
-                            "range": {
-                                "sheetId": sheet_id,
-                                "startRowIndex": 1,       # A partir de la ligne 2
-                                "endRowIndex": 1 + num_rows,
-                                "startColumnIndex": 0,    # A=0
-                                "endColumnIndex": 5       # A-E
-                            },
-                            "top": {
-                                "style": "SOLID",
-                                "width": 1,
-                                "color": {"red": 0, "green": 0, "blue": 0}
-                            },
-                            "bottom": {
-                                "style": "SOLID",
-                                "width": 1,
-                                "color": {"red": 0, "green": 0, "blue": 0}
-                            },
-                            "left": {
-                                "style": "SOLID",
-                                "width": 1,
-                                "color": {"red": 0, "green": 0, "blue": 0}
-                            },
-                            "right": {
-                                "style": "SOLID",
-                                "width": 1,
-                                "color": {"red": 0, "green": 0, "blue": 0}
-                            },
-                            "innerHorizontal": {
-                                "style": "SOLID",
-                                "width": 1,
-                                "color": {"red": 0, "green": 0, "blue": 0}
-                            },
-                            "innerVertical": {
-                                "style": "SOLID",
-                                "width": 1,
-                                "color": {"red": 0, "green": 0, "blue": 0}
+            range=RANGE_NAME,
+            valueInputOption='RAW',
+            body=body
+        ).execute()
+
+        num_rows = len(videos)
+        if num_rows > 0 and sheet_id is not None:
+            # Appliquer des bordures sur les nouvelles données
+            service.spreadsheets().batchUpdate(
+                spreadsheetId=SPREADSHEET_ID,
+                body={
+                    "requests": [
+                        {
+                            "updateBorders": {
+                                "range": {
+                                    "sheetId": sheet_id,
+                                    "startRowIndex": 1,       # A partir de la ligne 2
+                                    "endRowIndex": 1 + num_rows,
+                                    "startColumnIndex": 0,    # A=0
+                                    "endColumnIndex": 5       # A-E
+                                },
+                                "top": {
+                                    "style": "SOLID",
+                                    "width": 1,
+                                    "color": {"red": 0, "green": 0, "blue": 0}
+                                },
+                                "bottom": {
+                                    "style": "SOLID",
+                                    "width": 1,
+                                    "color": {"red": 0, "green": 0, "blue": 0}
+                                },
+                                "left": {
+                                    "style": "SOLID",
+                                    "width": 1,
+                                    "color": {"red": 0, "green": 0, "blue": 0}
+                                },
+                                "right": {
+                                    "style": "SOLID",
+                                    "width": 1,
+                                    "color": {"red": 0, "green": 0, "blue": 0}
+                                },
+                                "innerHorizontal": {
+                                    "style": "SOLID",
+                                    "width": 1,
+                                    "color": {"red": 0, "green": 0, "blue": 0}
+                                },
+                                "innerVertical": {
+                                    "style": "SOLID",
+                                    "width": 1,
+                                    "color": {"red": 0, "green": 0, "blue": 0}
+                                }
                             }
                         }
-                    }
-                ]
-            }
-        ).execute()
+                    ]
+                }
+            ).execute()
 
-print("Synchronisation terminée. Toutes les vidéos de la playlist sont présentes, sans affichage d'heures, avec bordures. Aucune ligne n'a été supprimée.")
+    print("Synchronisation terminée. Toutes les vidéos de la playlist sont présentes, sans affichage d'heures, avec bordures.")
+
+# Boucle pour synchroniser toutes les heures
+while True:
+    sync_videos()
+    time.sleep(3600)  # Attendre une heure avant la prochaine synchronisation
