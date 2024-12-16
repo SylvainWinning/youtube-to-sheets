@@ -6,24 +6,23 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 def parse_duration(iso_duration):
-    # Exemple de iso_duration : "PT4M13S", "PT1H2M3S" etc.
+    # Exemple : "PT4M13S", "PT1H2M3S"
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
     hours = int(match.group(1)) if match.group(1) else 0
     minutes = int(match.group(2)) if match.group(2) else 0
     seconds = int(match.group(3)) if match.group(3) else 0
 
-    # Convertir toute la durée en secondes
+    # Conversion en secondes totales
     total_seconds = hours * 3600 + minutes * 60 + seconds
-
-    # Convertir à nouveau en minutes et secondes pour n'afficher que MM:SS, même si >60 minutes
     total_minutes = total_seconds // 60
     remaining_seconds = total_seconds % 60
 
+    # Retourne MM:SS, où MM peut dépasser 60 si plus d'une heure
     return f"{total_minutes}:{remaining_seconds:02d}"
 
 def get_duration_category(duration):
-    # Convertir la durée (MM:SS) en secondes
+    # duration est maintenant au format MM:SS
     parts = duration.split(":")
     if len(parts) != 2:
         return "Inconnue"
@@ -33,22 +32,22 @@ def get_duration_category(duration):
     except ValueError:
         return "Inconnue"
 
-    # Catégoriser par plage
-    if total_seconds <= 300:       # 0-5 min
+    # Catégories
+    if total_seconds <= 300:       # <=5min
         return "0-5min"
-    elif total_seconds <= 600:     # 5-10 min
+    elif total_seconds <= 600:     # <=10min
         return "5-10min"
-    elif total_seconds <= 1200:    # 10-20 min
+    elif total_seconds <= 1200:    # <=20min
         return "10-20min"
-    elif total_seconds <= 1800:    # 20-30 min
+    elif total_seconds <= 1800:    # <=30min
         return "20-30min"
-    elif total_seconds <= 2400:    # 30-40 min
+    elif total_seconds <= 2400:    # <=40min
         return "30-40min"
-    elif total_seconds <= 3000:    # 40-50 min
+    elif total_seconds <= 3000:    # <=50min
         return "40-50min"
-    elif total_seconds <= 3600:    # 50-60 min
+    elif total_seconds <= 3600:    # <=60min
         return "50-60min"
-    else:                          # 60+ min
+    else:
         return "60+min"
 
 def get_sheet_id(spreadsheet_id, sheet_title, service):
@@ -91,13 +90,13 @@ for item in data.get('items', []):
     video_id = item['contentDetails']['videoId']
     published_at = item['snippet']['publishedAt']
 
-    # Format date sans l'heure
+    # Format date sans heure
     dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
-    published_at_formatted = dt.strftime("%d/%m/%Y")  # pas d'heure
+    published_at_formatted = dt.strftime("%d/%m/%Y")  # Affichage JJ/MM/AAAA sans l'heure
 
     video_link = f"https://www.youtube.com/watch?v={video_id}"
 
-    # Récupération des informations de la vidéo
+    # Récupérer infos supplémentaires de la vidéo
     YT_VIDEO_API_URL = (
         f"https://www.googleapis.com/youtube/v3/videos"
         f"?part=snippet,contentDetails&id={video_id}&key={YOUTUBE_API_KEY}"
@@ -119,7 +118,7 @@ for item in data.get('items', []):
 for category, videos in videos_by_category.items():
     RANGE_NAME = f"'{category}'!A2:E"
 
-    # Créer un onglet s'il n'existe pas
+    # Créer l'onglet s'il n'existe pas
     try:
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
@@ -136,14 +135,18 @@ for category, videos in videos_by_category.items():
             }
         ).execute()
     except Exception as e:
-        print(f"L'onglet {category} existe probablement déjà : {e}")
+        print(f"L'onglet {category} existe déjà : {e}")
 
     sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
-    body = {
-        'values': videos
-    }
+    # Avant d'écrire, on efface les anciennes données (A2:E1000) pour éviter toute donnée résiduelle
+    service.spreadsheets().values().clear(
+        spreadsheetId=SPREADSHEET_ID,
+        range=f"'{category}'!A2:E1000"
+    ).execute()
 
+    # Écrire les nouvelles vidéos
+    body = {'values': videos}
     service.spreadsheets().values().update(
         spreadsheetId=SPREADSHEET_ID,
         range=RANGE_NAME,
@@ -153,6 +156,7 @@ for category, videos in videos_by_category.items():
 
     num_rows = len(videos)
     if num_rows > 0 and sheet_id is not None:
+        # Appliquer des bordures
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
             body={
@@ -197,9 +201,29 @@ for category, videos in videos_by_category.items():
                                 "color": {"red": 0, "green": 0, "blue": 0}
                             }
                         }
+                    },
+                    # Forcer le format texte sur les colonnes afin d'éviter tout affichage d'heures
+                    {
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": 1,
+                                "endRowIndex": 1 + num_rows,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": 5
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "numberFormat": {
+                                        "type": "TEXT"
+                                    }
+                                }
+                            },
+                            "fields": "userEnteredFormat.numberFormat"
+                        }
                     }
                 ]
             }
         ).execute()
 
-print("Vidéos classées par durée dans les onglets correspondants, sans affichage d'heures, avec bordures ajoutées.")
+print("Synchronisation terminée, sans affichage d'heures, avec bordures et données nettoyées.")
