@@ -132,7 +132,7 @@ def sync_videos():
             duration_iso = video_data['items'][0]['contentDetails']['duration']
             video_duration = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(video_data)
-            # Utilisation de la formule =IMAGE("URL") pour afficher l'image directement
+            # Affichage de l'image directement (colonne A)
             thumbnail_formula = f'=IMAGE("{thumbnail_url}")' if thumbnail_url else ""
         else:
             channel = "Inconnu"
@@ -140,8 +140,8 @@ def sync_videos():
             thumbnail_formula = ""
 
         category = get_duration_category(video_duration)
-        # Colonnes : Titre, Lien, Chaîne, Date, Durée, Miniature (IMAGE)
-        videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration, thumbnail_formula])
+        # Colonnes : A=Miniature(IMAGE), B=Titre, C=Lien, D=Chaîne, E=Date, F=Durée
+        videos_by_category[category].append([thumbnail_formula, title, video_link, channel, published_at_formatted, video_duration])
 
     # Mise à jour des onglets
     for category, videos in videos_by_category.items():
@@ -170,7 +170,7 @@ def sync_videos():
         sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
         # Écriture/mise à jour des vidéos dans la feuille
-        # IMPORTANT: Pour que la formule =IMAGE(...) soit interprétée, on utilise USER_ENTERED
+        # On utilise USER_ENTERED pour interpréter la formule IMAGE
         body = {'values': videos}
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
@@ -182,56 +182,86 @@ def sync_videos():
         num_rows = len(videos)
         if num_rows > 0 and sheet_id is not None:
             # Appliquer des bordures sur les nouvelles données (A-F)
+            batch_requests = [
+                {
+                    "updateBorders": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,       # A partir de la ligne 2
+                            "endRowIndex": 1 + num_rows,
+                            "startColumnIndex": 0,    # A=0
+                            "endColumnIndex": 6       # F=5, endColumnIndex=6
+                        },
+                        "top": {
+                            "style": "SOLID",
+                            "width": 1,
+                            "color": {"red": 0, "green": 0, "blue": 0}
+                        },
+                        "bottom": {
+                            "style": "SOLID",
+                            "width": 1,
+                            "color": {"red": 0, "green": 0, "blue": 0}
+                        },
+                        "left": {
+                            "style": "SOLID",
+                            "width": 1,
+                            "color": {"red": 0, "green": 0, "blue": 0}
+                        },
+                        "right": {
+                            "style": "SOLID",
+                            "width": 1,
+                            "color": {"red": 0, "green": 0, "blue": 0}
+                        },
+                        "innerHorizontal": {
+                            "style": "SOLID",
+                            "width": 1,
+                            "color": {"red": 0, "green": 0, "blue": 0}
+                        },
+                        "innerVertical": {
+                            "style": "SOLID",
+                            "width": 1,
+                            "color": {"red": 0, "green": 0, "blue": 0}
+                        }
+                    }
+                },
+                # Agrandir la hauteur des lignes (200px)
+                {
+                    "updateDimensionProperties": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "dimension": "ROWS",
+                            "startIndex": 1,  # la deuxième ligne a l'index 1
+                            "endIndex": 1 + num_rows
+                        },
+                        "properties": {
+                            "pixelSize": 200
+                        },
+                        "fields": "pixelSize"
+                    }
+                },
+                # Agrandir la largeur de la colonne A (200px)
+                {
+                    "updateDimensionProperties": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "dimension": "COLUMNS",
+                            "startIndex": 0,  # Colonne A = index 0
+                            "endIndex": 1
+                        },
+                        "properties": {
+                            "pixelSize": 200
+                        },
+                        "fields": "pixelSize"
+                    }
+                }
+            ]
+
             service.spreadsheets().batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
-                body={
-                    "requests": [
-                        {
-                            "updateBorders": {
-                                "range": {
-                                    "sheetId": sheet_id,
-                                    "startRowIndex": 1,       # A partir de la ligne 2
-                                    "endRowIndex": 1 + num_rows,
-                                    "startColumnIndex": 0,    # A=0
-                                    "endColumnIndex": 6       # F=5, endColumnIndex=6
-                                },
-                                "top": {
-                                    "style": "SOLID",
-                                    "width": 1,
-                                    "color": {"red": 0, "green": 0, "blue": 0}
-                                },
-                                "bottom": {
-                                    "style": "SOLID",
-                                    "width": 1,
-                                    "color": {"red": 0, "green": 0, "blue": 0}
-                                },
-                                "left": {
-                                    "style": "SOLID",
-                                    "width": 1,
-                                    "color": {"red": 0, "green": 0, "blue": 0}
-                                },
-                                "right": {
-                                    "style": "SOLID",
-                                    "width": 1,
-                                    "color": {"red": 0, "green": 0, "blue": 0}
-                                },
-                                "innerHorizontal": {
-                                    "style": "SOLID",
-                                    "width": 1,
-                                    "color": {"red": 0, "green": 0, "blue": 0}
-                                },
-                                "innerVertical": {
-                                    "style": "SOLID",
-                                    "width": 1,
-                                    "color": {"red": 0, "green": 0, "blue": 0}
-                                }
-                            }
-                        }
-                    ]
-                }
+                body={"requests": batch_requests}
             ).execute()
 
-    print("Synchronisation terminée. Toutes les vidéos sont présentes, sans heures, avec bordures, et la miniature s'affiche directement sous forme d'image.")
+    print("Synchronisation terminée. Miniature dans la première colonne, lignes et colonne A agrandies, pas d'heures, bordures et mise à jour toutes les heures.")
 
 # Boucle pour synchroniser toutes les heures
 while True:
