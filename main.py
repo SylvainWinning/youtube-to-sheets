@@ -32,7 +32,6 @@ def get_duration_category(duration):
     except ValueError:
         return "Inconnue"
 
-    # Catégories par durée
     if total_seconds <= 300:       # <=5min
         return "0-5min"
     elif total_seconds <= 600:     # <=10min
@@ -66,13 +65,28 @@ creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FI
 service = build('sheets', 'v4', credentials=creds)
 
 PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
-YT_PLAYLIST_API_URL = (
-    f"https://www.googleapis.com/youtube/v3/playlistItems"
-    f"?part=snippet%2CcontentDetails&playlistId={PLAYLIST_ID}&maxResults=50&key={YOUTUBE_API_KEY}"
-)
 
-response = requests.get(YT_PLAYLIST_API_URL)
-data = response.json()
+def fetch_all_playlist_items(playlist_id, api_key):
+    base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
+    params = {
+        "part": "snippet,contentDetails",
+        "playlistId": playlist_id,
+        "maxResults": 50,
+        "key": api_key
+    }
+
+    all_items = []
+    while True:
+        response = requests.get(base_url, params=params)
+        data = response.json()
+        all_items.extend(data.get('items', []))
+        if 'nextPageToken' in data:
+            params["pageToken"] = data["nextPageToken"]
+        else:
+            break
+    return all_items
+
+items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
 
 videos_by_category = {
     "0-5min": [],
@@ -85,14 +99,14 @@ videos_by_category = {
     "60+min": []
 }
 
-for item in data.get('items', []):
+for item in items:
     title = item['snippet']['title']
     video_id = item['contentDetails']['videoId']
     published_at = item['snippet']['publishedAt']
 
     # Date sans heure
     dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
-    published_at_formatted = dt.strftime("%d/%m/%Y")  # JJ/MM/AAAA sans heure
+    published_at_formatted = dt.strftime("%d/%m/%Y")  # JJ/MM/AAAA
 
     video_link = f"https://www.youtube.com/watch?v={video_id}"
 
@@ -135,11 +149,12 @@ for category, videos in videos_by_category.items():
             }
         ).execute()
     except Exception as e:
-        print(f"L'onglet {category} existe déjà : {e}")
+        # L'onglet existe déjà, pas de problème
+        pass
 
     sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
-    # Écriture des vidéos dans la feuille
+    # Écriture/mise à jour des vidéos dans la feuille (sans suppression)
     body = {'values': videos}
     service.spreadsheets().values().update(
         spreadsheetId=SPREADSHEET_ID,
@@ -150,7 +165,7 @@ for category, videos in videos_by_category.items():
 
     num_rows = len(videos)
     if num_rows > 0 and sheet_id is not None:
-        # Appliquer des bordures sur le tableau
+        # Appliquer des bordures sur les nouvelles données
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
             body={
@@ -200,4 +215,4 @@ for category, videos in videos_by_category.items():
             }
         ).execute()
 
-print("Synchronisation terminée, sans affichage d'heures dans la date ou la durée, avec bordures, sans suppression de lignes.")
+print("Synchronisation terminée. Toutes les vidéos de la playlist sont présentes, sans affichage d'heures, avec bordures. Aucune ligne n'a été supprimée.")
