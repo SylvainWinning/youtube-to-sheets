@@ -39,6 +39,13 @@ def get_duration_category(duration):
     else:
         return "20+min"
 
+def get_sheet_id(spreadsheet_id, sheet_title, service):
+    spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    for sheet in spreadsheet.get("sheets", []):
+        if sheet["properties"]["title"] == sheet_title:
+            return sheet["properties"]["sheetId"]
+    return None
+
 YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
 SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
 
@@ -118,6 +125,9 @@ for category, videos in videos_by_category.items():
     except Exception as e:
         print(f"L'onglet {category} existe probablement déjà : {e}")
 
+    # Récupérer l'ID de l'onglet
+    sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
+
     # Ajouter les vidéos dans l'onglet
     body = {
         'values': videos
@@ -132,7 +142,7 @@ for category, videos in videos_by_category.items():
 
     # Ajouter des bordures pour le tableau
     num_rows = len(videos)
-    if num_rows > 0:
+    if num_rows > 0 and sheet_id is not None:
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
             body={
@@ -140,7 +150,7 @@ for category, videos in videos_by_category.items():
                     {
                         "updateBorders": {
                             "range": {
-                                "sheetId": 0,
+                                "sheetId": sheet_id,
                                 "startRowIndex": 1,       # A partir de la ligne 2
                                 "endRowIndex": 1 + num_rows,
                                 "startColumnIndex": 0,    # A=0
