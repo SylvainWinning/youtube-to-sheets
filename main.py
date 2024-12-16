@@ -6,21 +6,18 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 def parse_duration(iso_duration):
-    # Exemple de iso_duration : "PT4M13S"
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
     hours = int(match.group(1)) if match.group(1) else 0
     minutes = int(match.group(2)) if match.group(2) else 0
     seconds = int(match.group(3)) if match.group(3) else 0
 
-    # Formater la durée en HH:MM:SS si heures présentes, sinon MM:SS
     if hours > 0:
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
     else:
         return f"{minutes:02d}:{seconds:02d}"
 
 def get_duration_category(duration):
-    # Convertir la durée en secondes
     parts = duration.split(":")
     if len(parts) == 2:  # Format MM:SS
         total_seconds = int(parts[0]) * 60 + int(parts[1])
@@ -29,7 +26,7 @@ def get_duration_category(duration):
     else:
         return "Inconnue"
 
-    # Catégoriser par plage
+    # Mêmes plages de temps que précédemment
     if total_seconds <= 300:
         return "0-5min"
     elif total_seconds <= 600:
@@ -88,11 +85,11 @@ for item in data.get('items', []):
     published_at = item['snippet']['publishedAt']
 
     dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
-    published_at_formatted = dt.strftime("%d/%m/%Y %H:%M:%S")
+    # Suppression de l'heure dans l'affichage de la date
+    published_at_formatted = dt.strftime("%d/%m/%Y")
 
     video_link = f"https://www.youtube.com/watch?v={video_id}"
 
-    # Nouvel appel pour récupérer les infos de la vidéo (snippet+contentDetails)
     YT_VIDEO_API_URL = (
         f"https://www.googleapis.com/youtube/v3/videos"
         f"?part=snippet,contentDetails&id={video_id}&key={YOUTUBE_API_KEY}"
@@ -108,17 +105,12 @@ for item in data.get('items', []):
         channel = "Inconnu"
         video_duration = "Inconnue"
 
-    # Déterminer la catégorie de durée
     category = get_duration_category(video_duration)
-    
-    # Ajouter la vidéo dans la bonne catégorie
     videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration])
 
-# Écrire les vidéos dans les onglets correspondants
 for category, videos in videos_by_category.items():
     RANGE_NAME = f"'{category}'!A2:E"
 
-    # Créer un onglet s'il n'existe pas
     try:
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
@@ -137,10 +129,8 @@ for category, videos in videos_by_category.items():
     except Exception as e:
         print(f"L'onglet {category} existe probablement déjà : {e}")
 
-    # Récupérer l'ID de l'onglet
     sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
-    # Ajouter les vidéos dans l'onglet
     body = {
         'values': videos
     }
@@ -152,7 +142,6 @@ for category, videos in videos_by_category.items():
         body=body
     ).execute()
 
-    # Ajouter des bordures pour le tableau
     num_rows = len(videos)
     if num_rows > 0 and sheet_id is not None:
         service.spreadsheets().batchUpdate(
@@ -204,4 +193,4 @@ for category, videos in videos_by_category.items():
             }
         ).execute()
 
-print("Vidéos classées par durée dans les onglets correspondants avec bordures ajoutées.")
+print("Vidéos classées par durée dans les onglets correspondants avec bordures ajoutées sans l'heure.")
