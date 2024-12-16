@@ -7,21 +7,18 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 def parse_duration(iso_duration):
-    # Convertit une durée ISO 8601 (ex: "PT4M13S", "PT1H2M3S") en format "MM:SS"
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
-    hours = int(match.group(1)) if match and match.group(1) else 0
-    minutes = int(match.group(2)) if match and match.group(2) else 0
-    seconds = int(match.group(3)) if match and match.group(3) else 0
+    hours = int(match.group(1)) if match.group(1) else 0
+    minutes = int(match.group(2)) if match.group(2) else 0
+    seconds = int(match.group(3)) if match.group(3) else 0
 
     total_seconds = hours * 3600 + minutes * 60 + seconds
     total_minutes = total_seconds // 60
     remaining_seconds = total_seconds % 60
-
     return f"{total_minutes}:{remaining_seconds:02d}"
 
 def get_duration_category(duration):
-    # Classe la vidéo selon sa durée, durée au format "MM:SS"
     parts = duration.split(":")
     if len(parts) != 2:
         return "Inconnue"
@@ -31,25 +28,24 @@ def get_duration_category(duration):
     except ValueError:
         return "Inconnue"
 
-    if total_seconds <= 300:       # <=5min
+    if total_seconds <= 300:
         return "0-5min"
-    elif total_seconds <= 600:     # <=10min
+    elif total_seconds <= 600:
         return "5-10min"
-    elif total_seconds <= 1200:    # <=20min
+    elif total_seconds <= 1200:
         return "10-20min"
-    elif total_seconds <= 1800:    # <=30min
+    elif total_seconds <= 1800:
         return "20-30min"
-    elif total_seconds <= 2400:    # <=40min
+    elif total_seconds <= 2400:
         return "30-40min"
-    elif total_seconds <= 3000:    # <=50min
+    elif total_seconds <= 3000:
         return "40-50min"
-    elif total_seconds <= 3600:    # <=60min
+    elif total_seconds <= 3600:
         return "50-60min"
     else:
         return "60+min"
 
 def get_sheet_id(spreadsheet_id, sheet_title, service):
-    # Récupère l'ID interne d'un onglet en fonction de son titre
     spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     for sheet in spreadsheet.get("sheets", []):
         if sheet["properties"]["title"] == sheet_title:
@@ -57,7 +53,6 @@ def get_sheet_id(spreadsheet_id, sheet_title, service):
     return None
 
 def fetch_all_playlist_items(playlist_id, api_key):
-    # Récupère tous les items d'une playlist (tous les résultats paginés)
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
         "part": "snippet,contentDetails",
@@ -77,24 +72,25 @@ def fetch_all_playlist_items(playlist_id, api_key):
             break
     return all_items
 
+def get_thumbnail_url(video_data):
+    thumb_info = video_data['items'][0]['snippet'].get('thumbnails', {})
+    for quality in ['high', 'standard', 'medium', 'default']:
+        if quality in thumb_info:
+            return thumb_info[quality]['url']
+    return ""
+
 def sync_videos():
-    # Variables d'environnement
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
 
-    # Authentification Sheets API
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
     SERVICE_ACCOUNT_FILE = 'service_account.json'
     creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     service = build('sheets', 'v4', credentials=creds)
 
-    # ID de la playlist
     PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
-
-    # Récupération des items de la playlist
     items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
 
-    # Catégories de durées
     videos_by_category = {
         "0-5min": [],
         "5-10min": [],
@@ -107,17 +103,9 @@ def sync_videos():
     }
 
     for item in items:
-        title = item['snippet']['title']
         video_id = item['contentDetails']['videoId']
-        published_at = item['snippet']['publishedAt']
-
-        # Formatage de la date (sans heure)
-        dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
-        published_at_formatted = dt.strftime("%d/%m/%Y")
-
         video_link = f"https://www.youtube.com/watch?v={video_id}"
 
-        # Récupérer les détails de la vidéo (durée, chaîne)
         YT_VIDEO_API_URL = (
             f"https://www.googleapis.com/youtube/v3/videos"
             f"?part=snippet,contentDetails&id={video_id}&key={YOUTUBE_API_KEY}"
@@ -126,36 +114,33 @@ def sync_videos():
         video_data = video_response.json()
 
         if 'items' in video_data and len(video_data['items']) > 0:
-            channel = video_data['items'][0]['snippet']['channelTitle']
+            snippet = video_data['items'][0]['snippet']
+            title = snippet['title']
+            channel = snippet['channelTitle']
             duration_iso = video_data['items'][0]['contentDetails']['duration']
             video_duration = parse_duration(duration_iso)
+            thumbnail_url = get_thumbnail_url(video_data)
 
-            # Utilisation de l'URL fixe de la miniature YouTube
-            thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
-            thumbnail_formula = f'=IMAGE("{thumbnail_url}")'
+            # Date de mise en ligne originale de la vidéo
+            original_published_at = snippet['publishedAt']
+            dt = datetime.strptime(original_published_at, "%Y-%m-%dT%H:%M:%SZ")
+            published_at_formatted = dt.strftime("%d/%m/%Y")
+
+            thumbnail_formula = f'=IMAGE("{thumbnail_url}")' if thumbnail_url else ""
         else:
+            title = "Inconnu"
             channel = "Inconnu"
             video_duration = "Inconnue"
+            published_at_formatted = ""
             thumbnail_formula = ""
 
-        # Déterminer la catégorie de durée
         category = get_duration_category(video_duration)
+        # A=Miniature, B=Titre, C=Lien, D=Chaîne, E=Date de mise en ligne, F=Durée
+        videos_by_category[category].append([thumbnail_formula, title, video_link, channel, published_at_formatted, video_duration])
 
-        # Colonnes : A=Miniature, B=Titre, C=Lien, D=Chaîne, E=Date, F=Durée
-        videos_by_category[category].append([
-            thumbnail_formula,
-            title,
-            video_link,
-            channel,
-            published_at_formatted,
-            video_duration
-        ])
-
-    # Mise à jour de chaque onglet
     for category, videos in videos_by_category.items():
         RANGE_NAME = f"'{category}'!A2:F"
 
-        # Créer l'onglet s'il n'existe pas
         try:
             service.spreadsheets().batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
@@ -171,22 +156,19 @@ def sync_videos():
                     ]
                 }
             ).execute()
-        except:
-            # L'onglet existe déjà, on ignore l'erreur
+        except Exception:
             pass
 
         sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
-        # Mise à jour des données dans l'onglet
         body = {'values': videos}
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
             range=RANGE_NAME,
-            valueInputOption='USER_ENTERED',  # Pour que la formule =IMAGE() soit interprétée
+            valueInputOption='USER_ENTERED',
             body=body
         ).execute()
 
-        # Application des bordures et dimensionnement si des vidéos sont présentes
         num_rows = len(videos)
         if num_rows > 0 and sheet_id is not None:
             batch_requests = [
@@ -194,10 +176,10 @@ def sync_videos():
                     "updateBorders": {
                         "range": {
                             "sheetId": sheet_id,
-                            "startRowIndex": 1,       # A partir de la ligne 2
+                            "startRowIndex": 1,
                             "endRowIndex": 1 + num_rows,
-                            "startColumnIndex": 0,    # A=0
-                            "endColumnIndex": 6       # F=5, endColumnIndex=6 car non inclusif
+                            "startColumnIndex": 0,
+                            "endColumnIndex": 6
                         },
                         "top": {
                             "style": "SOLID",
@@ -231,7 +213,6 @@ def sync_videos():
                         }
                     }
                 },
-                # Ajuster la hauteur des lignes à 200px
                 {
                     "updateDimensionProperties": {
                         "range": {
@@ -246,13 +227,12 @@ def sync_videos():
                         "fields": "pixelSize"
                     }
                 },
-                # Ajuster la largeur de la colonne A (miniature) à 200px
                 {
                     "updateDimensionProperties": {
                         "range": {
                             "sheetId": sheet_id,
                             "dimension": "COLUMNS",
-                            "startIndex": 0,  # Colonne A
+                            "startIndex": 0,
                             "endIndex": 1
                         },
                         "properties": {
@@ -268,9 +248,8 @@ def sync_videos():
                 body={"requests": batch_requests}
             ).execute()
 
-    print("Synchronisation terminée. Les miniatures devraient désormais s'afficher correctement.")
+    print("Synchronisation terminée. La date de mise en ligne de la vidéo est maintenant affichée dans la colonne E.")
 
-# Boucle pour une synchronisation toutes les heures
 while True:
     sync_videos()
-    time.sleep(3600)  # Attendre une heure avant la prochaine synchronisation
+    time.sleep(3600)
