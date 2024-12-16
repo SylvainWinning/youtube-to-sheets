@@ -132,14 +132,16 @@ def sync_videos():
             duration_iso = video_data['items'][0]['contentDetails']['duration']
             video_duration = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(video_data)
+            # Utilisation de la formule =IMAGE("URL") pour afficher l'image directement
+            thumbnail_formula = f'=IMAGE("{thumbnail_url}")' if thumbnail_url else ""
         else:
             channel = "Inconnu"
             video_duration = "Inconnue"
-            thumbnail_url = ""
+            thumbnail_formula = ""
 
         category = get_duration_category(video_duration)
-        # Maintenant nous avons 6 colonnes : Titre, Lien, Chaîne, Date, Durée, Miniature
-        videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration, thumbnail_url])
+        # Colonnes : Titre, Lien, Chaîne, Date, Durée, Miniature (IMAGE)
+        videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration, thumbnail_formula])
 
     # Mise à jour des onglets
     for category, videos in videos_by_category.items():
@@ -162,23 +164,24 @@ def sync_videos():
                 }
             ).execute()
         except Exception:
-            # L'onglet existe déjà, pas grave
+            # L'onglet existe déjà
             pass
 
         sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
         # Écriture/mise à jour des vidéos dans la feuille
+        # IMPORTANT: Pour que la formule =IMAGE(...) soit interprétée, on utilise USER_ENTERED
         body = {'values': videos}
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
             range=RANGE_NAME,
-            valueInputOption='RAW',
+            valueInputOption='USER_ENTERED',
             body=body
         ).execute()
 
         num_rows = len(videos)
         if num_rows > 0 and sheet_id is not None:
-            # Appliquer des bordures sur les nouvelles données (A-F = endColumnIndex = 6)
+            # Appliquer des bordures sur les nouvelles données (A-F)
             service.spreadsheets().batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
                 body={
@@ -190,7 +193,7 @@ def sync_videos():
                                     "startRowIndex": 1,       # A partir de la ligne 2
                                     "endRowIndex": 1 + num_rows,
                                     "startColumnIndex": 0,    # A=0
-                                    "endColumnIndex": 6       # F=5, endColumnIndex est exclusif, donc 6
+                                    "endColumnIndex": 6       # F=5, endColumnIndex=6
                                 },
                                 "top": {
                                     "style": "SOLID",
@@ -228,7 +231,7 @@ def sync_videos():
                 }
             ).execute()
 
-    print("Synchronisation terminée. Toutes les vidéos de la playlist sont présentes, sans affichage d'heures, avec bordures, et incluant la miniature.")
+    print("Synchronisation terminée. Toutes les vidéos sont présentes, sans heures, avec bordures, et la miniature s'affiche directement sous forme d'image.")
 
 # Boucle pour synchroniser toutes les heures
 while True:
