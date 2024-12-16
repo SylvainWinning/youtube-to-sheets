@@ -28,7 +28,7 @@ for item in data.get('items', []):
     videos.append([title, video_link, channel, published_at])
 
 # Mettre à jour la feuille
-RANGE_NAME = "Feuille1!A2:D"
+RANGE_NAME = "'Feuille 1'!A2:D"
 body = {'values': videos}
 result = service.spreadsheets().values().update(
     spreadsheetId=SPREADSHEET_ID,
