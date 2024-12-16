@@ -7,7 +7,6 @@ from googleapiclient.discovery import build
 
 def parse_duration(iso_duration):
     # Exemple de iso_duration : "PT4M13S"
-    # On va extraire les heures (H), minutes (M), et secondes (S)
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
     hours = int(match.group(1)) if match.group(1) else 0
@@ -20,6 +19,25 @@ def parse_duration(iso_duration):
     else:
         return f"{minutes:02d}:{seconds:02d}"
 
+def get_duration_category(duration):
+    # Convertir la durée en secondes
+    parts = duration.split(":")
+    if len(parts) == 2:  # Format MM:SS
+        total_seconds = int(parts[0]) * 60 + int(parts[1])
+    elif len(parts) == 3:  # Format HH:MM:SS
+        total_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+    else:
+        return "Inconnue"
+
+    # Catégoriser par plage
+    if total_seconds <= 300:
+        return "0-5min"
+    elif total_seconds <= 600:
+        return "5-10min"
+    elif total_seconds <= 1200:
+        return "10-20min"
+    else:
+        return "20+min"
 
 YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
 SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
@@ -38,7 +56,13 @@ YT_PLAYLIST_API_URL = (
 response = requests.get(YT_PLAYLIST_API_URL)
 data = response.json()
 
-videos = []
+videos_by_category = {
+    "0-5min": [],
+    "5-10min": [],
+    "10-20min": [],
+    "20+min": []
+}
+
 for item in data.get('items', []):
     title = item['snippet']['title']
     video_id = item['contentDetails']['videoId']
@@ -65,79 +89,45 @@ for item in data.get('items', []):
         channel = "Inconnu"
         video_duration = "Inconnue"
 
-    # On ajoute maintenant la durée en plus, donc 5 colonnes :
-    # Titre (A), Lien (B), Chaine (C), Date (D), Durée (E)
-    videos.append([title, video_link, channel, published_at_formatted, video_duration])
+    # Déterminer la catégorie de durée
+    category = get_duration_category(video_duration)
+    
+    # Ajouter la vidéo dans la bonne catégorie
+    videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration])
 
-# Maintenant, la plage va jusqu'à la colonne E
-RANGE_NAME = "'Feuille 1'!A2:E"
-body = {
-    'values': videos
-}
+# Écrire les vidéos dans les onglets correspondants
+for category, videos in videos_by_category.items():
+    RANGE_NAME = f"'{category}'!A2:E"
 
-# Mise à jour des données dans le Google Sheet
-result = service.spreadsheets().values().update(
-    spreadsheetId=SPREADSHEET_ID,
-    range=RANGE_NAME,
-    valueInputOption='RAW',
-    body=body
-).execute()
-
-print(f"{result.get('updatedCells')} cellules mises à jour.")
-
-# Ajout des bordures autour du tableau
-num_rows = len(videos)
-requests = [
-    {
-        "updateBorders": {
-            "range": {
-                "sheetId": 0,  # L'ID de l'onglet (en général 0 pour la première feuille)
-                "startRowIndex": 1,       # A partir de la ligne 2 (index 1)
-                "endRowIndex": 1 + num_rows,
-                "startColumnIndex": 0,    # A=0
-                "endColumnIndex": 5       # On avait A-D = 4, maintenant A-E = 5
-            },
-            "top": {
-                "style": "SOLID",
-                "width": 1,
-                "color": {"red": 0, "green": 0, "blue": 0}
-            },
-            "bottom": {
-                "style": "SOLID",
-                "width": 1,
-                "color": {"red": 0, "green": 0, "blue": 0}
-            },
-            "left": {
-                "style": "SOLID",
-                "width": 1,
-                "color": {"red": 0, "green": 0, "blue": 0}
-            },
-            "right": {
-                "style": "SOLID",
-                "width": 1,
-                "color": {"red": 0, "green": 0, "blue": 0}
-            },
-            "innerHorizontal": {
-                "style": "SOLID",
-                "width": 1,
-                "color": {"red": 0, "green": 0, "blue": 0}
-            },
-            "innerVertical": {
-                "style": "SOLID",
-                "width": 1,
-                "color": {"red": 0, "green": 0, "blue": 0}
+    # Créer un onglet s'il n'existe pas
+    try:
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body={
+                "requests": [
+                    {
+                        "addSheet": {
+                            "properties": {
+                                "title": category
+                            }
+                        }
+                    }
+                ]
             }
-        }
+        ).execute()
+    except Exception as e:
+        print(f"L'onglet {category} existe probablement déjà : {e}")
+
+    # Ajouter les vidéos dans l'onglet
+    body = {
+        'values': videos
     }
-]
 
-format_body = {
-    "requests": requests
-}
+    service.spreadsheets().values().update(
+        spreadsheetId=SPREADSHEET_ID,
+        range=RANGE_NAME,
+        valueInputOption='RAW',
+        body=body
+    ).execute()
 
-response = service.spreadsheets().batchUpdate(
-    spreadsheetId=SPREADSHEET_ID,
-    body=format_body
-).execute()
-
-print("Bordures ajoutées aux cellules.")
+print("Vidéos classées par durée dans les onglets correspondants.")
