@@ -36,8 +36,16 @@ def get_duration_category(duration):
         return "5-10min"
     elif total_seconds <= 1200:
         return "10-20min"
+    elif total_seconds <= 1800:
+        return "20-30min"
+    elif total_seconds <= 2400:
+        return "30-40min"
+    elif total_seconds <= 3000:
+        return "40-50min"
+    elif total_seconds <= 3600:
+        return "50-60min"
     else:
-        return "20+min"
+        return "60+min"
 
 def get_sheet_id(spreadsheet_id, sheet_title, service):
     spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
@@ -67,7 +75,11 @@ videos_by_category = {
     "0-5min": [],
     "5-10min": [],
     "10-20min": [],
-    "20+min": []
+    "20-30min": [],
+    "30-40min": [],
+    "40-50min": [],
+    "50-60min": [],
+    "60+min": []
 }
 
 for item in data.get('items', []):
