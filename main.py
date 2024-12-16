@@ -6,42 +6,49 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 def parse_duration(iso_duration):
+    # Exemple de iso_duration : "PT4M13S", "PT1H2M3S" etc.
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
     hours = int(match.group(1)) if match.group(1) else 0
     minutes = int(match.group(2)) if match.group(2) else 0
     seconds = int(match.group(3)) if match.group(3) else 0
 
-    if hours > 0:
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-    else:
-        return f"{minutes:02d}:{seconds:02d}"
+    # Convertir toute la durée en secondes
+    total_seconds = hours * 3600 + minutes * 60 + seconds
+
+    # Convertir à nouveau en minutes et secondes pour n'afficher que MM:SS, même si >60 minutes
+    total_minutes = total_seconds // 60
+    remaining_seconds = total_seconds % 60
+
+    return f"{total_minutes}:{remaining_seconds:02d}"
 
 def get_duration_category(duration):
+    # Convertir la durée (MM:SS) en secondes
     parts = duration.split(":")
-    if len(parts) == 2:  # Format MM:SS
-        total_seconds = int(parts[0]) * 60 + int(parts[1])
-    elif len(parts) == 3:  # Format HH:MM:SS
-        total_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-    else:
+    if len(parts) != 2:
+        return "Inconnue"
+    try:
+        total_minutes = int(parts[0])
+        total_seconds = total_minutes * 60 + int(parts[1])
+    except ValueError:
         return "Inconnue"
 
-    # Mêmes plages de temps que précédemment
-    if total_seconds <= 300:
+    # Catégoriser par plage
+    if total_seconds <= 300:       # 0-5 min
         return "0-5min"
-    elif total_seconds <= 600:
+    elif total_seconds <= 600:     # 5-10 min
         return "5-10min"
-    elif total_seconds <= 1200:
+    elif total_seconds <= 1200:    # 10-20 min
         return "10-20min"
-    elif total_seconds <= 1800:
+    elif total_seconds <= 1800:    # 20-30 min
         return "20-30min"
-    elif total_seconds <= 2400:
+    elif total_seconds <= 2400:    # 30-40 min
         return "30-40min"
-    elif total_seconds <= 3000:
+    elif total_seconds <= 3000:    # 40-50 min
         return "40-50min"
-    elif total_seconds <= 3600:
+    elif total_seconds <= 3600:    # 50-60 min
         return "50-60min"
-    else:
+    else:                          # 60+ min
         return "60+min"
 
 def get_sheet_id(spreadsheet_id, sheet_title, service):
@@ -84,12 +91,13 @@ for item in data.get('items', []):
     video_id = item['contentDetails']['videoId']
     published_at = item['snippet']['publishedAt']
 
+    # Format date sans l'heure
     dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
-    # Suppression de l'heure dans l'affichage de la date
-    published_at_formatted = dt.strftime("%d/%m/%Y")
+    published_at_formatted = dt.strftime("%d/%m/%Y")  # pas d'heure
 
     video_link = f"https://www.youtube.com/watch?v={video_id}"
 
+    # Récupération des informations de la vidéo
     YT_VIDEO_API_URL = (
         f"https://www.googleapis.com/youtube/v3/videos"
         f"?part=snippet,contentDetails&id={video_id}&key={YOUTUBE_API_KEY}"
@@ -111,6 +119,7 @@ for item in data.get('items', []):
 for category, videos in videos_by_category.items():
     RANGE_NAME = f"'{category}'!A2:E"
 
+    # Créer un onglet s'il n'existe pas
     try:
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
@@ -193,4 +202,4 @@ for category, videos in videos_by_category.items():
             }
         ).execute()
 
-print("Vidéos classées par durée dans les onglets correspondants avec bordures ajoutées sans l'heure.")
+print("Vidéos classées par durée dans les onglets correspondants, sans affichage d'heures, avec bordures ajoutées.")
