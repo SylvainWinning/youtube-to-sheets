@@ -130,4 +130,56 @@ for category, videos in videos_by_category.items():
         body=body
     ).execute()
 
-print("Vidéos classées par durée dans les onglets correspondants.")
+    # Ajouter des bordures pour le tableau
+    num_rows = len(videos)
+    if num_rows > 0:
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body={
+                "requests": [
+                    {
+                        "updateBorders": {
+                            "range": {
+                                "sheetId": 0,
+                                "startRowIndex": 1,       # A partir de la ligne 2
+                                "endRowIndex": 1 + num_rows,
+                                "startColumnIndex": 0,    # A=0
+                                "endColumnIndex": 5       # A-E
+                            },
+                            "top": {
+                                "style": "SOLID",
+                                "width": 1,
+                                "color": {"red": 0, "green": 0, "blue": 0}
+                            },
+                            "bottom": {
+                                "style": "SOLID",
+                                "width": 1,
+                                "color": {"red": 0, "green": 0, "blue": 0}
+                            },
+                            "left": {
+                                "style": "SOLID",
+                                "width": 1,
+                                "color": {"red": 0, "green": 0, "blue": 0}
+                            },
+                            "right": {
+                                "style": "SOLID",
+                                "width": 1,
+                                "color": {"red": 0, "green": 0, "blue": 0}
+                            },
+                            "innerHorizontal": {
+                                "style": "SOLID",
+                                "width": 1,
+                                "color": {"red": 0, "green": 0, "blue": 0}
+                            },
+                            "innerVertical": {
+                                "style": "SOLID",
+                                "width": 1,
+                                "color": {"red": 0, "green": 0, "blue": 0}
+                            }
+                        }
+                    }
+                ]
+            }
+        ).execute()
+
+print("Vidéos classées par durée dans les onglets correspondants avec bordures ajoutées.")
