@@ -77,6 +77,14 @@ def fetch_all_playlist_items(playlist_id, api_key):
             break
     return all_items
 
+def get_thumbnail_url(video_data):
+    # Essayer d'obtenir la meilleure miniature disponible
+    thumb_info = video_data['items'][0]['snippet'].get('thumbnails', {})
+    for quality in ['high', 'standard', 'medium', 'default']:
+        if quality in thumb_info:
+            return thumb_info[quality]['url']
+    return ""  # Si aucune miniature disponible
+
 def sync_videos():
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
@@ -107,7 +115,7 @@ def sync_videos():
 
         # Date sans heure
         dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
-        published_at_formatted = dt.strftime("%d/%m/%Y")  # JJ/MM/AAAA
+        published_at_formatted = dt.strftime("%d/%m/%Y")
 
         video_link = f"https://www.youtube.com/watch?v={video_id}"
 
@@ -123,15 +131,19 @@ def sync_videos():
             channel = video_data['items'][0]['snippet']['channelTitle']
             duration_iso = video_data['items'][0]['contentDetails']['duration']
             video_duration = parse_duration(duration_iso)
+            thumbnail_url = get_thumbnail_url(video_data)
         else:
             channel = "Inconnu"
             video_duration = "Inconnue"
+            thumbnail_url = ""
 
         category = get_duration_category(video_duration)
-        videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration])
+        # Maintenant nous avons 6 colonnes : Titre, Lien, Chaîne, Date, Durée, Miniature
+        videos_by_category[category].append([title, video_link, channel, published_at_formatted, video_duration, thumbnail_url])
 
+    # Mise à jour des onglets
     for category, videos in videos_by_category.items():
-        RANGE_NAME = f"'{category}'!A2:E"
+        RANGE_NAME = f"'{category}'!A2:F"
 
         # Créer l'onglet s'il n'existe pas
         try:
@@ -150,12 +162,12 @@ def sync_videos():
                 }
             ).execute()
         except Exception:
-            # L'onglet existe déjà
+            # L'onglet existe déjà, pas grave
             pass
 
         sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
 
-        # Écriture/mise à jour des vidéos dans la feuille (sans suppression)
+        # Écriture/mise à jour des vidéos dans la feuille
         body = {'values': videos}
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
@@ -166,7 +178,7 @@ def sync_videos():
 
         num_rows = len(videos)
         if num_rows > 0 and sheet_id is not None:
-            # Appliquer des bordures sur les nouvelles données
+            # Appliquer des bordures sur les nouvelles données (A-F = endColumnIndex = 6)
             service.spreadsheets().batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
                 body={
@@ -178,7 +190,7 @@ def sync_videos():
                                     "startRowIndex": 1,       # A partir de la ligne 2
                                     "endRowIndex": 1 + num_rows,
                                     "startColumnIndex": 0,    # A=0
-                                    "endColumnIndex": 5       # A-E
+                                    "endColumnIndex": 6       # F=5, endColumnIndex est exclusif, donc 6
                                 },
                                 "top": {
                                     "style": "SOLID",
@@ -216,7 +228,7 @@ def sync_videos():
                 }
             ).execute()
 
-    print("Synchronisation terminée. Toutes les vidéos de la playlist sont présentes, sans affichage d'heures, avec bordures.")
+    print("Synchronisation terminée. Toutes les vidéos de la playlist sont présentes, sans affichage d'heures, avec bordures, et incluant la miniature.")
 
 # Boucle pour synchroniser toutes les heures
 while True:
