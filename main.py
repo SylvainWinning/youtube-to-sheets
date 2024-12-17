@@ -131,12 +131,13 @@ def sync_videos():
         video_items = video_data.get('items', [])
         
         if not video_items:
-            # Vidéo non trouvée, on ignore
+            # Vidéo non trouvée
             continue
         
         video_info = video_items[0]
         snippet = video_info.get('snippet', {})
         stats = video_info.get('statistics', {})
+        
         duration = parse_duration(video_info.get('contentDetails', {}).get('duration', 'PT0S'))
         category = get_duration_category(duration)
         
@@ -152,30 +153,29 @@ def sync_videos():
         tags_str = ", ".join(tags)
 
         videos_by_category[category].append([
-            f'=IMAGE("{thumbnail_url}")',
-            thumbnail_url,
-            title,
-            f"https://www.youtube.com/watch?v={video_id}",
-            channel,
-            published_date,
-            duration,
-            view_count,
-            like_count,
-            comment_count,
-            description,
-            tags_str
+            f'=IMAGE("{thumbnail_url}")',  # Miniature (Col A)
+            thumbnail_url,                 # Lien Miniature (Col B)
+            title,                         # Titre (Col C)
+            f"https://www.youtube.com/watch?v={video_id}",  # Lien (Col D)
+            channel,                       # Chaîne (Col E)
+            published_date,                # Publié le (Col F)
+            duration,                      # Durée (Col G)
+            view_count,                    # Vues (Col H)
+            like_count,                    # J'aime (Col I)
+            comment_count,                 # Commentaires (Col J)
+            description,                   # Description courte (Col K)
+            tags_str                       # Tags (Col L)
         ])
 
     # Mise à jour des feuilles Google Sheets
     for category, videos in videos_by_category.items():
         sheet = service.spreadsheets()
-        # On tente d'ajouter une feuille si elle n'existe pas
         try:
             sheet.batchUpdate(spreadsheetId=SPREADSHEET_ID, body={
                 "requests": [{"addSheet": {"properties": {"title": category}}}]
             }).execute()
         except Exception:
-            # Si la feuille existe déjà, on passe
+            # Ignore si la feuille existe déjà
             pass
 
         range_name = f"'{category}'!A1:L"
