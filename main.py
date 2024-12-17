@@ -18,7 +18,6 @@ PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
 CATEGORIES = ["0-5min", "5-10min", "10-20min", "20-30min", "30-40min", "40-50min", "50-60min", "60+min"]
 SHEET_HEADERS = ["Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags"]
 
-# Fonction pour parser la durée ISO8601
 def parse_duration(iso_duration):
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
@@ -27,7 +26,6 @@ def parse_duration(iso_duration):
     seconds = int(match.group(3)) if match.group(3) else 0
     return f"{hours*60+minutes}:{seconds:02d}"
 
-# Détermine la catégorie de durée
 def get_duration_category(duration):
     parts = duration.split(":")
     if len(parts) != 2:
@@ -64,7 +62,6 @@ def load_cache():
             return json.load(file)
     return None
 
-# Fonction pour récupérer toutes les vidéos avec pagination
 def fetch_all_playlist_items(playlist_id, api_key):
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
@@ -88,22 +85,14 @@ def fetch_all_playlist_items(playlist_id, api_key):
             if 'nextPageToken' in data:
                 params["pageToken"] = data["nextPageToken"]
                 page += 1
-                time.sleep(1)  # Pause pour éviter les quotas
+                time.sleep(1)
             else:
                 break
         except Exception as e:
             print(f"Erreur de connexion : {e}")
-            time.sleep(5)  # Attente avant relance
+            time.sleep(5)
     print(f"Nombre total de vidéos récupérées : {len(all_items)}")
     return all_items
-
-# Fonction pour récupérer l'URL de la miniature
-def get_thumbnail_url(video_data):
-    thumb_info = video_data['items'][0]['snippet'].get('thumbnails', {})
-    for quality in ['high', 'standard', 'medium', 'default']:
-        if quality in thumb_info:
-            return thumb_info[quality]['url']
-    return ""
 
 def get_video_details(video_id, api_key):
     url = "https://www.googleapis.com/youtube/v3/videos"
@@ -112,7 +101,6 @@ def get_video_details(video_id, api_key):
     return response.json()
 
 def sync_videos():
-    # Chargement éventuel du cache
     cached_data = load_cache()
     if cached_data:
         print("Données chargées depuis le cache")
@@ -123,12 +111,10 @@ def sync_videos():
         save_cache(items)
         print("Données sauvegardées dans le cache")
 
-    # Création des credentials Google Sheets
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
     creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     service = build('sheets', 'v4', credentials=creds)
 
-    # Organisation des vidéos par catégorie
     videos_by_category = {category: [] for category in CATEGORIES}
 
     for item in items:
@@ -163,22 +149,19 @@ def sync_videos():
             ", ".join(snippet.get("tags", []))
         ])
 
-    # Mise à jour des feuilles Google Sheets
     for category, videos in videos_by_category.items():
         random.shuffle(videos)
         range_name_headers = f"'{category}'!A1:K1"
         range_name_data = f"'{category}'!A2:K"
         sheet = service.spreadsheets()
-        # Création de la feuille si elle n'existe pas
         try:
             sheet.batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
                 body={"requests": [{"addSheet": {"properties": {"title": category}}}]}
             ).execute()
         except Exception:
-            pass  # La feuille existe déjà
-        
-        # Ajout des en-têtes
+            pass
+
         sheet.values().update(
             spreadsheetId=SPREADSHEET_ID,
             range=range_name_headers,
@@ -186,7 +169,6 @@ def sync_videos():
             body={'values': [SHEET_HEADERS]}
         ).execute()
 
-        # Ajout des données
         sheet.values().update(
             spreadsheetId=SPREADSHEET_ID,
             range=range_name_data,
