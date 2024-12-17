@@ -21,7 +21,6 @@ SHEET_HEADERS = [
     "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags"
 ]
 
-
 def parse_duration(iso_duration):
     """Convertit la durée ISO 8601 en format 'mm:ss'."""
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
@@ -31,7 +30,6 @@ def parse_duration(iso_duration):
     seconds = int(match.group(3)) if match.group(3) else 0
     total_seconds = hours * 3600 + minutes * 60 + seconds
     return f"{total_seconds // 60}:{total_seconds % 60:02d}"
-
 
 def get_duration_category(duration):
     """Classe la vidéo par durée."""
@@ -45,20 +43,17 @@ def get_duration_category(duration):
     if minutes <= 60: return "50-60min"
     return "60+min"
 
-
 def save_cache(data):
     """Enregistre les données dans un cache local."""
-    with open(CACHE_FILE, "w") as file:
-        json.dump(data, file)
-
+    with open(CACHE_FILE, "w", encoding="utf-8") as file:
+        json.dump(data, file, ensure_ascii=False)
 
 def load_cache():
     """Charge les données depuis le cache local."""
     if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, "r") as file:
+        with open(CACHE_FILE, "r", encoding="utf-8") as file:
             return json.load(file)
     return None
-
 
 def fetch_all_playlist_items(playlist_id, api_key):
     """Récupère toutes les vidéos d'une playlist YouTube."""
@@ -92,7 +87,6 @@ def fetch_all_playlist_items(playlist_id, api_key):
     print(f"Total des vidéos récupérées : {len(all_items)}")
     return all_items
 
-
 def get_video_details(video_id, api_key):
     """Récupère les détails d'une vidéo spécifique."""
     url = "https://www.googleapis.com/youtube/v3/videos"
@@ -100,6 +94,20 @@ def get_video_details(video_id, api_key):
     response = requests.get(url, params=params)
     return response.json()
 
+def clean_text(text):
+    """Nettoie le texte pour éviter les décalages (suppression des retours à la ligne)."""
+    if text:
+        return text.replace("\n", " ").replace("\r", " ")
+    return ""
+
+def get_thumbnail_url(snippet):
+    """Récupère l'URL de la miniature, en vérifiant différentes qualités."""
+    thumbnails = snippet.get("thumbnails", {})
+    for quality in ["high", "standard", "medium", "default"]:
+        url = thumbnails.get(quality, {}).get("url")
+        if url:
+            return url
+    return ""
 
 def sync_videos():
     """Synchronise les vidéos de YouTube vers Google Sheets."""
@@ -120,38 +128,55 @@ def sync_videos():
     for item in items:
         video_id = item['contentDetails']['videoId']
         video_data = get_video_details(video_id, YOUTUBE_API_KEY)
-        video_info = video_data.get('items', [{}])[0]
+        video_items = video_data.get('items', [])
+        
+        if not video_items:
+            # Vidéo non trouvée, on ignore
+            continue
+        
+        video_info = video_items[0]
         snippet = video_info.get('snippet', {})
         stats = video_info.get('statistics', {})
         duration = parse_duration(video_info.get('contentDetails', {}).get('duration', 'PT0S'))
         category = get_duration_category(duration)
-        thumbnail_url = snippet.get("thumbnails", {}).get("high", {}).get("url", "")
+        
+        thumbnail_url = get_thumbnail_url(snippet)
+        title = clean_text(snippet.get("title", "Inconnu"))
+        channel = clean_text(snippet.get("channelTitle", "Inconnu"))
+        published_date = snippet.get("publishedAt", "")[:10]
+        view_count = stats.get("viewCount", "N/A")
+        like_count = stats.get("likeCount", "N/A")
+        comment_count = stats.get("commentCount", "N/A")
+        description = clean_text(snippet.get("description", ""))
+        tags = snippet.get("tags", [])
+        tags_str = ", ".join(tags)
 
-        # Remplir exactement les colonnes
         videos_by_category[category].append([
             f'=IMAGE("{thumbnail_url}")',
             thumbnail_url,
-            snippet.get("title", "Inconnu"),
+            title,
             f"https://www.youtube.com/watch?v={video_id}",
-            snippet.get("channelTitle", "Inconnu"),
-            snippet.get("publishedAt", "")[:10],
+            channel,
+            published_date,
             duration,
-            stats.get("viewCount", "N/A"),
-            stats.get("likeCount", "N/A"),
-            stats.get("commentCount", "N/A"),
-            snippet.get("description", ""),
-            ", ".join(snippet.get("tags", []))
+            view_count,
+            like_count,
+            comment_count,
+            description,
+            tags_str
         ])
 
     # Mise à jour des feuilles Google Sheets
     for category, videos in videos_by_category.items():
         sheet = service.spreadsheets()
+        # On tente d'ajouter une feuille si elle n'existe pas
         try:
             sheet.batchUpdate(spreadsheetId=SPREADSHEET_ID, body={
                 "requests": [{"addSheet": {"properties": {"title": category}}}]
             }).execute()
         except Exception:
-            pass  # Ignore si la feuille existe déjà
+            # Si la feuille existe déjà, on passe
+            pass
 
         range_name = f"'{category}'!A1:L"
         sheet.values().update(
@@ -159,7 +184,6 @@ def sync_videos():
             valueInputOption="USER_ENTERED", body={"values": [SHEET_HEADERS] + videos}
         ).execute()
     print("Synchronisation terminée avec Google Sheets")
-
 
 if __name__ == "__main__":
     sync_videos()
