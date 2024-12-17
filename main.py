@@ -7,6 +7,7 @@ from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
+# Fonction pour parser la durée ISO8601
 def parse_duration(iso_duration):
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
@@ -19,6 +20,7 @@ def parse_duration(iso_duration):
     remaining_seconds = total_seconds % 60
     return f"{total_minutes}:{remaining_seconds:02d}"
 
+# Détermine la catégorie de durée
 def get_duration_category(duration):
     parts = duration.split(":")
     if len(parts) != 2:
@@ -46,13 +48,7 @@ def get_duration_category(duration):
     else:
         return "60+min"
 
-def get_sheet_id(spreadsheet_id, sheet_title, service):
-    spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-    for sheet in spreadsheet.get("sheets", []):
-        if sheet["properties"]["title"] == sheet_title:
-            return sheet["properties"]["sheetId"]
-    return None
-
+# Fonction pour récupérer toutes les vidéos avec pagination
 def fetch_all_playlist_items(playlist_id, api_key):
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
@@ -65,14 +61,23 @@ def fetch_all_playlist_items(playlist_id, api_key):
     all_items = []
     while True:
         response = requests.get(base_url, params=params)
+        if response.status_code != 200:
+            print(f"Erreur: {response.status_code} - {response.text}")
+            break
+
         data = response.json()
         all_items.extend(data.get('items', []))
+
+        # Pagination
         if 'nextPageToken' in data:
             params["pageToken"] = data["nextPageToken"]
         else:
             break
+
+    print(f"Nombre total de vidéos récupérées : {len(all_items)}")
     return all_items
 
+# Fonction pour récupérer l'URL de la miniature
 def get_thumbnail_url(video_data):
     thumb_info = video_data['items'][0]['snippet'].get('thumbnails', {})
     for quality in ['high', 'standard', 'medium', 'default']:
@@ -80,6 +85,7 @@ def get_thumbnail_url(video_data):
             return thumb_info[quality]['url']
     return ""
 
+# Fonction principale
 def sync_videos():
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
@@ -93,14 +99,9 @@ def sync_videos():
     items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
 
     videos_by_category = {
-        "0-5min": [],
-        "5-10min": [],
-        "10-20min": [],
-        "20-30min": [],
-        "30-40min": [],
-        "40-50min": [],
-        "50-60min": [],
-        "60+min": []
+        "0-5min": [], "5-10min": [], "10-20min": [],
+        "20-30min": [], "30-40min": [], "40-50min": [],
+        "50-60min": [], "60+min": []
     }
 
     for item in items:
@@ -117,89 +118,48 @@ def sync_videos():
         if 'items' in video_data and len(video_data['items']) > 0:
             snippet = video_data['items'][0]['snippet']
             stats = video_data['items'][0].get('statistics', {})
-            title = snippet['title']
-            channel = snippet['channelTitle']
             duration_iso = video_data['items'][0]['contentDetails']['duration']
             video_duration = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(video_data)
 
-            view_count = stats.get('viewCount', 'N/A')
-            like_count = stats.get('likeCount', 'N/A')
-            comment_count = stats.get('commentCount', 'N/A')
-
-            # On ne tronque plus la description
-            short_description = snippet.get('description', '')
-
-            tags = snippet.get('tags', [])
-            tags_str = ", ".join(tags)
-
-            original_published_at = snippet['publishedAt']
-            dt = datetime.strptime(original_published_at, "%Y-%m-%dT%H:%M:%SZ")
+            dt = datetime.strptime(snippet['publishedAt'], "%Y-%m-%dT%H:%M:%SZ")
             published_at_formatted = dt.strftime("%d/%m/%Y")
 
-            thumbnail_formula = f'=IMAGE("{thumbnail_url}")' if thumbnail_url else ""
-        else:
-            title = "Inconnu"
-            channel = "Inconnu"
-            video_duration = "Inconnue"
-            published_at_formatted = ""
-            thumbnail_formula = ""
-            view_count = "N/A"
-            like_count = "N/A"
-            comment_count = "N/A"
-            short_description = ""
-            tags_str = ""
+            category = get_duration_category(video_duration)
+            videos_by_category[category].append([
+                f'=IMAGE("{thumbnail_url}")' if thumbnail_url else "",
+                snippet['title'],
+                video_link,
+                snippet['channelTitle'],
+                published_at_formatted,
+                video_duration,
+                stats.get('viewCount', 'N/A'),
+                stats.get('likeCount', 'N/A'),
+                stats.get('commentCount', 'N/A'),
+                snippet.get('description', ''),
+                ", ".join(snippet.get('tags', []))
+            ])
 
-        category = get_duration_category(video_duration)
-        videos_by_category[category].append([
-            thumbnail_formula,
-            title,
-            video_link,
-            channel,
-            published_at_formatted,
-            video_duration,
-            view_count,
-            like_count,
-            comment_count,
-            short_description,
-            tags_str
-        ])
-
-    # Titres des colonnes
     headers = [
         "Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée",
-        "Vues", "J'aime", "Commentaires", "Description courte", "Tags"
+        "Vues", "J'aime", "Commentaires", "Description", "Tags"
     ]
 
     for category, videos in videos_by_category.items():
-        # Mélange aléatoire des vidéos de la catégorie
         random.shuffle(videos)
 
-        RANGE_NAME_DATA = f"'{category}'!A2:K"
         RANGE_NAME_HEADERS = f"'{category}'!A1:K1"
+        RANGE_NAME_DATA = f"'{category}'!A2:K"
 
-        # Création de la feuille si elle n’existe pas
         try:
             service.spreadsheets().batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
-                body={
-                    "requests": [
-                        {
-                            "addSheet": {
-                                "properties": {
-                                    "title": category
-                                }
-                            }
-                        }
-                    ]
-                }
+                body={"requests": [{"addSheet": {"properties": {"title": category}}}]}
             ).execute()
         except Exception:
-            pass
+            pass  # La feuille existe déjà
 
-        sheet_id = get_sheet_id(SPREADSHEET_ID, category, service)
-
-        # Insertion des en-têtes
+        # En-têtes
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
             range=RANGE_NAME_HEADERS,
@@ -207,36 +167,7 @@ def sync_videos():
             body={'values': [headers]}
         ).execute()
 
-        # Mettre les en-têtes en gras
-        bold_request = {
-            "requests": [
-                {
-                    "repeatCell": {
-                        "range": {
-                            "sheetId": sheet_id,
-                            "startRowIndex": 0,
-                            "endRowIndex": 1,
-                            "startColumnIndex": 0,
-                            "endColumnIndex": 11
-                        },
-                        "cell": {
-                            "userEnteredFormat": {
-                                "textFormat": {
-                                    "bold": True
-                                }
-                            }
-                        },
-                        "fields": "userEnteredFormat.textFormat.bold"
-                    }
-                }
-            ]
-        }
-        service.spreadsheets().batchUpdate(
-            spreadsheetId=SPREADSHEET_ID,
-            body=bold_request
-        ).execute()
-
-        # Insertion des vidéos
+        # Données
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
             range=RANGE_NAME_DATA,
@@ -244,51 +175,10 @@ def sync_videos():
             body={'values': videos}
         ).execute()
 
-        # Mettre le texte en mode wrapping (pour éviter la troncature visuelle)
-        wrap_request = {
-            "requests": [
-                {
-                    "repeatCell": {
-                        "range": {
-                            "sheetId": sheet_id
-                        },
-                        "cell": {
-                            "userEnteredFormat": {
-                                "wrapStrategy": "WRAP"
-                            }
-                        },
-                        "fields": "userEnteredFormat.wrapStrategy"
-                    }
-                }
-            ]
-        }
-        service.spreadsheets().batchUpdate(
-            spreadsheetId=SPREADSHEET_ID,
-            body=wrap_request
-        ).execute()
+    print("Synchronisation terminée.")
 
-        # Auto-redimensionner les colonnes pour s'adapter au contenu
-        auto_resize_request = {
-            "requests": [
-                {
-                    "autoResizeDimensions": {
-                        "dimensions": {
-                            "sheetId": sheet_id,
-                            "dimension": "COLUMNS",
-                            "startIndex": 0,
-                            "endIndex": 11
-                        }
-                    }
-                }
-            ]
-        }
-        service.spreadsheets().batchUpdate(
-            spreadsheetId=SPREADSHEET_ID,
-            body=auto_resize_request
-        ).execute()
-
-    print("Synchronisation terminée. Les vidéos, les titres en gras, sans troncature et avec wrapping sont ajoutés.")
-
-while True:
-    sync_videos()
-    time.sleep(3600)
+# Boucle d'exécution
+if __name__ == "__main__":
+    while True:
+        sync_videos()
+        time.sleep(3600)
