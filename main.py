@@ -2,30 +2,30 @@ import re
 import time
 import random
 import json
+import os
+import requests
 from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-# Fonction pour parser la durée ISO8601
+# Fichiers et configurations
 CACHE_FILE = "youtube_cache.json"
 SERVICE_ACCOUNT_FILE = "service_account.json"
-# Configuration
 YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
 SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
 PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
+
 CATEGORIES = ["0-5min", "5-10min", "10-20min", "20-30min", "30-40min", "40-50min", "50-60min", "60+min"]
 SHEET_HEADERS = ["Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags"]
+
+# Fonction pour parser la durée ISO8601
 def parse_duration(iso_duration):
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
     hours = int(match.group(1)) if match.group(1) else 0
     minutes = int(match.group(2)) if match.group(2) else 0
     seconds = int(match.group(3)) if match.group(3) else 0
-    total_seconds = hours * 3600 + minutes * 60 + seconds
-    total_minutes = total_seconds // 60
-    remaining_seconds = total_seconds % 60
-    return f"{total_minutes}:{remaining_seconds:02d}"
-    return f"{total_seconds // 60}:{total_seconds % 60:02d}"
+    return f"{hours*60+minutes}:{seconds:02d}"
 
 # Détermine la catégorie de durée
 def get_duration_category(duration):
@@ -53,18 +53,11 @@ def get_duration_category(duration):
         return "50-60min"
     else:
         return "60+min"
-    minutes = int(duration.split(":")[0])
-    if minutes <= 5: return "0-5min"
-    if minutes <= 10: return "5-10min"
-    if minutes <= 20: return "10-20min"
-    if minutes <= 30: return "20-30min"
-    if minutes <= 40: return "30-40min"
-    if minutes <= 50: return "40-50min"
-    if minutes <= 60: return "50-60min"
-    return "60+min"
+
 def save_cache(data):
     with open(CACHE_FILE, "w") as file:
         json.dump(data, file)
+
 def load_cache():
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as file:
@@ -80,31 +73,16 @@ def fetch_all_playlist_items(playlist_id, api_key):
         "maxResults": 50,
         "key": api_key
     }
-    params = {"part": "snippet,contentDetails", "playlistId": playlist_id, "maxResults": 50, "key": api_key}
     all_items = []
-    while True:
-        response = requests.get(base_url, params=params)
-        if response.status_code != 200:
-            print(f"Erreur: {response.status_code} - {response.text}")
-            break
-        data = response.json()
-        all_items.extend(data.get('items', []))
-        # Pagination
-        if 'nextPageToken' in data:
-            params["pageToken"] = data["nextPageToken"]
-        else:
-            break
     page = 1
-
-    print(f"Nombre total de vidéos récupérées : {len(all_items)}")
     while True:
         try:
             response = requests.get(base_url, params=params)
-            data = response.json()
-            if "error" in data:
-                print(f"Erreur API : {data['error']['message']}")
+            if response.status_code != 200:
+                print(f"Erreur: {response.status_code} - {response.text}")
                 break
-            items = data.get("items", [])
+            data = response.json()
+            items = data.get('items', [])
             all_items.extend(items)
             print(f"Page {page} : {len(items)} vidéos récupérées")
             if 'nextPageToken' in data:
@@ -116,7 +94,7 @@ def fetch_all_playlist_items(playlist_id, api_key):
         except Exception as e:
             print(f"Erreur de connexion : {e}")
             time.sleep(5)  # Attente avant relance
-    print(f"Total des vidéos récupérées : {len(all_items)}")
+    print(f"Nombre total de vidéos récupérées : {len(all_items)}")
     return all_items
 
 # Fonction pour récupérer l'URL de la miniature
@@ -126,17 +104,15 @@ def get_thumbnail_url(video_data):
         if quality in thumb_info:
             return thumb_info[quality]['url']
     return ""
+
 def get_video_details(video_id, api_key):
     url = "https://www.googleapis.com/youtube/v3/videos"
     params = {"part": "snippet,contentDetails,statistics", "id": video_id, "key": api_key}
     response = requests.get(url, params=params)
     return response.json()
 
-# Fonction principale
 def sync_videos():
-    YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
-    SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
-    # Cache local pour éviter de surcharger l'API
+    # Chargement éventuel du cache
     cached_data = load_cache()
     if cached_data:
         print("Données chargées depuis le cache")
@@ -147,114 +123,79 @@ def sync_videos():
         save_cache(items)
         print("Données sauvegardées dans le cache")
 
+    # Création des credentials Google Sheets
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-    SERVICE_ACCOUNT_FILE = 'service_account.json'
     creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-    creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
     service = build('sheets', 'v4', credentials=creds)
-    PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
-    items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
-    videos_by_category = {
-        "0-5min": [], "5-10min": [], "10-20min": [],
-        "20-30min": [], "30-40min": [], "40-50min": [],
-        "50-60min": [], "60+min": []
-    }
-    
+
+    # Organisation des vidéos par catégorie
     videos_by_category = {category: [] for category in CATEGORIES}
+
     for item in items:
         video_id = item['contentDetails']['videoId']
-        video_link = f"https://www.youtube.com/watch?v={video_id}"
-        YT_VIDEO_API_URL = (
-            f"https://www.googleapis.com/youtube/v3/videos"
-            f"?part=snippet,contentDetails,statistics&id={video_id}&key={YOUTUBE_API_KEY}"
-        )
-        video_response = requests.get(YT_VIDEO_API_URL)
-        video_data = video_response.json()
-        if 'items' in video_data and len(video_data['items']) > 0:
-            snippet = video_data['items'][0]['snippet']
-            stats = video_data['items'][0].get('statistics', {})
-            duration_iso = video_data['items'][0]['contentDetails']['duration']
-            video_duration = parse_duration(duration_iso)
-            thumbnail_url = get_thumbnail_url(video_data)
-            dt = datetime.strptime(snippet['publishedAt'], "%Y-%m-%dT%H:%M:%SZ")
-            published_at_formatted = dt.strftime("%d/%m/%Y")
-            category = get_duration_category(video_duration)
-            videos_by_category[category].append([
-                f'=IMAGE("{thumbnail_url}")' if thumbnail_url else "",
-                snippet['title'],
-                video_link,
-                snippet['channelTitle'],
-                published_at_formatted,
-                video_duration,
-                stats.get('viewCount', 'N/A'),
-                stats.get('likeCount', 'N/A'),
-                stats.get('commentCount', 'N/A'),
-                snippet.get('description', ''),
-                ", ".join(snippet.get('tags', []))
-            ])
-    headers = [
-        "Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée",
-        "Vues", "J'aime", "Commentaires", "Description", "Tags"
-    ]
         video_data = get_video_details(video_id, YOUTUBE_API_KEY)
         video_info = video_data.get('items', [{}])[0]
         snippet = video_info.get('snippet', {})
         stats = video_info.get('statistics', {})
-        duration = parse_duration(video_info.get('contentDetails', {}).get('duration', 'PT0S'))
-        category = get_duration_category(duration)
+        duration_iso = video_info.get('contentDetails', {}).get('duration', 'PT0S')
+        video_duration = parse_duration(duration_iso)
+        thumbnail_url = snippet.get("thumbnails", {}).get("high", {}).get("url", "")
+        published_at = snippet.get("publishedAt", "")
+        if published_at:
+            dt = datetime.strptime(published_at, "%Y-%m-%dT%H:%M:%SZ")
+            published_at_formatted = dt.strftime("%d/%m/%Y")
+        else:
+            published_at_formatted = ""
+
+        category = get_duration_category(video_duration)
+        video_link = f"https://www.youtube.com/watch?v={video_id}"
         videos_by_category[category].append([
-            f'=IMAGE("{snippet.get("thumbnails", {}).get("high", {}).get("url", "")}")',
+            f'=IMAGE("{thumbnail_url}")' if thumbnail_url else "",
             snippet.get("title", "Inconnu"),
-            f"https://www.youtube.com/watch?v={video_id}",
+            video_link,
             snippet.get("channelTitle", "Inconnu"),
-            snippet.get("publishedAt", "")[:10],
-            duration,
+            published_at_formatted,
+            video_duration,
             stats.get("viewCount", "N/A"),
             stats.get("likeCount", "N/A"),
             stats.get("commentCount", "N/A"),
             snippet.get("description", ""),
             ", ".join(snippet.get("tags", []))
         ])
-    
+
     # Mise à jour des feuilles Google Sheets
     for category, videos in videos_by_category.items():
         random.shuffle(videos)
-        RANGE_NAME_HEADERS = f"'{category}'!A1:K1"
-        RANGE_NAME_DATA = f"'{category}'!A2:K"
+        range_name_headers = f"'{category}'!A1:K1"
+        range_name_data = f"'{category}'!A2:K"
         sheet = service.spreadsheets()
+        # Création de la feuille si elle n'existe pas
         try:
-            service.spreadsheets().batchUpdate(
+            sheet.batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
                 body={"requests": [{"addSheet": {"properties": {"title": category}}}]}
             ).execute()
-            sheet.batchUpdate(spreadsheetId=SPREADSHEET_ID, body={
-                "requests": [{"addSheet": {"properties": {"title": category}}}]
-            }).execute()
         except Exception:
             pass  # La feuille existe déjà
-        # En-têtes
-        service.spreadsheets().values().update(
-            spreadsheetId=SPREADSHEET_ID,
-            range=RANGE_NAME_HEADERS,
-            valueInputOption='USER_ENTERED',
-            body={'values': [headers]}
         
-        range_name = f"'{category}'!A1:K"
+        # Ajout des en-têtes
         sheet.values().update(
-            spreadsheetId=SPREADSHEET_ID, range=range_name,
-            valueInputOption="USER_ENTERED", body={"values": [SHEET_HEADERS] + videos}
-        ).execute()
-    print("Synchronisation terminée avec Google Sheets")
-
-        # Données
-        service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
-            range=RANGE_NAME_DATA,
+            range=range_name_headers,
+            valueInputOption='USER_ENTERED',
+            body={'values': [SHEET_HEADERS]}
+        ).execute()
+
+        # Ajout des données
+        sheet.values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=range_name_data,
             valueInputOption='USER_ENTERED',
             body={'values': videos}
         ).execute()
+
     print("Synchronisation terminée.")
-# Boucle d'exécution
+
 if __name__ == "__main__":
     while True:
         sync_videos()
