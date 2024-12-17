@@ -16,7 +16,10 @@ SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
 PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
 
 CATEGORIES = ["0-5min", "5-10min", "10-20min", "20-30min", "30-40min", "40-50min", "50-60min", "60+min"]
-SHEET_HEADERS = ["Miniature", "Lien Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags"]
+SHEET_HEADERS = [
+    "Miniature", "Lien Miniature", "Titre", "Lien", "Chaîne", "Publié le", 
+    "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags"
+]
 
 
 def parse_duration(iso_duration):
