@@ -21,23 +21,25 @@ CATEGORIES = ["0-5min", "5-10min", "10-20min", "20-30min", "30-40min", "40-50min
 # la durée, les vues, les "j'aime", les commentaires, une description courte et les tags
 SHEET_HEADERS = ["Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags"]
 
-# Fonction pour parser la durée ISO8601
+# Fonction pour parser la durée ISO8601 et la formater en HH:MM:SS
 def parse_duration(iso_duration):
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
     hours = int(match.group(1)) if match.group(1) else 0
     minutes = int(match.group(2)) if match.group(2) else 0
     seconds = int(match.group(3)) if match.group(3) else 0
-    return f"{hours*60+minutes}:{seconds:02d}"
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 # Catégoriser la vidéo selon sa durée
 def get_duration_category(duration):
     parts = duration.split(":")
-    if len(parts) != 2:
+    if len(parts) != 3:
         return "Inconnue"
     try:
-        total_minutes = int(parts[0])
-        total_seconds = total_minutes * 60 + int(parts[1])
+        hours = int(parts[0])
+        minutes = int(parts[1])
+        seconds = int(parts[2])
+        total_seconds = hours * 3600 + minutes * 60 + seconds
     except ValueError:
         return "Inconnue"
     if total_seconds <= 300:
@@ -173,7 +175,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
                                 "startRowIndex": 0,
                                 "endRowIndex": num_rows,
                                 "startColumnIndex": 0,  # Colonne A
-                                "endColumnIndex": 12    # Colonne L = index 11, mais endColumnIndex est exclu, donc mettre 12
+                                "endColumnIndex": 12    # Colonne L = index 11, endColumnIndex est exclu donc 12
                             },
                             "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
                             "bottom": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
