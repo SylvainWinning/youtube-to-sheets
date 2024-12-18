@@ -160,5 +160,10 @@ def sync_videos():
     update_google_sheets(service, SPREADSHEET_ID, videos_by_category)
     print("Synchronisation terminée.")
 
+# Boucle infinie pour synchronisation toutes les heures
 if __name__ == "__main__":
-    sync_videos()
+    while True:
+        print(f"Début de synchronisation à {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        sync_videos()
+        print(f"Prochaine synchronisation dans 1 heure.\n")
+        time.sleep(3600)  # Pause de 3600 secondes (1 heure)
