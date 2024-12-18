@@ -15,7 +15,7 @@ YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
 SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
 PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
 
-CATEGORIES = ["0-5min", "5-10min", "10-20min", "20-30min", "30-40min", "40-50min", "50-60min", "60+min"]
+CATEGORIES = ["0-5min", "5-10min", "10-20min", "20-30min", "30-40min", "40-50min", "50-60min", "60Plusmin"]
 
 # Mise à jour des en-têtes pour inclure la miniature, le titre, le lien, la chaîne, la date de publication,
 # la durée, les vues, les "j'aime", les commentaires, une description courte et les tags
@@ -57,7 +57,7 @@ def get_duration_category(duration):
     elif total_seconds <= 3600:
         return "50-60min"
     else:
-        return "60+min"
+        return "60Plusmin"
 
 # Logiciel de mise en cache
 def save_cache(data):
