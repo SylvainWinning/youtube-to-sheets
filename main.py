@@ -140,6 +140,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
             valueInputOption='USER_ENTERED',
             body={"values": [SHEET_HEADERS]}
         ).execute()
+        time.sleep(1)  # Pause entre les mises à jour pour respecter les quotas
 
         # Ajouter les données
         range_data = f"{category}!A2:K{len(videos) + 1}"
@@ -149,6 +150,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
             valueInputOption='USER_ENTERED',
             body={"values": videos}
         ).execute()
+        time.sleep(1)  # Pause entre les mises à jour pour respecter les quotas
 
 # Synchronize videos
 def sync_videos():
@@ -186,10 +188,8 @@ def sync_videos():
     update_google_sheets(service, SPREADSHEET_ID, videos_by_category)
     print("Synchronisation terminée.")
 
-# Boucle infinie pour synchronisation toutes les heures
+# Lancer une synchronisation unique
 if __name__ == "__main__":
-    while True:
-        print(f"Début de synchronisation à {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        sync_videos()
-        print(f"Prochaine synchronisation dans 1 heure.\n")
-        time.sleep(3600)  # Pause de 3600 secondes (1 heure)
+    print(f"Début de synchronisation à {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    sync_videos()
+    print("Synchronisation terminée.")
