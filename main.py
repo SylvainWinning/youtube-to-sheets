@@ -17,7 +17,7 @@ PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
 
 CATEGORIES = ["0-5min", "5-10min", "10-20min", "20-30min", "30-40min", "40-50min", "50-60min", "60+min"]
 
-# Mise à jour des en-têtes pour inclure la miniature, le titre, le lien, la chaîne, la date de publication, 
+# Mise à jour des en-têtes pour inclure la miniature, le titre, le lien, la chaîne, la date de publication,
 # la durée, les vues, les "j'aime", les commentaires, une description courte et les tags
 SHEET_HEADERS = ["Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags"]
 
@@ -154,6 +154,40 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
             body={"values": videos}
         ).execute()
         time.sleep(1)  # Pause entre les mises à jour pour respecter les quotas
+
+        # Appliquer les bordures (de A à L)
+        sheet_id = None
+        for s in spreadsheet['sheets']:
+            if s['properties']['title'] == category:
+                sheet_id = s['properties']['sheetId']
+                break
+
+        if sheet_id is not None:
+            num_rows = len(videos) + 1
+            border_requests = {
+                "requests": [
+                    {
+                        "updateBorders": {
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": 0,
+                                "endRowIndex": num_rows,
+                                "startColumnIndex": 0,  # Colonne A
+                                "endColumnIndex": 12    # Colonne L = index 11, mais endColumnIndex est exclu, donc mettre 12
+                            },
+                            "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                            "bottom": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                            "left": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                            "right": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                            "innerHorizontal": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
+                            "innerVertical": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}
+                        }
+                    }
+                ]
+            }
+
+            service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=border_requests).execute()
+            time.sleep(1)
 
 # Synchroniser les vidéos
 def sync_videos():
