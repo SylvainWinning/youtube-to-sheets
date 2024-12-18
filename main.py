@@ -106,71 +106,49 @@ def get_video_details(video_id, api_key):
 
 # Update Google Sheets with batchUpdate
 def update_google_sheets(service, spreadsheet_id, videos_by_category):
-    # Associer des sheetId uniques à chaque catégorie
-    sheet_ids = {category: index + 1 for index, category in enumerate(videos_by_category.keys())}
+    # Obtenir les informations actuelles des feuilles dans le document
+    spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    existing_sheets = {sheet['properties']['title']: sheet['properties']['sheetId'] for sheet in spreadsheet['sheets']}
+
     requests_batch = []
 
-    # Ajouter des feuilles si elles n'existent pas
-    for category, sheet_id in sheet_ids.items():
-        requests_batch.append({
-            "addSheet": {
-                "properties": {
-                    "sheetId": sheet_id,
-                    "title": category
-                }
-            }
-        })
-
-    # Préparer les valeurs à écrire pour chaque feuille
+    # Ajouter ou mettre à jour les feuilles pour chaque catégorie
     for category, videos in videos_by_category.items():
-        # En-têtes (ligne 1)
-        requests_batch.append({
-            "updateCells": {
-                "rows": [
-                    {
-                        "values": [
-                            {"userEnteredValue": {"stringValue": header}}
-                            for header in SHEET_HEADERS
-                        ]
+        if category not in existing_sheets:
+            # Ajouter une nouvelle feuille si elle n'existe pas
+            requests_batch.append({
+                "addSheet": {
+                    "properties": {
+                        "title": category
                     }
-                ],
-                "fields": "*",
-                "range": {
-                    "sheetId": sheet_ids[category],
-                    "startRowIndex": 0,
-                    "endRowIndex": 1,
-                    "startColumnIndex": 0,
-                    "endColumnIndex": len(SHEET_HEADERS)
                 }
-            }
-        })
-
-        # Données (lignes 2+)
-        data_rows = []
-        for video in videos:
-            data_rows.append({
-                "values": [
-                    {"userEnteredValue": {"stringValue": str(value)}}
-                    for value in video
-                ]
             })
+        else:
+            print(f"La feuille '{category}' existe déjà, elle sera mise à jour.")
 
-        requests_batch.append({
-            "updateCells": {
-                "rows": data_rows,
-                "fields": "*",
-                "range": {
-                    "sheetId": sheet_ids[category],
-                    "startRowIndex": 1,
-                    "startColumnIndex": 0,
-                    "endColumnIndex": len(SHEET_HEADERS)
-                }
-            }
-        })
+    # Envoyer les requêtes pour créer les nouvelles feuilles
+    if requests_batch:
+        service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests_batch}).execute()
 
-    # Envoyer toutes les requêtes à batchUpdate
-    body = {"requests": requests_batch}
-    service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
+    # Mettre à jour les données dans les feuilles
+    for category, videos in videos_by_category.items():
+        # Ajouter les en-têtes
+        range_headers = f"{category}!A1:K1"
+        service.spreadsheets().values().update(
+            spreadsheetId=spreadsheet_id,
+            range=range_headers,
+            valueInputOption='USER_ENTERED',
+            body={"values": [SHEET_HEADERS]}
+        ).execute()
+
+        # Ajouter les données
+        range_data = f"{category}!A2:K{len(videos) + 1}"
+        service.spreadsheets().values().update(
+            spreadsheetId=spreadsheet_id,
+            range=range_data,
+            valueInputOption='USER_ENTERED',
+            body={"values": videos}
+        ).execute()
 
 # Synchronize videos
 def sync_videos():
