@@ -106,23 +106,71 @@ def get_video_details(video_id, api_key):
 
 # Update Google Sheets with batchUpdate
 def update_google_sheets(service, spreadsheet_id, videos_by_category):
+    # Associer des sheetId uniques à chaque catégorie
+    sheet_ids = {category: index + 1 for index, category in enumerate(videos_by_category.keys())}
     requests_batch = []
-    for category, videos in videos_by_category.items():
-        # Add sheet if not exists
+
+    # Ajouter des feuilles si elles n'existent pas
+    for category, sheet_id in sheet_ids.items():
         requests_batch.append({
-            "addSheet": {"properties": {"title": category}}
+            "addSheet": {
+                "properties": {
+                    "sheetId": sheet_id,
+                    "title": category
+                }
+            }
         })
 
-        # Prepare data to write
-        range_headers = f"{category}!A1:K1"
-        range_data = f"{category}!A2:K{len(videos) + 1}"
-        requests_batch.extend([
-            {"updateCells": {"range": {"sheetId": category}, "fields": "*"}},
-            {"updateCells": {"range": range_headers, "fields": SHEET_HEADERS}}
-        ])
+    # Préparer les valeurs à écrire pour chaque feuille
+    for category, videos in videos_by_category.items():
+        # En-têtes (ligne 1)
+        requests_batch.append({
+            "updateCells": {
+                "rows": [
+                    {
+                        "values": [
+                            {"userEnteredValue": {"stringValue": header}}
+                            for header in SHEET_HEADERS
+                        ]
+                    }
+                ],
+                "fields": "*",
+                "range": {
+                    "sheetId": sheet_ids[category],
+                    "startRowIndex": 0,
+                    "endRowIndex": 1,
+                    "startColumnIndex": 0,
+                    "endColumnIndex": len(SHEET_HEADERS)
+                }
+            }
+        })
 
-    batch_request = {"requests": requests_batch}
-    service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=batch_request).execute()
+        # Données (lignes 2+)
+        data_rows = []
+        for video in videos:
+            data_rows.append({
+                "values": [
+                    {"userEnteredValue": {"stringValue": str(value)}}
+                    for value in video
+                ]
+            })
+
+        requests_batch.append({
+            "updateCells": {
+                "rows": data_rows,
+                "fields": "*",
+                "range": {
+                    "sheetId": sheet_ids[category],
+                    "startRowIndex": 1,
+                    "startColumnIndex": 0,
+                    "endColumnIndex": len(SHEET_HEADERS)
+                }
+            }
+        })
+
+    # Envoyer toutes les requêtes à batchUpdate
+    body = {"requests": requests_batch}
+    service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
 
 # Synchronize videos
 def sync_videos():
