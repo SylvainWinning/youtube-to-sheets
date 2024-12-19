@@ -1,6 +1,5 @@
 import re
 import time
-import random
 import json
 import os
 import requests
@@ -17,8 +16,8 @@ PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
 
 CATEGORIES = ["0-5min", "5-10min", "10-20min", "20-30min", "30-40min", "40-50min", "50-60min", "60Plusmin"]
 
-# Ajout de la colonne "Avatar" en dernière position
-SHEET_HEADERS = ["Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags", "Avatar"]
+# Ajout de la colonne "Catégorie" avant "Avatar"
+SHEET_HEADERS = ["Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags", "Catégorie", "Avatar"]
 
 def parse_duration(iso_duration):
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
@@ -103,13 +102,11 @@ def get_video_details(video_id, api_key):
     response = requests.get(url, params=params)
     return response.json()
 
-# Nouvelle fonction pour récupérer l'avatar de la chaîne
 def get_channel_avatar(channel_id, api_key):
     url = "https://www.googleapis.com/youtube/v3/channels"
     params = {"part": "snippet", "id": channel_id, "key": api_key}
     response = requests.get(url, params=params)
     data = response.json()
-    # On récupère l’URL de la vignette haute résolution si disponible
     avatar_url = data.get('items', [{}])[0].get('snippet', {}).get('thumbnails', {}).get('high', {}).get('url', '')
     return avatar_url
 
@@ -135,7 +132,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
         service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests_batch}).execute()
 
     for category, videos in videos_by_category.items():
-        range_headers = f"{category}!A1:M1"  # M correspond maintenant à la 13ème colonne
+        range_headers = f"{category}!A1:M1"
         service.spreadsheets().values().update(
             spreadsheetId=spreadsheet_id,
             range=range_headers,
@@ -170,7 +167,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
                                 "startRowIndex": 0,
                                 "endRowIndex": num_rows,
                                 "startColumnIndex": 0,
-                                "endColumnIndex": 13  # 0-12 pour A à M, endColumnIndex exclusif => 13
+                                "endColumnIndex": 13  # 0 à 12 (13 colonnes)
                             },
                             "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
                             "bottom": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
@@ -222,11 +219,10 @@ def sync_videos():
         tags_str = ", ".join(tags)
         description_courte = snippet.get('description', '')[:100]
         channel_title = snippet.get('channelTitle', 'Inconnu')
-        
-        # Récupérer l'avatar de la chaîne
         channel_id = snippet.get('channelId', '')
         avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
 
+        # On insère Catégorie juste avant Avatar
         videos_by_category[category].append([
             thumbnail_url,
             snippet.get("title", "Inconnu"),
@@ -239,7 +235,8 @@ def sync_videos():
             comments,
             description_courte,
             tags_str,
-            avatar_url  # Nouvelle colonne
+            category,      # Ajout de la Catégorie ici
+            avatar_url     # Lien avatar en dernier
         ])
 
     update_google_sheets(service, SPREADSHEET_ID, videos_by_category)
