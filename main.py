@@ -222,7 +222,7 @@ def sync_videos():
         channel_id = snippet.get('channelId', '')
         avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
 
-        # On insère Catégorie juste avant Avatar
+        # La colonne "Catégorie" est maintenant laissée vide
         videos_by_category[category].append([
             thumbnail_url,
             snippet.get("title", "Inconnu"),
@@ -235,7 +235,7 @@ def sync_videos():
             comments,
             description_courte,
             tags_str,
-            category,      # Ajout de la Catégorie ici
+            "",            # Colonne catégorie vide
             avatar_url     # Lien avatar en dernier
         ])
 
