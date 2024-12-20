@@ -131,6 +131,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
     if requests_batch:
         service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests_batch}).execute()
 
+    # Mise à jour des en-têtes
     for category, videos in videos_by_category.items():
         range_headers = f"{category}!A1:M1"
         service.spreadsheets().values().update(
@@ -141,14 +142,32 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
         ).execute()
         time.sleep(1)
 
-        range_data = f"{category}!A2:M{len(videos) + 1}"
-        service.spreadsheets().values().update(
-            spreadsheetId=spreadsheet_id,
-            range=range_data,
-            valueInputOption='USER_ENTERED',
-            body={"values": videos}
-        ).execute()
-        time.sleep(1)
+        if videos:
+            # Mise à jour des colonnes A à K (sans toucher la colonne L)
+            # Chaque ligne correspond à: [A-K, L, M]
+            # A-K = indices 0 à 10
+            # L = indice 11
+            # M = indice 12
+            values_main = [row[:11] for row in videos]  # A-K seulement
+            range_data_main = f"{category}!A2:K{len(videos) + 1}"
+            service.spreadsheets().values().update(
+                spreadsheetId=spreadsheet_id,
+                range=range_data_main,
+                valueInputOption='USER_ENTERED',
+                body={"values": values_main}
+            ).execute()
+            time.sleep(1)
+
+            # Mise à jour de la colonne M uniquement
+            values_avatar = [[row[12]] for row in videos]  # Uniquement la dernière colonne (Avatar)
+            range_data_avatar = f"{category}!M2:M{len(videos) + 1}"
+            service.spreadsheets().values().update(
+                spreadsheetId=spreadsheet_id,
+                range=range_data_avatar,
+                valueInputOption='USER_ENTERED',
+                body={"values": values_avatar}
+            ).execute()
+            time.sleep(1)
 
         sheet_id = None
         for s in spreadsheet['sheets']:
@@ -156,7 +175,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
                 sheet_id = s['properties']['sheetId']
                 break
 
-        if sheet_id is not None:
+        if sheet_id is not None and videos:
             num_rows = len(videos) + 1
             border_requests = {
                 "requests": [
@@ -222,21 +241,22 @@ def sync_videos():
         channel_id = snippet.get('channelId', '')
         avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
 
-        # La colonne "Catégorie" est maintenant laissée vide
+        # On laisse la colonne L (Catégorie) intacte, on met juste ""
+        # Mais comme on n’écrira jamais de données dessus, son contenu actuel sera préservé
         videos_by_category[category].append([
-            thumbnail_url,
-            snippet.get("title", "Inconnu"),
-            video_link,
-            channel_title,
-            snippet.get("publishedAt", ""),
-            duration,
-            views,
-            likes,
-            comments,
-            description_courte,
-            tags_str,
-            "",            # Colonne catégorie vide
-            avatar_url     # Lien avatar en dernier
+            thumbnail_url,               # A
+            snippet.get("title", ""),    # B
+            video_link,                  # C
+            channel_title,               # D
+            snippet.get("publishedAt", ""), # E
+            duration,                    # F
+            views,                       # G
+            likes,                       # H
+            comments,                    # I
+            description_courte,          # J
+            tags_str,                    # K
+            "",                          # L (on n'écrira rien, la valeur ici ne sera pas utilisée)
+            avatar_url                   # M
         ])
 
     update_google_sheets(service, SPREADSHEET_ID, videos_by_category)
