@@ -17,7 +17,21 @@ PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
 CATEGORIES = ["0-5min", "5-10min", "10-20min", "20-30min", "30-40min", "40-50min", "50-60min", "60Plusmin"]
 
 # Ajout de la colonne "Catégorie" avant "Avatar"
-SHEET_HEADERS = ["Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée", "Vues", "J'aime", "Commentaires", "Description courte", "Tags", "Catégorie", "Avatar"]
+SHEET_HEADERS = [
+    "Miniature", 
+    "Titre", 
+    "Lien", 
+    "Chaîne", 
+    "Publié le", 
+    "Durée", 
+    "Vues", 
+    "J'aime", 
+    "Commentaires", 
+    "Description courte", 
+    "Tags", 
+    "Catégorie",  # On n'écrira rien dans cette colonne
+    "Avatar"
+]
 
 def parse_duration(iso_duration):
     """
@@ -44,19 +58,20 @@ def get_duration_category(duration):
         total_seconds = hours * 3600 + minutes * 60 + seconds
     except ValueError:
         return "Inconnue"
-    if total_seconds <= 300:   # 0-5 min
+    
+    if total_seconds <= 300:    # 0-5 min
         return "0-5min"
     elif total_seconds <= 600:  # 5-10 min
         return "5-10min"
-    elif total_seconds <= 1200:  # 10-20 min
+    elif total_seconds <= 1200: # 10-20 min
         return "10-20min"
-    elif total_seconds <= 1800:  # 20-30 min
+    elif total_seconds <= 1800: # 20-30 min
         return "20-30min"
-    elif total_seconds <= 2400:  # 30-40 min
+    elif total_seconds <= 2400: # 30-40 min
         return "30-40min"
-    elif total_seconds <= 3000:  # 40-50 min
+    elif total_seconds <= 3000: # 40-50 min
         return "40-50min"
-    elif total_seconds <= 3600:  # 50-60 min
+    elif total_seconds <= 3600: # 50-60 min
         return "50-60min"
     else:
         return "60Plusmin"
@@ -137,6 +152,9 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
     """
     Met à jour le Google Sheet en créant des onglets pour chaque catégorie
     et en remplissant les données vidéo correspondantes.
+    
+    Modification : 
+    - On vide chaque onglet avant de réécrire les nouvelles lignes pour éviter les doublons.
     """
     spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     existing_sheets = {sheet['properties']['title']: sheet['properties']['sheetId'] for sheet in spreadsheet['sheets']}
@@ -158,10 +176,22 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
 
     # Si on doit créer de nouvelles feuilles, on exécute la requête en bloc
     if requests_batch:
-        service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests_batch}).execute()
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id, 
+            body={"requests": requests_batch}
+        ).execute()
 
-    # Mise à jour des en-têtes
+    # Pour chaque catégorie, on efface d'abord tout le contenu avant d'ajouter les nouvelles données
     for category, videos in videos_by_category.items():
+        # Vider la feuille (colonnes A à Z par sécurité)
+        clear_range = f"{category}!A:Z"
+        service.spreadsheets().values().clear(
+            spreadsheetId=spreadsheet_id,
+            range=clear_range
+        ).execute()
+        time.sleep(1)
+
+        # Mise à jour des en-têtes
         range_headers = f"{category}!A1:M1"
         service.spreadsheets().values().update(
             spreadsheetId=spreadsheet_id,
@@ -171,13 +201,10 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
         ).execute()
         time.sleep(1)
 
+        # Insertion des données vidéo
         if videos:
-            # Mise à jour des colonnes A à K (sans toucher la colonne L)
-            # Chaque ligne correspond à: [A-K, L, M]
-            # A-K = indices 0 à 10
-            # L = indice 11
-            # M = indice 12
-            values_main = [row[:11] for row in videos]  # A-K seulement
+            # Les colonnes A à K (indices 0 à 10)
+            values_main = [row[:11] for row in videos]  
             range_data_main = f"{category}!A2:K{len(videos) + 1}"
             service.spreadsheets().values().update(
                 spreadsheetId=spreadsheet_id,
@@ -187,8 +214,8 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
             ).execute()
             time.sleep(1)
 
-            # Mise à jour de la colonne M uniquement (avatar)
-            values_avatar = [[row[12]] for row in videos]  # Uniquement la dernière colonne (Avatar)
+            # La colonne M (Avatar) uniquement (indice 12)
+            values_avatar = [[row[12]] for row in videos]
             range_data_avatar = f"{category}!M2:M{len(videos) + 1}"
             service.spreadsheets().values().update(
                 spreadsheetId=spreadsheet_id,
@@ -207,7 +234,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
 
         # Mise en forme des bordures si la feuille existe et qu'il y a des vidéos
         if sheet_id is not None and videos:
-            num_rows = len(videos) + 1
+            num_rows = len(videos) + 1  # +1 pour l'entête
             border_requests = {
                 "requests": [
                     {
@@ -217,7 +244,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
                                 "startRowIndex": 0,
                                 "endRowIndex": num_rows,
                                 "startColumnIndex": 0,
-                                "endColumnIndex": 13  # 0 à 12 (13 colonnes)
+                                "endColumnIndex": 13  # 13 colonnes (A à M)
                             },
                             "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
                             "bottom": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
@@ -229,8 +256,10 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
                     }
                 ]
             }
-
-            service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=border_requests).execute()
+            service.spreadsheets().batchUpdate(
+                spreadsheetId=spreadsheet_id, 
+                body=border_requests
+            ).execute()
             time.sleep(1)
 
 def sync_videos():
@@ -238,7 +267,8 @@ def sync_videos():
     Fonction principale de synchronisation : 
     1. Récupère la liste de toutes les vidéos. 
     2. Charge les credentials du service account. 
-    3. Met à jour les feuilles Google pour chaque catégorie de durée.
+    3. Met à jour les feuilles Google pour chaque catégorie de durée,
+       en effaçant au préalable chaque onglet pour éviter les doublons.
     """
     # Chargement du cache si disponible, sinon récupération via l'API
     cached_data = load_cache()
@@ -292,21 +322,21 @@ def sync_videos():
         channel_id = snippet.get('channelId', '')
         avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
 
-        # On laisse la colonne L (Catégorie) intacte, on met juste ""
+        # On laisse la colonne L (Catégorie) vide (dans l'array, on stocke juste un "")
         videos_by_category[category].append([
-            thumbnail_url,               # A
-            snippet.get("title", ""),    # B
-            video_link,                  # C
-            channel_title,               # D
-            snippet.get("publishedAt", ""), # E
-            duration,                    # F
-            views,                       # G
-            likes,                       # H
-            comments,                    # I
-            description_courte,          # J
-            tags_str,                    # K
-            "",                          # L (on n'écrira rien, la valeur ici ne sera pas utilisée)
-            avatar_url                   # M
+            thumbnail_url,                # A
+            snippet.get("title", ""),     # B
+            video_link,                   # C
+            channel_title,                # D
+            snippet.get("publishedAt", ""),  # E
+            duration,                     # F
+            views,                        # G
+            likes,                        # H
+            comments,                     # I
+            description_courte,           # J
+            tags_str,                     # K
+            "",                           # L
+            avatar_url                    # M
         ])
 
     # Une fois toutes les vidéos regroupées, on met à jour les onglets correspondants
