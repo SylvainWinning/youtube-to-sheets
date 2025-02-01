@@ -176,7 +176,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
             body={"requests": requests_batch}
         ).execute()
 
-    # Pour chaque catégorie, efface la feuille puis insère les nouvelles données
+    # Pour chaque catégorie, effacer la feuille puis insérer les nouvelles données
     for category, videos in videos_by_category.items():
         # Effacer la feuille (colonnes A à Z par sécurité)
         clear_range = f"{category}!A:Z"
@@ -317,19 +317,19 @@ def sync_videos():
         avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
 
         videos_by_category[category].append([
-            thumbnail_url,                # Colonne A
-            snippet.get("title", ""),     # Colonne B
-            video_link,                   # Colonne C
-            channel_title,                # Colonne D
-            snippet.get("publishedAt", ""),  # Colonne E
-            duration,                     # Colonne F
-            views,                        # Colonne G
-            likes,                        # Colonne H
-            comments,                     # Colonne I
-            description_courte,           # Colonne J
-            tags_str,                     # Colonne K
-            "",                           # Colonne L (Catégorie laissée vide)
-            avatar_url                    # Colonne M
+            thumbnail_url,                     # Colonne A
+            snippet.get("title", ""),          # Colonne B
+            video_link,                        # Colonne C
+            channel_title,                     # Colonne D
+            snippet.get("publishedAt", ""),    # Colonne E
+            duration,                          # Colonne F
+            views,                             # Colonne G
+            likes,                             # Colonne H
+            comments,                          # Colonne I
+            description_courte,                # Colonne J
+            tags_str,                          # Colonne K
+            "",                                # Colonne L (Catégorie laissée vide)
+            avatar_url                         # Colonne M
         ])
 
     update_google_sheets(service, SPREADSHEET_ID, videos_by_category)
