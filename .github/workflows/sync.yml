@@ -36,11 +36,15 @@ jobs:
           # On recrée le fichier service_account.json à partir du secret
           echo "$SERVICE_ACCOUNT_JSON" > service_account.json
 
+          # Check the format of the service_account.json file
+          python -m json.tool service_account.json
+
           # Lancement du script Python principal
           python main.py
         # Cette étape :
         # 1. Récupère les secrets et les met dans les variables d'environnement.
         # 2. Crée le fichier service_account.json à partir du secret.
-        # 3. Lance le script main.py qui va :
+        # 3. Vérifie le format du fichier service_account.json.
+        # 4. Lance le script main.py qui va :
         #    - Appeler l'API YouTube Data avec YOUTUBE_API_KEY
         #    - Mettre à jour le Google Sheet via le compte de service
