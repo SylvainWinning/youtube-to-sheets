@@ -24,10 +24,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Exécuter le script de synchronisation
-        run: python sync_videos.py
+        run: python main.py
 
       - name: Upload artifact (log)
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v3.2.0
         with:
           name: sync-log
-          path: log.txt  # Assure-toi que ce fichier existe ou adapte le chemin
+          path: log.txt  # Vérifie que ce fichier existe ou ajuste le chemin
