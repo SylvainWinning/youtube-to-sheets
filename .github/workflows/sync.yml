@@ -27,7 +27,7 @@ jobs:
         run: python main.py
 
       - name: Upload artifact (log)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sync-log
           path: log.txt  # Vérifie que ce fichier existe ou ajuste le chemin
