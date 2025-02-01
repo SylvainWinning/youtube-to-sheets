@@ -29,13 +29,13 @@ SHEET_HEADERS = [
     "Commentaires", 
     "Description courte", 
     "Tags", 
-    "Catégorie",  # On n'écrira rien dans cette colonne
+    "Catégorie",  # Colonne laissée vide
     "Avatar"
 ]
 
 def parse_duration(iso_duration):
     """
-    Convertit une durée ISO 8601 (par ex. PT1H20M30S) en format HH:MM:SS.
+    Convertit une durée ISO 8601 (ex: PT1H20M30S) en format HH:MM:SS.
     """
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
@@ -46,7 +46,7 @@ def parse_duration(iso_duration):
 
 def get_duration_category(duration):
     """
-    Détermine la catégorie de durée (0-5min, 5-10min, etc.) en fonction de la durée.
+    Détermine la catégorie de durée (0-5min, 5-10min, etc.) en fonction du format HH:MM:SS.
     """
     parts = duration.split(":")
     if len(parts) != 3:
@@ -94,8 +94,7 @@ def load_cache():
 
 def fetch_all_playlist_items(playlist_id, api_key):
     """
-    Récupère toutes les vidéos d'une playlist via l'API YouTube,
-    en gérant la pagination (maxResults=50).
+    Récupère toutes les vidéos d'une playlist via l'API YouTube en gérant la pagination.
     """
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
@@ -130,7 +129,7 @@ def fetch_all_playlist_items(playlist_id, api_key):
 
 def get_video_details(video_id, api_key):
     """
-    Retourne un dictionnaire contenant les détails d'une vidéo (snippet, contentDetails, statistics).
+    Retourne un dictionnaire contenant les détails d'une vidéo.
     """
     url = "https://www.googleapis.com/youtube/v3/videos"
     params = {"part": "snippet,contentDetails,statistics", "id": video_id, "key": api_key}
@@ -150,18 +149,15 @@ def get_channel_avatar(channel_id, api_key):
 
 def update_google_sheets(service, spreadsheet_id, videos_by_category):
     """
-    Met à jour le Google Sheet en créant des onglets pour chaque catégorie
-    et en remplissant les données vidéo correspondantes.
-    
-    Modification : 
-    - On vide chaque onglet avant de réécrire les nouvelles lignes pour éviter les doublons.
+    Met à jour le Google Sheet en créant un onglet par catégorie et en y insérant les données vidéo.
+    Avant insertion, le contenu de chaque feuille est vidé pour éviter les doublons.
     """
     spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     existing_sheets = {sheet['properties']['title']: sheet['properties']['sheetId'] for sheet in spreadsheet['sheets']}
 
     requests_batch = []
 
-    # Vérifie si les onglets pour chaque catégorie existent, sinon on les crée
+    # Création des feuilles manquantes
     for category, videos in videos_by_category.items():
         if category not in existing_sheets:
             requests_batch.append({
@@ -174,16 +170,15 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
         else:
             print(f"La feuille '{category}' existe déjà, elle sera mise à jour.")
 
-    # Si on doit créer de nouvelles feuilles, on exécute la requête en bloc
     if requests_batch:
         service.spreadsheets().batchUpdate(
             spreadsheetId=spreadsheet_id, 
             body={"requests": requests_batch}
         ).execute()
 
-    # Pour chaque catégorie, on efface d'abord tout le contenu avant d'ajouter les nouvelles données
+    # Pour chaque catégorie, efface la feuille puis insère les nouvelles données
     for category, videos in videos_by_category.items():
-        # Vider la feuille (colonnes A à Z par sécurité)
+        # Effacer la feuille (colonnes A à Z par sécurité)
         clear_range = f"{category}!A:Z"
         service.spreadsheets().values().clear(
             spreadsheetId=spreadsheet_id,
@@ -203,7 +198,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
 
         # Insertion des données vidéo
         if videos:
-            # Les colonnes A à K (indices 0 à 10)
+            # Colonnes A à K (indices 0 à 10)
             values_main = [row[:11] for row in videos]  
             range_data_main = f"{category}!A2:K{len(videos) + 1}"
             service.spreadsheets().values().update(
@@ -214,7 +209,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
             ).execute()
             time.sleep(1)
 
-            # La colonne M (Avatar) uniquement (indice 12)
+            # Colonne M (Avatar) uniquement (indice 12)
             values_avatar = [[row[12]] for row in videos]
             range_data_avatar = f"{category}!M2:M{len(videos) + 1}"
             service.spreadsheets().values().update(
@@ -225,14 +220,14 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
             ).execute()
             time.sleep(1)
 
-        # On récupère l'ID de la feuille pour ajouter des bordures
+        # Récupération de l'ID de la feuille pour ajouter des bordures
         sheet_id = None
         for s in spreadsheet['sheets']:
             if s['properties']['title'] == category:
                 sheet_id = s['properties']['sheetId']
                 break
 
-        # Mise en forme des bordures si la feuille existe et qu'il y a des vidéos
+        # Mise en forme des bordures si la feuille existe et contient des données
         if sheet_id is not None and videos:
             num_rows = len(videos) + 1  # +1 pour l'entête
             border_requests = {
@@ -244,7 +239,7 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
                                 "startRowIndex": 0,
                                 "endRowIndex": num_rows,
                                 "startColumnIndex": 0,
-                                "endColumnIndex": 13  # 13 colonnes (A à M)
+                                "endColumnIndex": 13  # Colonnes A à M
                             },
                             "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
                             "bottom": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}},
@@ -264,13 +259,16 @@ def update_google_sheets(service, spreadsheet_id, videos_by_category):
 
 def sync_videos():
     """
-    Fonction principale de synchronisation : 
-    1. Récupère la liste de toutes les vidéos. 
-    2. Charge les credentials du service account. 
-    3. Met à jour les feuilles Google pour chaque catégorie de durée,
-       en effaçant au préalable chaque onglet pour éviter les doublons.
+    Fonction principale de synchronisation lancée manuellement.
+    Récupère les vidéos d'une playlist YouTube et met à jour un Google Sheet
+    en les répartissant par catégorie de durée.
     """
-    # Chargement du cache si disponible, sinon récupération via l'API
+    # Debug : affichage des variables d'environnement et du répertoire de travail
+    print("YOUTUBE_API_KEY =", YOUTUBE_API_KEY)
+    print("SPREADSHEET_ID =", SPREADSHEET_ID)
+    print("Répertoire de travail :", os.getcwd())
+
+    # Chargement du cache si disponible, sinon récupération via l'API YouTube
     cached_data = load_cache()
     if cached_data:
         print("Données chargées depuis le cache")
@@ -285,24 +283,20 @@ def sync_videos():
     creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     service = build('sheets', 'v4', credentials=creds)
 
-    # On prépare une structure permettant de stocker les vidéos par catégorie de durée
+    # Préparation des vidéos par catégorie de durée
     videos_by_category = {category: [] for category in CATEGORIES}
 
-    # Boucle sur chaque vidéo récupérée pour traiter ses détails
     for item in items:
         video_id = item['contentDetails']['videoId']
         video_data = get_video_details(video_id, YOUTUBE_API_KEY)
         time.sleep(0.5)
 
-        # Vérifier qu'on a bien au moins un élément dans 'items'
         video_items = video_data.get('items', [])
         if not video_items:
-            print(f"Impossible de récupérer les détails pour la vidéo {video_id}, données vides ou inaccessibles.")
+            print(f"Impossible de récupérer les détails pour la vidéo {video_id}.")
             continue
 
-        # Comme on est sûr qu'il y a au moins un item, on peut accéder au premier
         video_info = video_items[0]
-
         snippet = video_info.get('snippet', {})
         content_details = video_info.get('contentDetails', {})
         statistics = video_info.get('statistics', {})
@@ -322,24 +316,22 @@ def sync_videos():
         channel_id = snippet.get('channelId', '')
         avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
 
-        # On laisse la colonne L (Catégorie) vide (dans l'array, on stocke juste un "")
         videos_by_category[category].append([
-            thumbnail_url,                # A
-            snippet.get("title", ""),     # B
-            video_link,                   # C
-            channel_title,                # D
-            snippet.get("publishedAt", ""),  # E
-            duration,                     # F
-            views,                        # G
-            likes,                        # H
-            comments,                     # I
-            description_courte,           # J
-            tags_str,                     # K
-            "",                           # L
-            avatar_url                    # M
+            thumbnail_url,                # Colonne A
+            snippet.get("title", ""),     # Colonne B
+            video_link,                   # Colonne C
+            channel_title,                # Colonne D
+            snippet.get("publishedAt", ""),  # Colonne E
+            duration,                     # Colonne F
+            views,                        # Colonne G
+            likes,                        # Colonne H
+            comments,                     # Colonne I
+            description_courte,           # Colonne J
+            tags_str,                     # Colonne K
+            "",                           # Colonne L (Catégorie laissée vide)
+            avatar_url                    # Colonne M
         ])
 
-    # Une fois toutes les vidéos regroupées, on met à jour les onglets correspondants
     update_google_sheets(service, SPREADSHEET_ID, videos_by_category)
     print("Synchronisation terminée.")
 
