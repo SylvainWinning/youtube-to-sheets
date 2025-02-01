@@ -2,8 +2,8 @@ name: YouTube to Sheets Sync
 
 on:
   schedule:
-    - cron: '0 6 * * *'
-  workflow_dispatch:
+    - cron: '0 6 * * *' # Exécute le workflow tous les jours à 6h du matin UTC
+  workflow_dispatch: # Permet de lancer manuellement le workflow depuis l'onglet Actions
 
 jobs:
   sync:
@@ -11,26 +11,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        # Cette étape clone le code du dépôt dans l'environnement du workflow
 
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
+        # Installe Python 3.9 pour exécuter le script
 
       - name: Install dependencies
         run: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
-
-      - name: Configure Git
-        run: |
-          git config --global --add safe.directory /home/runner/work/youtube-to-sheets/youtube-to-sheets
-          git config --local --unset-all http.https://github.com/.extraheader || true
-          git submodule foreach --recursive git config --local --unset-all http.https://github.com/.extraheader || true
-
-      - name: Debug service_account.json
-        run: |
-          echo "$SERVICE_ACCOUNT_JSON" > service_account.json
-          cat service_account.json
-          python -m json.tool service_account.json
+        # Installe les dépendances Python nécessaires
 
       - name: Run script
         env:
@@ -38,5 +29,14 @@ jobs:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: |
+          # On recrée le fichier service_account.json à partir du secret
           echo "$SERVICE_ACCOUNT_JSON" > service_account.json
+
+          # Lancement du script Python principal
           python main.py
+        # Cette étape :
+        # 1. Récupère les secrets et les met dans les variables d'environnement.
+        # 2. Crée le fichier service_account.json à partir du secret.
+        # 3. Lance le script main.py qui va :
+        #    - Appeler l'API YouTube Data avec YOUTUBE_API_KEY
+        #    - Mettre à jour le Google Sheet via le compte de service
