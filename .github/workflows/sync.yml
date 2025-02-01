@@ -1,42 +1,33 @@
 name: YouTube to Sheets Sync
 
 on:
-  schedule:
-    - cron: '0 6 * * *' # Exécute le workflow tous les jours à 6h du matin UTC
-  workflow_dispatch: # Permet de lancer manuellement le workflow depuis l'onglet Actions
+  workflow_dispatch:  # Pour lancer manuellement depuis l'interface GitHub
+  push:
+    branches: [ main ]
 
 jobs:
-  sync:
+  run-sync:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-        # Cette étape clone le code du dépôt dans l'environnement du workflow
+      - name: Checkout du dépôt
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-        # Installe Python 3.9 pour exécuter le script
+          python-version: '3.x'
 
-      - name: Install dependencies
-        run: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
-        # Installe les dépendances Python nécessaires
-
-      - name: Run script
-        env:
-          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+      - name: Installer les dépendances
         run: |
-          # On recrée le fichier service_account.json à partir du secret
-          echo "$SERVICE_ACCOUNT_JSON" > service_account.json
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-          # Lancement du script Python principal
-          python main.py
-        # Cette étape :
-        # 1. Récupère les secrets et les met dans les variables d'environnement.
-        # 2. Crée le fichier service_account.json à partir du secret.
-        # 3. Lance le script main.py qui va :
-        #    - Appeler l'API YouTube Data avec YOUTUBE_API_KEY
-        #    - Mettre à jour le Google Sheet via le compte de service
+      - name: Exécuter le script de synchronisation
+        run: python sync_videos.py
+
+      - name: Upload artifact (log)
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: sync-log
+          path: log.txt  # Assure-toi que ce fichier existe ou adapte le chemin
