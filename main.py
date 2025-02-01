@@ -92,6 +92,7 @@ def sync_videos():
     PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
     items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
 
+    # Ajout de la clé "Inconnue" pour gérer les durées non reconnues
     videos_by_category = {
         "0-5min": [],
         "5-10min": [],
@@ -100,7 +101,8 @@ def sync_videos():
         "30-40min": [],
         "40-50min": [],
         "50-60min": [],
-        "60+min": []
+        "60+min": [],
+        "Inconnue": []
     }
 
     for item in items:
