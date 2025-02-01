@@ -36,4 +36,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sync-log
-          path: log.txt  # Vérifie que ce fichier existe ou ajuste le chemin
+          path: log.txt  # Assure-toi que ce fichier existe ou ajuste le chemin
