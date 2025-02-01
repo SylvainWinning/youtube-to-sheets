@@ -2,8 +2,8 @@ name: YouTube to Sheets Sync
 
 on:
   schedule:
-    - cron: '0 6 * * *' # Exécute le workflow tous les jours à 6h du matin UTC
-  workflow_dispatch: # Permet de lancer manuellement le workflow depuis l'onglet Actions
+    - cron: '0 6 * * *'
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -11,21 +11,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-        # Cette étape clone le code du dépôt dans l'environnement du workflow
 
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-        # Installe Python 3.9 pour exécuter le script
 
       - name: Install dependencies
         run: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
-        # Installe les dépendances Python nécessaires
 
       - name: Debug service_account.json
         run: head -n 5 service_account.json
-        # Affiche les 5 premières lignes du fichier pour vérifier son format
 
       - name: Run script
         env:
@@ -33,18 +29,6 @@ jobs:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: |
-          # On recrée le fichier service_account.json à partir du secret
           echo "$SERVICE_ACCOUNT_JSON" > service_account.json
-
-          # Check the format of the service_account.json file
           python -m json.tool service_account.json
-
-          # Lancement du script Python principal
           python main.py
-        # Cette étape :
-        # 1. Récupère les secrets et les met dans les variables d'environnement.
-        # 2. Crée le fichier service_account.json à partir du secret.
-        # 3. Vérifie le format du fichier service_account.json.
-        # 4. Lance le script main.py qui va :
-        #    - Appeler l'API YouTube Data avec YOUTUBE_API_KEY
-        #    - Mettre à jour le Google Sheet via le compte de service
