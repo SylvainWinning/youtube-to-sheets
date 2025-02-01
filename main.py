@@ -9,11 +9,14 @@ from googleapiclient.discovery import build
 
 def parse_duration(iso_duration):
     """
-    Transforme une durée au format ISO (ex: "PT5M24S") en une chaîne de caractères "minutes:secondes".
-    On préfixe le résultat d'une apostrophe pour forcer l'affichage en texte dans Google Sheets.
+    Convertit une durée au format ISO (ex : "PT1H5M24S") en une chaîne affichant
+    la durée totale en minutes et secondes, par exemple "65 min 24 s".
     """
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
+    if not match:
+        return "Inconnue", None
+
     hours = int(match.group(1)) if match.group(1) else 0
     minutes = int(match.group(2)) if match.group(2) else 0
     seconds = int(match.group(3)) if match.group(3) else 0
@@ -21,25 +24,17 @@ def parse_duration(iso_duration):
     total_seconds = hours * 3600 + minutes * 60 + seconds
     total_minutes = total_seconds // 60
     remaining_seconds = total_seconds % 60
-    # On retourne la durée avec un apostrophe préfixé pour que Sheets l'interprète comme du texte
-    return f"'{total_minutes}:{remaining_seconds:02d}"
 
-def get_duration_category(duration):
-    """
-    Classe la durée dans une catégorie.
-    On enlève l'apostrophe éventuelle avant le calcul.
-    """
-    if duration.startswith("'"):
-        duration = duration[1:]
-    parts = duration.split(":")
-    if len(parts) != 2:
-        return "Inconnue"
-    try:
-        total_minutes = int(parts[0])
-        total_seconds = total_minutes * 60 + int(parts[1])
-    except ValueError:
-        return "Inconnue"
+    display_duration = f"{total_minutes} min {remaining_seconds:02d} s"
+    return display_duration, total_seconds
 
+def get_duration_category(total_seconds):
+    """
+    Classe la durée selon le total de secondes.
+    Si total_seconds est None, retourne "Inconnue".
+    """
+    if total_seconds is None:
+        return "Inconnue"
     if total_seconds <= 300:
         return "0-5min"
     elif total_seconds <= 600:
@@ -103,7 +98,7 @@ def sync_videos():
     PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
     items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
 
-    # Ajout de la clé "Inconnue" pour gérer les durées non reconnues
+    # On ajoute "Inconnue" pour gérer les cas où la durée n'est pas reconnue
     videos_by_category = {
         "0-5min": [],
         "5-10min": [],
@@ -133,7 +128,7 @@ def sync_videos():
             title = snippet['title']
             channel = snippet['channelTitle']
             duration_iso = video_data['items'][0]['contentDetails']['duration']
-            video_duration = parse_duration(duration_iso)
+            video_duration, total_seconds = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(video_data)
 
             view_count = stats.get('viewCount', 'N/A')
@@ -155,6 +150,7 @@ def sync_videos():
             title = "Inconnu"
             channel = "Inconnu"
             video_duration = "Inconnue"
+            total_seconds = None
             published_at_formatted = ""
             thumbnail_formula = ""
             view_count = "N/A"
@@ -163,7 +159,7 @@ def sync_videos():
             short_description = ""
             tags_str = ""
 
-        category = get_duration_category(video_duration)
+        category = get_duration_category(total_seconds)
         videos_by_category[category].append([
             thumbnail_formula,
             title,
