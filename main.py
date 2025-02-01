@@ -8,6 +8,10 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 def parse_duration(iso_duration):
+    """
+    Transforme une durée au format ISO (ex: "PT5M24S") en une chaîne de caractères "minutes:secondes".
+    On préfixe le résultat d'une apostrophe pour forcer l'affichage en texte dans Google Sheets.
+    """
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
     hours = int(match.group(1)) if match.group(1) else 0
@@ -17,9 +21,16 @@ def parse_duration(iso_duration):
     total_seconds = hours * 3600 + minutes * 60 + seconds
     total_minutes = total_seconds // 60
     remaining_seconds = total_seconds % 60
-    return f"{total_minutes}:{remaining_seconds:02d}"
+    # On retourne la durée avec un apostrophe préfixé pour que Sheets l'interprète comme du texte
+    return f"'{total_minutes}:{remaining_seconds:02d}"
 
 def get_duration_category(duration):
+    """
+    Classe la durée dans une catégorie.
+    On enlève l'apostrophe éventuelle avant le calcul.
+    """
+    if duration.startswith("'"):
+        duration = duration[1:]
     parts = duration.split(":")
     if len(parts) != 2:
         return "Inconnue"
