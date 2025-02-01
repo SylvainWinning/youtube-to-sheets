@@ -20,16 +20,10 @@ jobs:
       - name: Install dependencies
         run: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
 
-      - name: Configure Git
-        run: |
-          git config --global --add safe.directory /home/runner/work/youtube-to-sheets/youtube-to-sheets
-          git config --local --unset-all http.https://github.com/.extraheader || true
-          git submodule foreach --recursive git config --local --unset-all http.https://github.com/.extraheader || true
-
       - name: Debug service_account.json
         run: |
           echo "$SERVICE_ACCOUNT_JSON" > service_account.json
-          head -n 5 service_account.json
+          cat service_account.json
           python -m json.tool service_account.json
 
       - name: Run script
