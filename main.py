@@ -148,7 +148,8 @@ def sync_videos():
             # On préfixe la date avec une apostrophe pour forcer l'affichage en texte au format "07/01/2025"
             published_at_formatted = f"'{dt.strftime('%d/%m/%Y')}"
             
-            thumbnail_formula = f'=IMAGE("{thumbnail_url}")' if thumbnail_url else ""
+            # Modification ici : on retourne uniquement l'URL brute, sans "=IMAGE(...)"
+            thumbnail_formula = thumbnail_url if thumbnail_url else ""
         else:
             title = "Inconnu"
             channel = "Inconnu"
