@@ -145,8 +145,9 @@ def sync_videos():
 
             original_published_at = snippet['publishedAt']
             dt = datetime.strptime(original_published_at, "%Y-%m-%dT%H:%M:%SZ")
-            published_at_formatted = dt.strftime("%d/%m/%Y")
-
+            # On préfixe la date avec une apostrophe pour forcer l'affichage en texte au format "07/01/2025"
+            published_at_formatted = f"'{dt.strftime('%d/%m/%Y')}"
+            
             thumbnail_formula = f'=IMAGE("{thumbnail_url}")' if thumbnail_url else ""
         else:
             title = "Inconnu"
