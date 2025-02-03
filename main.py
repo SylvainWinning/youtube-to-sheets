@@ -1,7 +1,6 @@
 import os
 import requests
 import re
-import time
 import random
 from datetime import datetime
 from google.oauth2 import service_account
@@ -100,7 +99,7 @@ def sync_videos():
     PLAYLIST_ID = "PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR"
     items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
 
-    # Ajout de la clé "Inconnue" pour gérer les durées non reconnues
+    # Dictionnaire pour classer les vidéos par durée
     videos_by_category = {
         "0-5min": [],
         "5-10min": [],
@@ -145,10 +144,10 @@ def sync_videos():
 
             original_published_at = snippet['publishedAt']
             dt = datetime.strptime(original_published_at, "%Y-%m-%dT%H:%M:%SZ")
-            # On préfixe la date avec une apostrophe pour forcer l'affichage en texte au format "07/01/2025"
+            # On préfixe la date d'une apostrophe pour l'afficher au format "07/01/2025"
             published_at_formatted = f"'{dt.strftime('%d/%m/%Y')}"
             
-            # On affiche uniquement l'URL brute de la miniature
+            # Affichage uniquement de l'URL brute de la miniature
             thumbnail_formula = thumbnail_url if thumbnail_url else ""
         else:
             title = "Inconnu"
@@ -184,13 +183,13 @@ def sync_videos():
     ]
 
     for category, videos in videos_by_category.items():
-        # Mélange aléatoire des vidéos de la catégorie
+        # Mélange aléatoire des vidéos dans la catégorie
         random.shuffle(videos)
 
         RANGE_NAME_DATA = f"'{category}'!A2:K"
         RANGE_NAME_HEADERS = f"'{category}'!A1:K1"
 
-        # Création de la feuille si elle n’existe pas
+        # Création de la feuille si elle n'existe pas déjà
         try:
             service.spreadsheets().batchUpdate(
                 spreadsheetId=SPREADSHEET_ID,
@@ -219,7 +218,7 @@ def sync_videos():
             body={'values': [headers]}
         ).execute()
 
-        # Mettre les en-têtes en gras
+        # Mise en gras des en-têtes
         bold_request = {
             "requests": [
                 {
@@ -256,7 +255,7 @@ def sync_videos():
             body={'values': videos}
         ).execute()
 
-        # Mettre le texte en mode wrapping (pour éviter la troncature visuelle)
+        # Activation du wrapping pour éviter la troncature visuelle
         wrap_request = {
             "requests": [
                 {
@@ -279,7 +278,7 @@ def sync_videos():
             body=wrap_request
         ).execute()
 
-        # Auto-redimensionner les colonnes pour s'adapter au contenu
+        # Auto-redimensionnement des colonnes
         auto_resize_request = {
             "requests": [
                 {
