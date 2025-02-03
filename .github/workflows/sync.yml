@@ -9,13 +9,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        # Mise à jour de l'action checkout à la version 3
+        # Utilisation de la version 3 pour checkout
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-        # Mise à jour de l'action setup-python à la version 4
+        # Mise à jour de setup-python à la version 4
 
       - name: Install dependencies
         run: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
@@ -28,3 +28,10 @@ jobs:
         run: |
           echo "$SERVICE_ACCOUNT_JSON" > service_account.json
           python main.py
+
+      # Étape optionnelle : Upload d'artefact en utilisant la version mise à jour de l'action
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-artifact
+          path: path/to/artifact
