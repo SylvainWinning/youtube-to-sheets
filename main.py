@@ -148,7 +148,7 @@ def sync_videos():
             # On préfixe la date avec une apostrophe pour forcer l'affichage en texte au format "07/01/2025"
             published_at_formatted = f"'{dt.strftime('%d/%m/%Y')}"
             
-            # Modification ici : on retourne uniquement l'URL brute, sans "=IMAGE(...)"
+            # On affiche uniquement l'URL brute de la miniature
             thumbnail_formula = thumbnail_url if thumbnail_url else ""
         else:
             title = "Inconnu"
@@ -301,6 +301,5 @@ def sync_videos():
 
     print("Synchronisation terminée. Les vidéos, les titres en gras, sans troncature et avec wrapping sont ajoutés.")
 
-while True:
-    sync_videos()
-    time.sleep(3600)
+# Exécution unique de la synchronisation
+sync_videos()
