@@ -1,24 +1,22 @@
 name: YouTube to Sheets Sync
 
 on:
-  # La synchronisation automatique est désactivée
-  # schedule:
-  #   - cron: '0 6 * * *' # Exécute le workflow tous les jours à 6h du matin UTC
-  workflow_dispatch: # Permet de lancer manuellement le workflow depuis l'onglet Actions
+  # La synchronisation automatique est désactivée, seul le déclenchement manuel est activé
+  workflow_dispatch: 
 
 jobs:
   sync:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-        # Cette étape clone le code du dépôt dans l'environnement du workflow
+      - uses: actions/checkout@v3
+        # Mise à jour de l'action checkout à la version 3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-        # Installe Python 3.9 pour exécuter le script
+        # Mise à jour de l'action setup-python à la version 4
 
       - name: Install dependencies
         run: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
@@ -33,11 +31,5 @@ jobs:
           # On recrée le fichier service_account.json à partir du secret
           echo "$SERVICE_ACCOUNT_JSON" > service_account.json
 
-          # Lancement du script Python principal
+          # Lancement du script Python principal (exécuté une seule fois)
           python main.py
-        # Cette étape :
-        # 1. Récupère les secrets et les met dans les variables d'environnement.
-        # 2. Crée le fichier service_account.json à partir du secret.
-        # 3. Lance le script main.py qui va :
-        #    - Appeler l'API YouTube Data avec YOUTUBE_API_KEY
-        #    - Mettre à jour le Google Sheet via le compte de service
