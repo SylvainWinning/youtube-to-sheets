@@ -19,7 +19,6 @@ jobs:
 
       - name: Install dependencies
         run: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
-        # Installation des dépendances nécessaires
 
       - name: Run script
         env:
@@ -27,7 +26,5 @@ jobs:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: |
-          # Création du fichier service_account.json à partir du secret
           echo "$SERVICE_ACCOUNT_JSON" > service_account.json
-          # Exécution unique du script Python principal
           python main.py
