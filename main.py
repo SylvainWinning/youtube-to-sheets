@@ -128,7 +128,7 @@ def sync_videos():
             stats = video_data['items'][0].get('statistics', {})
             title = snippet['title']
             channel = snippet['channelTitle']
-            # Modification : récupération sécurisée de la durée
+            # Récupération sécurisée de la durée
             content_details = video_data['items'][0].get('contentDetails', {})
             duration_iso = content_details.get('duration', "PT0S")
             video_duration = parse_duration(duration_iso)
@@ -220,6 +220,20 @@ def sync_videos():
             body={'values': [headers]}
         ).execute()
 
+        # Efface la plage de données pour éviter la présence de vidéos obsolètes
+        service.spreadsheets().values().clear(
+            spreadsheetId=SPREADSHEET_ID,
+            range=RANGE_NAME_DATA
+        ).execute()
+
+        # Insertion des vidéos
+        service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=RANGE_NAME_DATA,
+            valueInputOption='USER_ENTERED',
+            body={'values': videos}
+        ).execute()
+
         # Mise en gras des en-têtes
         bold_request = {
             "requests": [
@@ -247,14 +261,6 @@ def sync_videos():
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
             body=bold_request
-        ).execute()
-
-        # Insertion des vidéos
-        service.spreadsheets().values().update(
-            spreadsheetId=SPREADSHEET_ID,
-            range=RANGE_NAME_DATA,
-            valueInputOption='USER_ENTERED',
-            body={'values': videos}
         ).execute()
 
         # Activation du wrapping pour éviter la troncature visuelle
