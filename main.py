@@ -51,7 +51,7 @@ def get_duration_category(duration):
     elif total_seconds <= 3600:
         return "50-60min"
     else:
-        return "60+min"
+        return "60Plusmin"
 
 def get_sheet_id(spreadsheet_id, sheet_title, service):
     spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
@@ -108,7 +108,7 @@ def sync_videos():
         "30-40min": [],
         "40-50min": [],
         "50-60min": [],
-        "60+min": [],
+        "60Plusmin": [],
         "Inconnue": []
     }
 
