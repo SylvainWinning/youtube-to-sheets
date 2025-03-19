@@ -128,7 +128,9 @@ def sync_videos():
             stats = video_data['items'][0].get('statistics', {})
             title = snippet['title']
             channel = snippet['channelTitle']
-            duration_iso = video_data['items'][0]['contentDetails']['duration']
+            # Modification : récupération sécurisée de la durée
+            content_details = video_data['items'][0].get('contentDetails', {})
+            duration_iso = content_details.get('duration', "PT0S")
             video_duration = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(video_data)
 
