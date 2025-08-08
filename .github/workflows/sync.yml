@@ -18,7 +18,7 @@ jobs:
         # Mise à jour de setup-python à la version 4
 
       - name: Install dependencies
-        run: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib requests
+        run: pip install -r requirements.txt
 
       - name: Run script
         env:
