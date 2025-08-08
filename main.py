@@ -308,5 +308,6 @@ def sync_videos():
 
     print("Synchronisation terminée. Les vidéos, les titres en gras, sans troncature et avec wrapping sont ajoutés.")
 
-# Exécution unique de la synchronisation
-sync_videos()
+if __name__ == "__main__":
+    # Exécution unique de la synchronisation
+    sync_videos()
