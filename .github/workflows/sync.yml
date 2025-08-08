@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        # Utilisation de la version 3 pour checkout
+      - uses: actions/checkout@v4
+        # Utilisation de la version 4 pour checkout
 
       - name: Set up Python
         uses: actions/setup-python@v4
