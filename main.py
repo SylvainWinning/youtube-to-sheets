@@ -11,6 +11,7 @@ def parse_duration(iso_duration):
     Transforme une durée au format ISO (ex: "PT2H34M" ou "PT2H34S") en une chaîne "HH:MM:SS".
     On garde séparément les heures, minutes et secondes.
     """
+    # Regex pour extraire heures, minutes et secondes
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
     if not match:
