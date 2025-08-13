@@ -3,7 +3,7 @@ name: YouTube to Sheets Sync
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: "0 7 * * *"   # Tous les jours à 07:00 UTC. 08:00 en hiver à Paris, 09:00 en été.
+    - cron: "0 7 * * *"   # 07:00 UTC chaque jour. 08:00 à Paris en hiver, 09:00 en été.
 
 permissions:
   contents: read
@@ -43,6 +43,7 @@ jobs:
     env:
       YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
       SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+      SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,9 +59,50 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Write Google service account key
+      - name: Sanity check required secrets
         run: |
-          printf '%s' "${{ secrets.SERVICE_ACCOUNT_JSON }}" > service_account.json
+          test -n "${YOUTUBE_API_KEY}" || (echo "Secret YOUTUBE_API_KEY manquant" && exit 1)
+          test -n "${SPREADSHEET_ID}" || (echo "Secret SPREADSHEET_ID manquant" && exit 1)
+          test -n "${SERVICE_ACCOUNT_JSON}" || (echo "Secret SERVICE_ACCOUNT_JSON manquant" && exit 1)
+
+      - name: Prepare Google service account key
+        run: |
+          python - << 'PY'
+          import os, json, sys, base64
+          raw = os.environ.get("SERVICE_ACCOUNT_JSON", "")
+
+          def try_write(content: str) -> bool:
+            try:
+              # Valide que c'est bien du JSON avant d'écrire
+              json.loads(content)
+            except json.JSONDecodeError:
+              return False
+            else:
+              with open("service_account.json", "w", encoding="utf-8") as f:
+                f.write(content)
+              return True
+
+          # 1) Essaye tel quel (cas JSON brut multi-ligne)
+          if try_write(raw):
+            sys.exit(0)
+
+          # 2) Essaye en remplaçant les \n échappés
+          fixed = raw.replace("\\n", "\n").replace("\\r", "\r")
+          if try_write(fixed):
+            sys.exit(0)
+
+          # 3) Optionnel: si quelqu'un a stocké le JSON en base64
+          try:
+            decoded = base64.b64decode(raw).decode("utf-8", "strict")
+            if try_write(decoded):
+              sys.exit(0)
+          except Exception:
+            pass
+
+          print("SERVICE_ACCOUNT_JSON n'est pas un JSON valide. "
+                "Colle le JSON brut multi-ligne ou laisse les \\n et ce job les convertira.")
+          sys.exit(1)
+          PY
 
       - name: Run sync
         run: python main.py
