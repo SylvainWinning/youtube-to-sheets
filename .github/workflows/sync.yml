@@ -1,9 +1,13 @@
 name: YouTube to Sheets Sync
 
 on:
+  # Lancement manuel possible à tout moment
   workflow_dispatch: {}
+
+  # Déclenche toutes les heures, le job "gate" filtrera pour ne laisser passer
+  # que les heures autorisées en Europe/Paris
   schedule:
-    - cron: "0 7 * * *"   # 07:00 UTC chaque jour. 08:00 à Paris en hiver, 09:00 en été.
+    - cron: "0 * * * *"
 
 permissions:
   contents: read
@@ -13,8 +17,48 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  gate:
+    name: Time gate (Europe/Paris)
+    runs-on: ubuntu-latest
+    outputs:
+      allow: ${{ steps.set.outputs.allow }}
+      hour: ${{ steps.set.outputs.hour }}
+    steps:
+      - id: set
+        name: Compute allowed hour
+        shell: bash
+        run: |
+          # Autoriser tout de suite si ce n'est pas un run planifié
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "allow=true" >> "$GITHUB_OUTPUT"
+            echo "hour=manual" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Heures autorisées en Europe/Paris
+          ALLOWED="00 01 02 12 13 14 20 21 22 23"
+
+          # Heure locale Europe/Paris
+          HOUR=$(TZ=Europe/Paris date +%H)
+
+          if echo "$ALLOWED" | grep -qw "$HOUR"; then
+            echo "allow=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "allow=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "hour=$HOUR" >> "$GITHUB_OUTPUT"
+
+      - name: Skip info when hour is not allowed
+        if: ${{ steps.set.outputs.allow != 'true' }}
+        run: |
+          echo "Heure actuelle non autorisée: $(TZ=Europe/Paris date)."
+          echo "Heures autorisées: 00, 01, 02, 12, 13, 14, 20, 21, 22, 23."
+
   tests:
     name: Run unit tests
+    needs: gate
+    if: ${{ needs.gate.outputs.allow == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -37,7 +81,8 @@ jobs:
 
   sync:
     name: Sync playlist to Google Sheets
-    needs: tests
+    needs: [gate, tests]
+    if: ${{ needs.gate.outputs.allow == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -73,7 +118,6 @@ jobs:
 
           def try_write(content: str) -> bool:
             try:
-              # Valide que c'est bien du JSON avant d'écrire
               json.loads(content)
             except json.JSONDecodeError:
               return False
@@ -82,16 +126,16 @@ jobs:
                 f.write(content)
               return True
 
-          # 1) Essaye tel quel (cas JSON brut multi-ligne)
+          # 1) Essaye tel quel (JSON brut multi-ligne)
           if try_write(raw):
             sys.exit(0)
 
-          # 2) Essaye en remplaçant les \n échappés
+          # 2) Remplace \n échappés par vraies nouvelles lignes
           fixed = raw.replace("\\n", "\n").replace("\\r", "\r")
           if try_write(fixed):
             sys.exit(0)
 
-          # 3) Optionnel: si quelqu'un a stocké le JSON en base64
+          # 3) Si jamais le secret est en base64
           try:
             decoded = base64.b64decode(raw).decode("utf-8", "strict")
             if try_write(decoded):
@@ -99,10 +143,11 @@ jobs:
           except Exception:
             pass
 
-          print("SERVICE_ACCOUNT_JSON n'est pas un JSON valide. "
-                "Colle le JSON brut multi-ligne ou laisse les \\n et ce job les convertira.")
+          print("SERVICE_ACCOUNT_JSON n'est pas un JSON valide.")
           sys.exit(1)
           PY
 
       - name: Run sync
-        run: python main.py
+        run: |
+          echo "Heure Europe/Paris: ${{ needs.gate.outputs.hour }}"
+          python main.py
