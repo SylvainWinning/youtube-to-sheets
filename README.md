@@ -1,10 +1,10 @@
 # youtube-to-sheets
 
-Script Python pour synchroniser les vidéos d’une playlist YouTube vers Google Sheets.
+Synchronisation des vidéos d’une playlist YouTube vers Google Sheets.
 
-## Planification automatique
+## Planification
 
-La synchronisation est lancée automatiquement aux heures suivantes (heure de Paris):
+Synchronisation automatique aux heures suivantes (heure de Paris) :
 - 00 h
 - 01 h
 - 02 h
@@ -16,22 +16,27 @@ La synchronisation est lancée automatiquement aux heures suivantes (heure de Pa
 - 22 h
 - 23 h
 
-Le workflow est dans `.github/workflows/sync.yml`. Il déclenche toutes les heures en UTC et un job de garde n’autorise l’exécution que si l’heure locale Europe/Paris fait partie de la liste ci‑dessus. Ça fonctionne correctement toute l’année, y compris avec l’heure d’été.
+Le fichier `.github/workflows/sync.yml` convertit ces heures en UTC suivant la saison :
+- CEST (heure d’été, UTC+2) pour avril à septembre, 1–24 octobre, 25–31 mars.
+- CET (heure d’hiver, UTC+1) pour novembre à février, 1–24 mars, 25–31 octobre.
 
-Tu peux aussi lancer manuellement depuis l’onglet Actions avec le bouton Run workflow.
+Aucune exécution n’est programmée en dehors de ces créneaux.  
+Tu peux toujours déclencher manuellement via l’onglet **Actions**.
 
 ## Configuration
 
-Secrets GitHub à créer dans Settings → Secrets and variables → Actions:
-- `YOUTUBE_API_KEY` clé YouTube Data API v3
-- `SPREADSHEET_ID` ID de la feuille Google
-- `SERVICE_ACCOUNT_JSON` contenu JSON de la clé de compte de service Google
+Secrets GitHub à créer :
+- `YOUTUBE_API_KEY`
+- `SPREADSHEET_ID`
+- `SERVICE_ACCOUNT_JSON` contenu JSON du compte de service Google
 
-Partage la Google Sheet avec l’adresse e‑mail du compte de service pour donner l’accès.
+Partage la feuille Google Sheets avec l’e‑mail du compte de service.
 
 ## Dépendances
 
-Voir `requirements.txt`. Installation locale:
+Voir `requirements.txt`.
+
+Installation locale :
 ```bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
