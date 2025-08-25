@@ -1,0 +1,104 @@
+import { VideoData, VideoResponse } from '../../types/video';
+import { SHEET_TABS, SPREADSHEET_ID, API_KEY } from '../constants';
+
+interface SheetError {
+  error: {
+    code: number;
+    message: string;
+    status: string;
+  };
+}
+
+async function fetchSheetData(range: string): Promise<any[]> {
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorData: SheetError = await response.json();
+      throw new Error(errorData.error?.message || `Erreur HTTP: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.values) {
+      console.warn(`Aucune donnée trouvée pour l'onglet: ${range}`);
+      return [];
+    }
+
+    return data.values;
+  } catch (error) {
+    console.error('Erreur lors de la récupération des données:', error);
+    throw error;
+  }
+}
+
+function validateVideoData(row: any[]): boolean {
+  return (
+    Array.isArray(row) &&
+    row.length >= 12 &&
+    typeof row[1] === 'string' && // Titre
+    typeof row[2] === 'string' && // Lien
+    row[1].trim() !== '' &&
+    row[2].trim().startsWith('http')
+  );
+}
+
+function mapRowToVideo(row: any[]): VideoData {
+  return {
+    thumbnail: String(row[0] || ''),
+    title: String(row[1] || ''),
+    link: String(row[2] || ''),
+    channel: String(row[3] || ''),
+    publishedAt: String(row[4] || ''),
+    duration: String(row[5] || '00:00'),
+    views: String(row[6] || '0'),
+    likes: String(row[7] || '0'),
+    comments: String(row[8] || '0'),
+    shortDescription: String(row[9] || ''),
+    tags: String(row[10] || ''),
+    category: String(row[11] || '')
+  };
+}
+
+export async function fetchAllVideos(): Promise<VideoResponse> {
+  try {
+    const allVideos: VideoData[] = [];
+    const errors: string[] = [];
+    
+    // Récupération des données de chaque onglet en parallèle
+    const tabResults = await Promise.allSettled(
+      SHEET_TABS.map(tab => fetchSheetData(tab.range))
+    );
+    
+    // Traitement des résultats
+    tabResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        const validRows = result.value.filter(validateVideoData);
+        const videos = validRows.map(mapRowToVideo);
+        allVideos.push(...videos);
+      } else {
+        const tabName = SHEET_TABS[index].name;
+        console.error(`Erreur pour l'onglet ${tabName}:`, result.reason);
+        errors.push(`Erreur lors de la récupération des données de l'onglet ${tabName}`);
+      }
+    });
+
+    if (allVideos.length === 0) {
+      if (errors.length > 0) {
+        throw new Error(errors.join('\n'));
+      }
+      console.warn('Aucune vidéo trouvée dans les onglets');
+    }
+
+    return { data: allVideos };
+  } catch (error) {
+    console.error('Erreur globale:', error);
+    return { 
+      data: [], 
+      error: error instanceof Error 
+        ? error.message 
+        : 'Une erreur est survenue lors de la récupération des données'
+    };
+  }
+}
