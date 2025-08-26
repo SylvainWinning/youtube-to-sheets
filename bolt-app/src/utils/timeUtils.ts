@@ -22,14 +22,20 @@ export function parseDate(dateString: string): Date | null {
     const ddmmyyyyTime = formats[1].exec(dateString);
     if (ddmmyyyyTime) {
       const [, day, month, year, hour, minute] = ddmmyyyyTime;
-      return new Date(`${year}-${month}-${day}T${hour}:${minute}:00`);
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute)
+      );
     }
 
     // Test format DD/MM/YYYY
     const ddmmyyyy = formats[2].exec(dateString);
     if (ddmmyyyy) {
       const [, day, month, year] = ddmmyyyy;
-      return new Date(`${year}-${month}-${day}`);
+      return new Date(Number(year), Number(month) - 1, Number(day));
     }
     
     // Test format français
@@ -41,8 +47,8 @@ export function parseDate(dateString: string): Date | null {
         'mai': '05', 'juin': '06', 'juillet': '07', 'août': '08',
         'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12'
       };
-      const monthNumber = monthMap[month.toLowerCase()];
-      return new Date(`${year}-${monthNumber}-${day.padStart(2, '0')}`);
+      const monthNumber = Number(monthMap[month.toLowerCase()]);
+      return new Date(Number(year), monthNumber - 1, Number(day));
     }
 
     // Si aucun format ne correspond, essaie le parsing natif
