@@ -22,14 +22,20 @@ export function parseDate(dateString: string): Date | null {
     const ddmmyyyyTime = formats[1].exec(dateString);
     if (ddmmyyyyTime) {
       const [, day, month, year, hour, minute] = ddmmyyyyTime;
-      return new Date(`${year}-${month}-${day}T${hour}:${minute}:00`);
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute)
+      );
     }
 
     // Test format DD/MM/YYYY
     const ddmmyyyy = formats[2].exec(dateString);
     if (ddmmyyyy) {
       const [, day, month, year] = ddmmyyyy;
-      return new Date(`${year}-${month}-${day}`);
+      return new Date(Number(year), Number(month) - 1, Number(day));
     }
     
     // Test format français
@@ -41,8 +47,8 @@ export function parseDate(dateString: string): Date | null {
         'mai': '05', 'juin': '06', 'juillet': '07', 'août': '08',
         'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12'
       };
-      const monthNumber = monthMap[month.toLowerCase()];
-      return new Date(`${year}-${monthNumber}-${day.padStart(2, '0')}`);
+      const monthNumber = Number(monthMap[month.toLowerCase()]);
+      return new Date(Number(year), monthNumber - 1, Number(day));
     }
 
     // Si aucun format ne correspond, essaie le parsing natif
@@ -61,13 +67,31 @@ export function formatPublishDate(dateString: string): string {
   }
 
   const now = new Date();
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+  const diffMs = now.getTime() - date.getTime();
 
-  if (diffInHours < 24) {
+  // Si la date est dans le futur, retourne la date formatée
+  if (diffMs < 0) {
     return new Intl.DateTimeFormat('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     }).format(date);
+  }
+
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+  if (diffMinutes < 60) {
+    return `Il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) {
+    return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
   }
 
   return new Intl.DateTimeFormat('fr-FR', {
