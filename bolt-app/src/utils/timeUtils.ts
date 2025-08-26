@@ -4,6 +4,8 @@ export function parseDate(dateString: string): Date | null {
   const formats = [
     // Format ISO
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+    // Format DD/MM/YYYY HH:MM
+    /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/,
     // Format DD/MM/YYYY
     /^(\d{2})\/(\d{2})\/(\d{4})/,
     // Format français (ex: 11 avril 2024)
@@ -16,15 +18,22 @@ export function parseDate(dateString: string): Date | null {
       return new Date(dateString);
     }
     
+    // Test format DD/MM/YYYY HH:MM
+    const ddmmyyyyTime = formats[1].exec(dateString);
+    if (ddmmyyyyTime) {
+      const [, day, month, year, hour, minute] = ddmmyyyyTime;
+      return new Date(`${year}-${month}-${day}T${hour}:${minute}:00`);
+    }
+
     // Test format DD/MM/YYYY
-    const ddmmyyyy = formats[1].exec(dateString);
+    const ddmmyyyy = formats[2].exec(dateString);
     if (ddmmyyyy) {
       const [, day, month, year] = ddmmyyyy;
       return new Date(`${year}-${month}-${day}`);
     }
     
     // Test format français
-    const frenchDate = formats[2].exec(dateString);
+    const frenchDate = formats[3].exec(dateString);
     if (frenchDate) {
       const [, day, month, year] = frenchDate;
       const monthMap: { [key: string]: string } = {
@@ -52,19 +61,15 @@ export function formatPublishDate(dateString: string): string {
   }
 
   const now = new Date();
-  const diffInMilliseconds = now.getTime() - date.getTime();
-  const diffInMinutes = Math.floor(diffInMilliseconds / (1000 * 60));
-  const diffInHours = Math.floor(diffInMinutes / 60);
+  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
-  // Si moins de 24 heures, affiche le temps relatif
   if (diffInHours < 24) {
-    if (diffInMinutes < 60) {
-      return `Il y a ${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''}`;
-    }
-    return `Il y a ${diffInHours} heure${diffInHours > 1 ? 's' : ''}`;
+    return new Intl.DateTimeFormat('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
   }
 
-  // Sinon utilise le format français standard
   return new Intl.DateTimeFormat('fr-FR', {
     year: 'numeric',
     month: 'long',
