@@ -15,21 +15,32 @@ export function parseDate(dateString: string): Date | null {
   try {
     // Test format ISO
     if (formats[0].test(dateString)) {
-      return new Date(dateString);
+      // Certaines dates ISO provenant de l'API peuvent ne pas spécifier explicitement le fuseau horaire
+      // Ajoute "Z" par défaut pour les interpréter comme UTC
+      const hasTimeZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(dateString);
+      return new Date(hasTimeZone ? dateString : `${dateString}Z`);
     }
     
     // Test format DD/MM/YYYY HH:MM
     const ddmmyyyyTime = formats[1].exec(dateString);
     if (ddmmyyyyTime) {
       const [, day, month, year, hour, minute] = ddmmyyyyTime;
-      return new Date(`${year}-${month}-${day}T${hour}:${minute}:00`);
+      return new Date(
+        Date.UTC(
+          Number(year),
+          Number(month) - 1,
+          Number(day),
+          Number(hour),
+          Number(minute)
+        )
+      );
     }
 
     // Test format DD/MM/YYYY
     const ddmmyyyy = formats[2].exec(dateString);
     if (ddmmyyyy) {
       const [, day, month, year] = ddmmyyyy;
-      return new Date(`${year}-${month}-${day}`);
+      return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
     }
     
     // Test format français
@@ -41,8 +52,8 @@ export function parseDate(dateString: string): Date | null {
         'mai': '05', 'juin': '06', 'juillet': '07', 'août': '08',
         'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12'
       };
-      const monthNumber = monthMap[month.toLowerCase()];
-      return new Date(`${year}-${monthNumber}-${day.padStart(2, '0')}`);
+      const monthNumber = Number(monthMap[month.toLowerCase()]);
+      return new Date(Date.UTC(Number(year), monthNumber - 1, Number(day)));
     }
 
     // Si aucun format ne correspond, essaie le parsing natif
@@ -61,13 +72,31 @@ export function formatPublishDate(dateString: string): string {
   }
 
   const now = new Date();
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+  const diffMs = now.getTime() - date.getTime();
 
-  if (diffInHours < 24) {
+  // Si la date est dans le futur, retourne la date formatée
+  if (diffMs < 0) {
     return new Intl.DateTimeFormat('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     }).format(date);
+  }
+
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+
+  if (diffMinutes < 60) {
+    return `Il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) {
+    return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
   }
 
   return new Intl.DateTimeFormat('fr-FR', {
