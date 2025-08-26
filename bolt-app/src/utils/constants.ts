@@ -9,6 +9,7 @@ export const SHEET_TABS: SheetTab[] = [
   { name: '40-50min', range: '40-50min!A2:N1000', durationRange: { min: 40, max: 50 } },
   { name: '50-60min', range: '50-60min!A2:N1000', durationRange: { min: 50, max: 60 } },
   { name: '60Plusmin', range: '60Plusmin!A2:N1000', durationRange: { min: 60, max: null } },
+  { name: 'Inconnue', range: 'Inconnue!A2:N1000', durationRange: { min: null, max: null } },
 ];
 
 export const SPREADSHEET_ID = '1ltnNUqmBjkCLmePBJgM5U3yf_CU44vDucDQ9Gq8FNzU';

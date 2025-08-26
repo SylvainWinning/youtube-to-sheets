@@ -30,7 +30,10 @@ export function formatDuration(duration: string): string {
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
-export function formatDurationRange(min: number, max: number | null): string {
+export function formatDurationRange(min: number | null, max: number | null): string {
+  if (min === null && max === null) {
+    return 'Inconnue';
+  }
   if (max === null) {
     return `${min}+ min`;
   }
