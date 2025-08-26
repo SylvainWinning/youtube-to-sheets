@@ -25,7 +25,16 @@ jobs:
         env:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-          SHEET_RANGE: AllVideos!A1:Z   # adapt the sheet name and range if needed
+              SHEET_TABS: |
+          0-5 min
+          5-10 min
+          10-20 min
+          20-30 min
+          30-40 min
+          40-50 min
+          50-60 min
+          60 + min
+          Inconnu
         run: python scripts/export_sheet.py
 
       - name: Commit updated data
