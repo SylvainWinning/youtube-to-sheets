@@ -84,6 +84,11 @@ def get_thumbnail_url(video_data):
             return thumb_info[quality]['url']
     return ""
 
+
+def format_published_at(iso_timestamp):
+    dt = datetime.strptime(iso_timestamp, "%Y-%m-%dT%H:%M:%SZ")
+    return f"'{dt.strftime('%d/%m/%Y %H:%M')}"
+
 def sync_videos():
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
@@ -142,9 +147,10 @@ def sync_videos():
             tags_str = ", ".join(tags)
 
             original_published_at = snippet['publishedAt']
-            dt = datetime.strptime(original_published_at, "%Y-%m-%dT%H:%M:%SZ")
-            # On préfixe la date d'une apostrophe pour l'afficher au format "07/01/2025"
-            published_at_formatted = f"'{dt.strftime('%d/%m/%Y')}"
+            # On préfixe la date d'une apostrophe pour l'afficher au format
+            # "07/01/2025 12:34" et éviter la conversion automatique de Google
+            # Sheets
+            published_at_formatted = format_published_at(original_published_at)
             
             # Affichage uniquement de l'URL brute de la miniature
             thumbnail_formula = thumbnail_url if thumbnail_url else ""
