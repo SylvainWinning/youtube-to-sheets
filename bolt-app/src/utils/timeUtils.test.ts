@@ -12,7 +12,20 @@ test('parseDate parses DD/MM/YYYY HH:MM format', () => {
   assert.equal(result?.getMinutes(), 30);
 });
 
-test('formatPublishDate formats recent dates with time', () => {
+test('formatPublishDate handles minutes', () => {
+  const now = new Date();
+  const recent = new Date(now.getTime() - 5 * 60 * 1000);
+  const dd = String(recent.getDate()).padStart(2, '0');
+  const mm = String(recent.getMonth() + 1).padStart(2, '0');
+  const yyyy = recent.getFullYear();
+  const hh = String(recent.getHours()).padStart(2, '0');
+  const min = String(recent.getMinutes()).padStart(2, '0');
+  const dateString = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+  const expected = 'Il y a 5 minutes';
+  assert.equal(formatPublishDate(dateString), expected);
+});
+
+test('formatPublishDate handles hours', () => {
   const now = new Date();
   const recent = new Date(now.getTime() - 3 * 60 * 60 * 1000);
   const dd = String(recent.getDate()).padStart(2, '0');
@@ -21,13 +34,26 @@ test('formatPublishDate formats recent dates with time', () => {
   const hh = String(recent.getHours()).padStart(2, '0');
   const min = String(recent.getMinutes()).padStart(2, '0');
   const dateString = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-  const expected = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(recent);
+  const expected = 'Il y a 3 heures';
   assert.equal(formatPublishDate(dateString), expected);
 });
 
-test('formatPublishDate formats older dates with full date', () => {
+test('formatPublishDate handles days', () => {
   const now = new Date();
-  const older = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+  const recent = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const dd = String(recent.getDate()).padStart(2, '0');
+  const mm = String(recent.getMonth() + 1).padStart(2, '0');
+  const yyyy = recent.getFullYear();
+  const hh = String(recent.getHours()).padStart(2, '0');
+  const min = String(recent.getMinutes()).padStart(2, '0');
+  const dateString = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+  const expected = 'Il y a 3 jours';
+  assert.equal(formatPublishDate(dateString), expected);
+});
+
+test('formatPublishDate handles dates older than a week', () => {
+  const now = new Date();
+  const older = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000);
   const dd = String(older.getDate()).padStart(2, '0');
   const mm = String(older.getMonth() + 1).padStart(2, '0');
   const yyyy = older.getFullYear();
