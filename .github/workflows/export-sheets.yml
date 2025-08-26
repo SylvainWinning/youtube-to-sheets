@@ -1,7 +1,6 @@
 name: Export Google Sheet to public data
 
 on:
-#on:
   workflow_dispatch:
   schedule:
     # ===== CEST (UTC+2) =====
@@ -26,8 +25,6 @@ on:
     - cron: "0 0-1,11-13,19-22 25-31 10 *"
     - cron: "0 23 25-31 10 *"
 
-"5 4 * * *"  # everyday at 04:05 UTC
-
 permissions:
   contents: write
 
@@ -40,11 +37,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install deps
         run: pip install -r requirements.txt
+
       - name: Export sheet to CSV/JSON
         env:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
@@ -52,9 +52,10 @@ jobs:
           # Specify only the cell range without a sheet name so the API uses the first sheet by default
           SHEET_RANGE: A1:Z1000  # adapt the range if needed
         run: python scripts/export_sheet.py
+
       - name: Commit updated data
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add bolt-app/public/data/videos.csv bolt-app/public/data/videos.json || true
           if git diff --cached --quiet; then
