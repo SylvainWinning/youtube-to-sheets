@@ -1,10 +1,12 @@
 name: Export Google Sheet to public data
 
 on:
+  push:
+    branches: ['main']
   workflow_dispatch:
+    schedule:
+       - cron: "5 4 * * *"  # everyday at 04:05 UTC
   schedule:
-    - cron: "5 4 * * *"  # everyday at 04:05 UTC
-
 permissions:
   contents: write
 
