@@ -92,7 +92,11 @@ export default function App() {
                 className="flex items-center gap-3 group"
                 disabled={isLoading}
               >
-                <img src="/youtube-logo.svg" alt="YouTube logo" className="h-8 w-8" />
+                <img
+                  src={`${import.meta.env.BASE_URL}youtube-logo.svg`}
+                  alt="YouTube logo"
+                  className="h-8 w-8"
+                />
                 <h1 className="text-xl font-semibold text-youtube-black dark:text-white flex items-center gap-2">
                   Mes Vidéos YouTube
                   <RefreshCw
