@@ -22,8 +22,8 @@ jobs:
         env:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-          # Use single quotes around the sheet name so Google Sheets API parses the range correctly
-          SHEET_RANGE: "'AllVideos'!A1:Z1000"  # adapt the sheet name and range if needed
+          # Specify only the cell range without a sheet name so the API uses the first sheet by default
+          SHEET_RANGE: A1:Z1000  # adapt the range if needed
         run: python scripts/export_sheet.py
       - name: Commit updated data
         run: |
