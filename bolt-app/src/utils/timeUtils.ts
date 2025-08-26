@@ -26,13 +26,6 @@ export function parseDate(dateString: string): Date | null {
     if (ddmmyyyyTime) {
       const [, day, month, year, hour, minute] = ddmmyyyyTime;
       return new Date(
-        Date.UTC(
-          Number(year),
-          Number(month) - 1,
-          Number(day),
-          Number(hour),
-          Number(minute)
-        )
       );
     }
 
@@ -40,7 +33,6 @@ export function parseDate(dateString: string): Date | null {
     const ddmmyyyy = formats[2].exec(dateString);
     if (ddmmyyyy) {
       const [, day, month, year] = ddmmyyyy;
-      return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
     }
     
     // Test format français
@@ -53,7 +45,6 @@ export function parseDate(dateString: string): Date | null {
         'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12'
       };
       const monthNumber = Number(monthMap[month.toLowerCase()]);
-      return new Date(Date.UTC(Number(year), monthNumber - 1, Number(day)));
     }
 
     // Si aucun format ne correspond, essaie le parsing natif
