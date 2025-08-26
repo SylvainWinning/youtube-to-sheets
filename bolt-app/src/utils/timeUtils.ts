@@ -15,7 +15,10 @@ export function parseDate(dateString: string): Date | null {
   try {
     // Test format ISO
     if (formats[0].test(dateString)) {
-      return new Date(dateString);
+      // Certaines dates ISO provenant de l'API peuvent ne pas spécifier explicitement le fuseau horaire
+      // Ajoute "Z" par défaut pour les interpréter comme UTC
+      const hasTimeZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(dateString);
+      return new Date(hasTimeZone ? dateString : `${dateString}Z`);
     }
     
     // Test format DD/MM/YYYY HH:MM
@@ -23,11 +26,6 @@ export function parseDate(dateString: string): Date | null {
     if (ddmmyyyyTime) {
       const [, day, month, year, hour, minute] = ddmmyyyyTime;
       return new Date(
-        Number(year),
-        Number(month) - 1,
-        Number(day),
-        Number(hour),
-        Number(minute)
       );
     }
 
@@ -35,7 +33,6 @@ export function parseDate(dateString: string): Date | null {
     const ddmmyyyy = formats[2].exec(dateString);
     if (ddmmyyyy) {
       const [, day, month, year] = ddmmyyyy;
-      return new Date(Number(year), Number(month) - 1, Number(day));
     }
     
     // Test format français
@@ -48,7 +45,6 @@ export function parseDate(dateString: string): Date | null {
         'septembre': '09', 'octobre': '10', 'novembre': '11', 'décembre': '12'
       };
       const monthNumber = Number(monthMap[month.toLowerCase()]);
-      return new Date(Number(year), monthNumber - 1, Number(day));
     }
 
     // Si aucun format ne correspond, essaie le parsing natif
