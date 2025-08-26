@@ -1,5 +1,5 @@
 import React from 'react';
-import { Youtube, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { VideoGrid } from './components/VideoGrid';
 import { DurationTabs } from './components/DurationTabs';
 import { SearchBar } from './components/SearchBar';
@@ -92,7 +92,7 @@ export default function App() {
                 className="flex items-center gap-3 group"
                 disabled={isLoading}
               >
-                <Youtube className="h-8 w-8 text-youtube-red" />
+                <img src="/youtube-logo.svg" alt="YouTube logo" className="h-8 w-8" />
                 <h1 className="text-xl font-semibold text-youtube-black dark:text-white flex items-center gap-2">
                   Mes Vidéos YouTube
                   <RefreshCw 
