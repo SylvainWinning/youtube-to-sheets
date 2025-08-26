@@ -14,5 +14,7 @@ import { sortVideos } from './utils/sortUtils';
 import { useVideos } from './hooks/useVideos';
 import { useSound } from './hooks/useSound';
 import { SearchFilters } from './types/search';
-import { SortOptions } from './types/sor
- import logoUrl from './assets/logo.png';
+import { SortOptions } from './types/sort';
+
+// si tu veux utiliser le logo depuis le code React:
+import logoUrl from './assets/logo.png';
