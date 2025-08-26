@@ -7,7 +7,6 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 def parse_duration(iso_duration):
-    """Convertit une durée ISO 8601 en chaîne formatée "HH:MM:SS"."""
     # Regex pour extraire heures, minutes et secondes
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
     match = pattern.match(iso_duration)
