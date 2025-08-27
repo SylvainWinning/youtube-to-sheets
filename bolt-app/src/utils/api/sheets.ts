@@ -45,7 +45,7 @@ function validateVideoData(row: any[]): boolean {
 
 function mapRowToVideo(row: any[]): VideoData {
   return {
-    channelAvatar: String(row[0] || ''),
+    thumbnail: String(row[0] || ''),
     title: String(row[1] || ''),
     link: String(row[2] || ''),
     channel: String(row[3] || ''),
@@ -57,7 +57,7 @@ function mapRowToVideo(row: any[]): VideoData {
     shortDescription: String(row[9] || ''),
     tags: String(row[10] || ''),
     category: String(row[11] || ''),
-    thumbnail: String(row[12] || ''),
+    channelAvatar: String(row[12] || ''),
   };
 }
 
