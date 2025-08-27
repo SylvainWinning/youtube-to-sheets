@@ -9,12 +9,10 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 HEADERS = [
-    "Miniature",
+    "Avatar",
     "Titre",
     "Lien",
     "Chaîne",
-    "Avatar",
-    "Catégorie",
     "Publié le",
     "Durée",
     "Vues",
@@ -22,6 +20,8 @@ HEADERS = [
     "Commentaires",
     "Description courte",
     "Tags",
+    "Catégorie",
+    "Miniature",
 ]
 
 def parse_duration(iso_duration):
@@ -251,12 +251,10 @@ def sync_videos():
 
         category = get_duration_category(video_duration)
         videos_by_category[category].append([
-            thumbnail_formula,
+            avatar_url,
             title,
             video_link,
             channel,
-            avatar_url,
-            category,
             published_at_formatted,
             video_duration,
             view_count,
@@ -264,6 +262,8 @@ def sync_videos():
             comment_count,
             short_description,
             tags_str,
+            category,
+            thumbnail_formula,
         ])
 
     # Titres des colonnes
@@ -273,8 +273,9 @@ def sync_videos():
         # Mélange aléatoire des vidéos dans la catégorie
         random.shuffle(videos)
 
-        RANGE_NAME_DATA = f"'{category}'!A2:M"
-        RANGE_NAME_HEADERS = f"'{category}'!A1:M1"
+        last_col = chr(ord('A') + len(headers) - 1)
+        RANGE_NAME_DATA = f"'{category}'!A2:{last_col}"
+        RANGE_NAME_HEADERS = f"'{category}'!A1:{last_col}1"
 
         # Création de la feuille si elle n'existe pas déjà
         try:
@@ -329,7 +330,7 @@ def sync_videos():
                             "startRowIndex": 0,
                             "endRowIndex": 1,
                             "startColumnIndex": 0,
-                            "endColumnIndex": 13
+                            "endColumnIndex": len(headers)
                         },
                         "cell": {
                             "userEnteredFormat": {
@@ -380,7 +381,7 @@ def sync_videos():
                             "sheetId": sheet_id,
                             "dimension": "COLUMNS",
                             "startIndex": 0,
-                            "endIndex": 13
+                            "endIndex": len(headers)
                         }
                     }
                 }
