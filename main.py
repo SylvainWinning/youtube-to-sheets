@@ -8,6 +8,22 @@ from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
+HEADERS = [
+    "Miniature",
+    "Titre",
+    "Lien",
+    "Chaîne",
+    "Avatar",
+    "Catégorie",
+    "Publié le",
+    "Durée",
+    "Vues",
+    "J'aime",
+    "Commentaires",
+    "Description courte",
+    "Tags",
+]
+
 def parse_duration(iso_duration):
     # Regex pour extraire heures, minutes et secondes
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
@@ -156,6 +172,27 @@ def sync_videos():
         "Inconnue": []
     }
 
+    channel_avatar_cache = {}
+
+    def get_channel_avatar(channel_id):
+        if channel_id in channel_avatar_cache:
+            return channel_avatar_cache[channel_id]
+        channel_url = (
+            "https://www.googleapis.com/youtube/v3/channels"
+            f"?part=snippet&id={channel_id}&key={YOUTUBE_API_KEY}"
+        )
+        response = requests.get(channel_url)
+        data = response.json()
+        avatar_url = ""
+        if "items" in data and data["items"]:
+            thumbs = data["items"][0]["snippet"].get("thumbnails", {})
+            for quality in ["high", "medium", "default"]:
+                if quality in thumbs:
+                    avatar_url = thumbs[quality]["url"]
+                    break
+        channel_avatar_cache[channel_id] = avatar_url
+        return avatar_url
+
     for item in items:
         video_id = item['contentDetails']['videoId']
         video_link = f"https://www.youtube.com/watch?v={video_id}"
@@ -172,11 +209,13 @@ def sync_videos():
             stats = video_data['items'][0].get('statistics', {})
             title = snippet['title']
             channel = snippet['channelTitle']
+            channel_id = snippet.get('channelId', '')
             # Récupération sécurisée de la durée
             content_details = video_data['items'][0].get('contentDetails', {})
             duration_iso = content_details.get('duration', "PT0S")
             video_duration = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(video_data)
+            avatar_url = get_channel_avatar(channel_id)
 
             view_count = stats.get('viewCount', 'N/A')
             like_count = stats.get('likeCount', 'N/A')
@@ -199,9 +238,11 @@ def sync_videos():
         else:
             title = "Inconnu"
             channel = "Inconnu"
+            channel_id = ""
             video_duration = "Inconnue"
             published_at_formatted = ""
             thumbnail_formula = ""
+            avatar_url = ""
             view_count = "N/A"
             like_count = "N/A"
             comment_count = "N/A"
@@ -214,27 +255,26 @@ def sync_videos():
             title,
             video_link,
             channel,
+            avatar_url,
+            category,
             published_at_formatted,
             video_duration,
             view_count,
             like_count,
             comment_count,
             short_description,
-            tags_str
+            tags_str,
         ])
 
     # Titres des colonnes
-    headers = [
-        "Miniature", "Titre", "Lien", "Chaîne", "Publié le", "Durée",
-        "Vues", "J'aime", "Commentaires", "Description courte", "Tags"
-    ]
+    headers = HEADERS
 
     for category, videos in videos_by_category.items():
         # Mélange aléatoire des vidéos dans la catégorie
         random.shuffle(videos)
 
-        RANGE_NAME_DATA = f"'{category}'!A2:K"
-        RANGE_NAME_HEADERS = f"'{category}'!A1:K1"
+        RANGE_NAME_DATA = f"'{category}'!A2:M"
+        RANGE_NAME_HEADERS = f"'{category}'!A1:M1"
 
         # Création de la feuille si elle n'existe pas déjà
         try:
@@ -289,7 +329,7 @@ def sync_videos():
                             "startRowIndex": 0,
                             "endRowIndex": 1,
                             "startColumnIndex": 0,
-                            "endColumnIndex": 11
+                            "endColumnIndex": 13
                         },
                         "cell": {
                             "userEnteredFormat": {
@@ -340,7 +380,7 @@ def sync_videos():
                             "sheetId": sheet_id,
                             "dimension": "COLUMNS",
                             "startIndex": 0,
-                            "endIndex": 11
+                            "endIndex": 13
                         }
                     }
                 }
