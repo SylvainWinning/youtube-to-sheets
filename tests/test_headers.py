@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import main
 
 EXPECTED_HEADERS = [
-    "thumbnail",
+    "channelAvatar",
     "title",
     "link",
     "channel",
@@ -18,7 +18,7 @@ EXPECTED_HEADERS = [
     "shortDescription",
     "tags",
     "category",
-    "channelAvatar",
+    "thumbnail",
 ]
 
 

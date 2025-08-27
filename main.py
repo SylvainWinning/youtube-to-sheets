@@ -9,7 +9,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 HEADERS = [
-    "thumbnail",
+    "channelAvatar",
     "title",
     "link",
     "channel",
@@ -21,7 +21,7 @@ HEADERS = [
     "shortDescription",
     "tags",
     "category",
-    "channelAvatar",
+    "thumbnail",
 ]
 
 DEFAULT_AVATAR_URL = "https://via.placeholder.com/48"
@@ -259,7 +259,7 @@ def sync_videos():
 
         duration_category = get_duration_category(video_duration)
         entry = [
-            thumbnail_formula,
+            avatar_url,
             title,
             video_link,
             channel,
@@ -271,7 +271,7 @@ def sync_videos():
             short_description,
             tags_str,
             duration_category,
-            avatar_url,
+            thumbnail_formula,
         ]
         add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
 
