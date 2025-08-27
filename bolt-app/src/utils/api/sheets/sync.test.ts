@@ -24,7 +24,7 @@ test('synchronizeSheets handles large sheet ranges', async () => {
 
   // Limit to a single tab to simplify the mock
   SHEET_TABS.length = 1;
-  SHEET_TABS[0].range = 'tab!A2:N';
+  SHEET_TABS[0].range = 'tab!A2:M';
 
   mock.method(globalThis, 'fetch', async () => {
     return new Response(JSON.stringify({ values: rows }), { status: 200 });

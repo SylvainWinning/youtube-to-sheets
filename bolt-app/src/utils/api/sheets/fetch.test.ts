@@ -9,11 +9,11 @@ test('fetchSheetData retrieves all rows for unbounded range', async () => {
 
   mock.method(globalThis as any, 'fetch', async (input: any) => {
     const url = typeof input === 'string' ? input : input.url;
-    assert.ok(url.includes(encodeURIComponent('tab!A2:N')));
+    assert.ok(url.includes(encodeURIComponent('tab!A2:M')));
     return new Response(JSON.stringify({ values: rows }), { status: 200 });
   });
 
-  const result = await fetchSheetData('tab!A2:N');
+  const result = await fetchSheetData('tab!A2:M');
   assert.equal(result.values.length, 1201);
 
   mock.restoreAll();

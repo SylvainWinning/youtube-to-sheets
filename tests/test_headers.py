@@ -5,7 +5,22 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import main
 
+EXPECTED_HEADERS = [
+    "channelAvatar",
+    "title",
+    "link",
+    "channel",
+    "publishedAt",
+    "duration",
+    "views",
+    "likes",
+    "comments",
+    "shortDescription",
+    "tags",
+    "category",
+    "thumbnail",
+]
 
-def test_headers_contains_avatar_and_category():
-    assert "Avatar" in main.HEADERS
-    assert "Catégorie" in main.HEADERS
+
+def test_headers_match_expected_list():
+    assert main.HEADERS == EXPECTED_HEADERS
