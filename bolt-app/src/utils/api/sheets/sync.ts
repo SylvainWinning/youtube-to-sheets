@@ -1,8 +1,8 @@
-import { fetchSheetData } from './fetch';
-import { SHEET_TABS } from '../../constants';
-import { VideoData } from '../../../types/video';
-import { validateRow } from './validation';
-import { processVideoData } from '../../youtube';
+import { fetchSheetData } from './fetch.ts';
+import { SHEET_TABS } from '../../constants.ts';
+import type { VideoData } from '../../../types/video.ts';
+import { validateRow } from './validation.ts';
+import { processVideoData } from '../../youtube.ts';
 
 interface VideoMap {
   [link: string]: VideoData;

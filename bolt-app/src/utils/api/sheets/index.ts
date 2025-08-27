@@ -1,6 +1,6 @@
-import { VideoData } from '../../../types/video';
-import { ApiResponse } from './types';
-import { synchronizeSheets } from './sync';
+import type { VideoData } from '../../../types/video.ts';
+import type { ApiResponse } from './types.ts';
+import { synchronizeSheets } from './sync.ts';
 
 export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
   try {
