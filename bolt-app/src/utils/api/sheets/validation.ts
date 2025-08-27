@@ -1,4 +1,4 @@
-import { VideoData } from '../../../types/video';
+import type { VideoData } from '../../../types/video.ts';
 
 export function validateRow(row: any[]): boolean {
   if (!Array.isArray(row)) {

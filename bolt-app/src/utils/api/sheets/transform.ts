@@ -1,4 +1,4 @@
-import { VideoData } from '../../../types/video';
+import type { VideoData } from '../../../types/video.ts';
 
 export function mapRowToVideo(row: any[]): VideoData {
   const safeString = (value: any, defaultValue: string = ''): string => {

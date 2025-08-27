@@ -1,4 +1,4 @@
-import { VideoData } from '../types/video';
+import type { VideoData } from '../types/video.ts';
 
 // Supported YouTube URL patterns
 const URL_PATTERNS = {

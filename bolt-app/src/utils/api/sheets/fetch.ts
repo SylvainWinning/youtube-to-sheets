@@ -1,5 +1,5 @@
-import { SheetResponse } from './types';
-import { SPREADSHEET_ID, API_KEY } from '../../constants';
+import type { SheetResponse } from './types.ts';
+import { SPREADSHEET_ID, API_KEY } from '../../constants.ts';
 
 const RATE_LIMIT = {
   requests: 0,
