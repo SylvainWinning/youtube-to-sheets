@@ -9,19 +9,19 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 HEADERS = [
-    "Avatar",
-    "Titre",
-    "Lien",
-    "Chaîne",
-    "Publié le",
-    "Durée",
-    "Vues",
-    "J'aime",
-    "Commentaires",
-    "Description courte",
-    "Tags",
-    "Catégorie",
-    "Miniature",
+    "channelAvatar",
+    "title",
+    "link",
+    "channel",
+    "publishedAt",
+    "duration",
+    "views",
+    "likes",
+    "comments",
+    "shortDescription",
+    "tags",
+    "category",
+    "thumbnail",
 ]
 
 def parse_duration(iso_duration):
@@ -186,10 +186,7 @@ def sync_videos():
         avatar_url = ""
         if "items" in data and data["items"]:
             thumbs = data["items"][0]["snippet"].get("thumbnails", {})
-            for quality in ["high", "medium", "default"]:
-                if quality in thumbs:
-                    avatar_url = thumbs[quality]["url"]
-                    break
+            avatar_url = thumbs.get("default", {}).get("url", "")
         channel_avatar_cache[channel_id] = avatar_url
         return avatar_url
 
@@ -249,8 +246,8 @@ def sync_videos():
             short_description = ""
             tags_str = ""
 
-        category = get_duration_category(video_duration)
-        videos_by_category[category].append([
+        duration_category = get_duration_category(video_duration)
+        videos_by_category[duration_category].append([
             avatar_url,
             title,
             video_link,
@@ -262,7 +259,7 @@ def sync_videos():
             comment_count,
             short_description,
             tags_str,
-            category,
+            duration_category,
             thumbnail_formula,
         ])
 
