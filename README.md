@@ -2,6 +2,9 @@
 
 Synchronisation des vidéos d’une playlist YouTube vers Google Sheets.
 
+Les vidéos sont réparties dans des onglets selon leur durée et un onglet
+supplémentaire **AllVideos** regroupe l'intégralité des entrées.
+
 ## Planification
 
 Synchronisation automatique aux heures suivantes (heure de Paris) :

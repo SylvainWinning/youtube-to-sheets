@@ -147,6 +147,12 @@ def format_published_at(iso_timestamp):
     dt = datetime.strptime(iso_timestamp, "%Y-%m-%dT%H:%M:%SZ")
     return f"'{dt.strftime('%d/%m/%Y %H:%M')}"
 
+
+def add_video_to_categories(entry, duration_category, videos_by_category, all_videos):
+    """Ajoute une vidéo aux listes catégorielles et globale."""
+    videos_by_category[duration_category].append(entry)
+    all_videos.append(entry)
+
 def sync_videos():
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
@@ -171,6 +177,8 @@ def sync_videos():
         "60Plusmin": [],
         "Inconnue": []
     }
+
+    all_videos = []
 
     channel_avatar_cache = {}
 
@@ -247,7 +255,7 @@ def sync_videos():
             tags_str = ""
 
         duration_category = get_duration_category(video_duration)
-        videos_by_category[duration_category].append([
+        entry = [
             avatar_url,
             title,
             video_link,
@@ -261,16 +269,16 @@ def sync_videos():
             tags_str,
             duration_category,
             thumbnail_formula,
-        ])
+        ]
+        add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
 
     # Titres des colonnes
     headers = HEADERS
+    last_col = chr(ord('A') + len(headers) - 1)
 
     for category, videos in videos_by_category.items():
         # Mélange aléatoire des vidéos dans la catégorie
         random.shuffle(videos)
-
-        last_col = chr(ord('A') + len(headers) - 1)
         RANGE_NAME_DATA = f"'{category}'!A2:{last_col}"
         RANGE_NAME_HEADERS = f"'{category}'!A1:{last_col}1"
 
@@ -388,6 +396,99 @@ def sync_videos():
             spreadsheetId=SPREADSHEET_ID,
             body=auto_resize_request
         ).execute()
+
+    # Onglet regroupant toutes les vidéos
+    random.shuffle(all_videos)
+
+    all_range_data = f"'AllVideos'!A2:{last_col}"
+    all_range_headers = f"'AllVideos'!A1:{last_col}1"
+
+    try:
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body={
+                "requests": [
+                    {"addSheet": {"properties": {"title": "AllVideos"}}}
+                ]
+            },
+        ).execute()
+    except Exception:
+        pass
+
+    sheet_id = get_sheet_id(SPREADSHEET_ID, "AllVideos", service)
+
+    service.spreadsheets().values().update(
+        spreadsheetId=SPREADSHEET_ID,
+        range=all_range_headers,
+        valueInputOption="USER_ENTERED",
+        body={"values": [headers]},
+    ).execute()
+
+    service.spreadsheets().values().clear(
+        spreadsheetId=SPREADSHEET_ID,
+        range=all_range_data,
+    ).execute()
+
+    service.spreadsheets().values().update(
+        spreadsheetId=SPREADSHEET_ID,
+        range=all_range_data,
+        valueInputOption="USER_ENTERED",
+        body={"values": all_videos},
+    ).execute()
+
+    bold_request = {
+        "requests": [
+            {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "startRowIndex": 0,
+                        "endRowIndex": 1,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": len(headers),
+                    },
+                    "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
+                    "fields": "userEnteredFormat.textFormat.bold",
+                }
+            }
+        ]
+    }
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=SPREADSHEET_ID, body=bold_request
+    ).execute()
+
+    wrap_request = {
+        "requests": [
+            {
+                "repeatCell": {
+                    "range": {"sheetId": sheet_id},
+                    "cell": {"userEnteredFormat": {"wrapStrategy": "WRAP"}},
+                    "fields": "userEnteredFormat.wrapStrategy",
+                }
+            }
+        ]
+    }
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=SPREADSHEET_ID, body=wrap_request
+    ).execute()
+
+    auto_resize_request = {
+        "requests": [
+            {
+                "autoResizeDimensions": {
+                    "dimensions": {
+                        "sheetId": sheet_id,
+                        "dimension": "COLUMNS",
+                        "startIndex": 0,
+                        "endIndex": len(headers),
+                    }
+                }
+            }
+        ]
+    }
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=SPREADSHEET_ID, body=auto_resize_request
+    ).execute()
 
     print("Synchronisation terminée. Les vidéos, les titres en gras, sans troncature et avec wrapping sont ajoutés.")
 
