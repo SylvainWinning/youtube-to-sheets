@@ -24,6 +24,9 @@ HEADERS = [
     "thumbnail",
 ]
 
+DEFAULT_AVATAR_URL = "https://via.placeholder.com/48"
+DEFAULT_THUMBNAIL_URL = "https://via.placeholder.com/480x360?text=No+Thumbnail"
+
 def parse_duration(iso_duration):
     # Regex pour extraire heures, minutes et secondes
     pattern = re.compile(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?')
@@ -140,7 +143,7 @@ def get_thumbnail_url(video_data):
     for quality in ['high', 'standard', 'medium', 'default']:
         if quality in thumb_info:
             return thumb_info[quality]['url']
-    return ""
+    return DEFAULT_THUMBNAIL_URL
 
 
 def format_published_at(iso_timestamp):
@@ -191,10 +194,10 @@ def sync_videos():
         )
         response = requests.get(channel_url)
         data = response.json()
-        avatar_url = ""
+        avatar_url = DEFAULT_AVATAR_URL
         if "items" in data and data["items"]:
             thumbs = data["items"][0]["snippet"].get("thumbnails", {})
-            avatar_url = thumbs.get("default", {}).get("url", "")
+            avatar_url = thumbs.get("default", {}).get("url", DEFAULT_AVATAR_URL)
         channel_avatar_cache[channel_id] = avatar_url
         return avatar_url
 
@@ -239,15 +242,15 @@ def sync_videos():
             published_at_formatted = format_published_at(original_published_at)
             
             # Affichage uniquement de l'URL brute de la miniature
-            thumbnail_formula = thumbnail_url if thumbnail_url else ""
+            thumbnail_formula = thumbnail_url
         else:
             title = "Inconnu"
             channel = "Inconnu"
             channel_id = ""
             video_duration = "Inconnue"
             published_at_formatted = ""
-            thumbnail_formula = ""
-            avatar_url = ""
+            thumbnail_formula = DEFAULT_THUMBNAIL_URL
+            avatar_url = DEFAULT_AVATAR_URL
             view_count = "N/A"
             like_count = "N/A"
             comment_count = "N/A"
