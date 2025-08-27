@@ -32,7 +32,8 @@ function mapRowToVideo(row: string[]): VideoData {
     comments: row[8] || '0',
     shortDescription: row[9] || '',
     tags: row[10] || '',
-    category: row[11] || ''
+    category: row[11] || '',
+    channelAvatar: row[12] || ''
   };
 }
 
