@@ -2,6 +2,8 @@ import os
 import requests
 import re
 import random
+import time
+import logging
 from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -66,15 +68,55 @@ def fetch_all_playlist_items(playlist_id, api_key):
         "key": api_key
     }
 
+    def fetch_page():
+        backoff = 1
+        while True:
+            try:
+                response = requests.get(base_url, params=params)
+                if response.status_code != 200:
+                    raise requests.RequestException(f"HTTP {response.status_code}")
+                return response.json()
+            except Exception as err:
+                logging.warning("Erreur lors de la récupération de la playlist: %s", err)
+                time.sleep(backoff)
+                backoff = min(backoff * 2, 60)
+
     all_items = []
+    last_page_token = None
     while True:
-        response = requests.get(base_url, params=params)
-        data = response.json()
+        data = fetch_page()
         all_items.extend(data.get('items', []))
         if 'nextPageToken' in data:
-            params["pageToken"] = data["nextPageToken"]
+            last_page_token = data['nextPageToken']
+            params["pageToken"] = last_page_token
         else:
             break
+
+    playlist_resp = requests.get(
+        "https://www.googleapis.com/youtube/v3/playlists",
+        params={"part": "contentDetails", "id": playlist_id, "key": api_key},
+    )
+    total_items = (
+        playlist_resp.json().get("items", [{}])[0]
+        .get("contentDetails", {})
+        .get("itemCount", 0)
+    )
+
+    if len(all_items) < total_items and last_page_token:
+        logging.warning(
+            "Nombre d'éléments incomplet (%d/%d), relance depuis le dernier pageToken",
+            len(all_items),
+            total_items,
+        )
+        params["pageToken"] = last_page_token
+        while len(all_items) < total_items:
+            data = fetch_page()
+            all_items.extend(data.get('items', []))
+            if 'nextPageToken' in data:
+                params["pageToken"] = data["nextPageToken"]
+            else:
+                break
+
     return all_items
 
 def get_thumbnail_url(video_data):
