@@ -49,8 +49,8 @@ jobs:
         env:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-          # Specify only the cell range without a sheet name so the API uses the first sheet by default
-          SHEET_RANGE: A1:Z1000  # adapt the range if needed
+          # Comma-separated list of sheet ranges to merge
+          SHEET_RANGE: "0-5min!A1:Z,5-10min!A1:Z,10-15min!A1:Z"  # adapt the ranges if needed
         run: python scripts/export_sheet.py
 
       - name: Commit updated data
