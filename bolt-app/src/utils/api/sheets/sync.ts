@@ -76,7 +76,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
       
       validRows.forEach(row => {
         const [
-          channelAvatar,
+          thumbnail,
           title,
           link,
           channel,
@@ -88,7 +88,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
           description,
           tags,
           category,
-          thumbnail
+          channelAvatar
         ] = row.map(cell => String(cell || '').trim());
 
         if (!link || !link.includes('youtube.com')) {
@@ -98,7 +98,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
 
         if (!videoMap[link]) {
           const video: VideoData = {
-            channelAvatar: channelAvatar || '',
+            thumbnail: thumbnail || '',
             title: title || '',
             link,
             channel: channel || '',
@@ -110,7 +110,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
             shortDescription: description || '',
             tags: tags || '',
             category: category || 'Non catégorisé',
-            thumbnail: thumbnail || ''
+            channelAvatar: channelAvatar || ''
           };
 
           videoMap[link] = processVideoData(video);

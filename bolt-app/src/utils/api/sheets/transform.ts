@@ -9,10 +9,10 @@ export function mapRowToVideo(row: any[]): VideoData {
   };
 
   return {
-    channelAvatar: safeString(row[0]), // Column A
-    title: safeString(row[1]),        // Column B
-    link: safeString(row[2]),         // Column C
-    channel: safeString(row[3]),      // Column D
+    thumbnail: safeString(row[0]), // Column A
+    title: safeString(row[1]),     // Column B
+    link: safeString(row[2]),      // Column C
+    channel: safeString(row[3]),   // Column D
     publishedAt: safeString(row[4], new Date().toISOString()),
     duration: safeString(row[5], '00:00'),
     views: safeString(row[6], '0'),
@@ -21,6 +21,6 @@ export function mapRowToVideo(row: any[]): VideoData {
     shortDescription: safeString(row[9]),
     tags: safeString(row[10]),
     category: safeString(row[11], 'Non catégorisé'), // Column L for category
-    thumbnail: safeString(row[12]), // Column M for thumbnail
+    channelAvatar: safeString(row[12]), // Column M for channel avatar
   };
 }

@@ -1,5 +1,5 @@
 export interface VideoData {
-  channelAvatar: string;   // Colonne A
+  thumbnail: string;      // Colonne A
   title: string;          // Colonne B
   link: string;           // Colonne C
   channel: string;        // Colonne D
@@ -11,7 +11,7 @@ export interface VideoData {
   shortDescription: string; // Colonne J
   tags: string;           // Colonne K
   category: string;       // Colonne L
-  thumbnail: string;      // Générée à partir du lien YouTube
+  channelAvatar: string;  // Colonne M
 }
 
 export interface VideoResponse {
