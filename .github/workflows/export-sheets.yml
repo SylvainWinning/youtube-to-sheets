@@ -50,7 +50,7 @@ jobs:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           # Comma-separated list of sheet ranges to merge
-          SHEET_RANGE: "AllVideos!A1:Z1000"  # adapt the range if needed
+          SHEET_RANGE: "'AllVideos'!A1:M2000"  # adapt the range if needed
         run: python scripts/export_sheet.py
 
       - name: Commit updated data
