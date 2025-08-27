@@ -87,7 +87,8 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
           comments,
           description,
           tags,
-          category
+          category,
+          thumbnail
         ] = row.map(cell => String(cell || '').trim());
 
         if (!link || !link.includes('youtube.com')) {
@@ -109,7 +110,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
             shortDescription: description || '',
             tags: tags || '',
             category: category || 'Non catégorisé',
-            thumbnail: ''
+            thumbnail: thumbnail || ''
           };
 
           videoMap[link] = processVideoData(video);

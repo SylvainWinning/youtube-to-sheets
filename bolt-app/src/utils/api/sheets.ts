@@ -36,7 +36,7 @@ async function fetchSheetData(range: string): Promise<any[]> {
 function validateVideoData(row: any[]): boolean {
   return (
     Array.isArray(row) &&
-    row.length >= 12 &&
+    row.length >= 13 &&
     typeof row[1] === 'string' && // Titre
     typeof row[2] === 'string' && // Lien
     row[1].trim() !== '' &&
@@ -46,7 +46,7 @@ function validateVideoData(row: any[]): boolean {
 
 function mapRowToVideo(row: any[]): VideoData {
   return {
-    thumbnail: String(row[0] || ''),
+    channelAvatar: String(row[0] || ''),
     title: String(row[1] || ''),
     link: String(row[2] || ''),
     channel: String(row[3] || ''),
@@ -57,7 +57,8 @@ function mapRowToVideo(row: any[]): VideoData {
     comments: String(row[8] || '0'),
     shortDescription: String(row[9] || ''),
     tags: String(row[10] || ''),
-    category: String(row[11] || '')
+    category: String(row[11] || ''),
+    thumbnail: String(row[12] || ''),
   };
 }
 
