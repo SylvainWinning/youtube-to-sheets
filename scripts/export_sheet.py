@@ -23,6 +23,11 @@ def parse_ranges(raw: str) -> List[str]:
 
 SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
 SHEET_RANGES = parse_ranges(os.environ.get("SHEET_RANGE", "AllVideos!A1:Z"))
+for sheet_range in SHEET_RANGES:
+    if "!" not in sheet_range:
+        raise ValueError(
+            f"SHEET_RANGE '{sheet_range}' must include a sheet name (e.g., 'Sheet1!A1:Z1000')"
+        )
 
 # Read credentials from environment secret
 creds_info = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
