@@ -10,7 +10,7 @@ export function filterVideosBySearch(videos: VideoData[], filters: SearchFilters
   
   return videos.filter(video => {
     return filters.fields.some(field => {
-      const value = video[field].toLowerCase();
+      const value = (video[field] ?? '').toLowerCase();
       return value.includes(searchTerm);
     });
   });
