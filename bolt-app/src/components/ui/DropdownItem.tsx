@@ -1,4 +1,5 @@
 import React from 'react';
+import { CheckCircle } from 'lucide-react';
 
 interface DropdownItemProps {
   onClick: () => void;
@@ -17,7 +18,10 @@ export function DropdownItem({ onClick, isSelected, children }: DropdownItemProp
         }
       `}
     >
-      {children}
+      {isSelected && (
+        <CheckCircle className="w-4 h-4 mr-2 inline-block align-middle" />
+      )}
+      <span className="align-middle">{children}</span>
     </button>
   );
 }
