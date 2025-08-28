@@ -32,21 +32,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18    # ou 20 selon vos besoins
-          cache: 'npm'        # met en cache les dépendances
+          cache: npm
+          cache-dependency-path: bolt-app/package-lock.json
 
       # 3. Installe les dépendances
       - name: Install dependencies
         run: npm ci
+        working-directory: bolt-app
 
       # 4. Compile le site (remplacez par la commande de build de votre projet)
       - name: Build project
         run: npm run build
+        working-directory: bolt-app
 
       # 5. Prépare l’artefact à publier (le dossier généré par la commande précédente)
       - name: Upload build artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./build   # remplacez par votre dossier de sortie (ex.: dist, public, etc.)
+          path: bolt-app/dist   # remplacez par votre dossier de sortie (ex.: dist, public, etc.)
 
       # 6. Déploie vers la branche GitHub Pages (gh-pages) en utilisant GitHub Pages
       - name: Deploy to GitHub Pages
