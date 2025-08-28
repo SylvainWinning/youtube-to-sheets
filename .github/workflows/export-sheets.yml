@@ -51,15 +51,14 @@ jobs:
           python-version: "3.11"
 
       - name: Install deps
-        run: pip install -r requirements.txt
+    - name: Export sheet to CSV/JSON
+      run: |
+        export SPREADSHEET_ID="${{ secrets.SPREADSHEET_ID }}"
+        export SERVICE_ACCOUNT_JSON="${{ secrets.SERVICE_ACCOUNT_JSON }}"
+        export SHEET_RANGE="'AllVideos'!A1:M2000"
+        python scripts/export_sheet.py
 
-      - name: Export sheet to CSV/JSON
-        env:
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-   
-          SHEET_RANGE: "'AllVideos'!A1:M2000"
-     run: python scripts/export_sheet.py
+  
 
       - name: Commit & push CSV and JSON update
         run: |
