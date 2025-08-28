@@ -40,7 +40,7 @@ jobs:
 
       # 4. Installe les dépendances
       - name: Install dependencies
-        run: npm ci --prefer-online
+        run: npm ci
         working-directory: bolt-app
 
       # 5. Compile le site
