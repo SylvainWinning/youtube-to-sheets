@@ -55,11 +55,11 @@ jobs:
 
       - name: Export sheet to CSV/JSON
         env:
-          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
-          GOOGLE_CREDENTIALS_BASE64: ${{ secrets.GOOGLE_CREDENTIALS_BASE64 }}
-          SHEET_NAME: "AllVideos"
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+   
           SHEET_RANGE: "'AllVideos'!A1:M2000"
-        run: python export_sheet.py
+     run: python scripts/export_sheet.py
 
       - name: Commit & push CSV and JSON update
         run: |
