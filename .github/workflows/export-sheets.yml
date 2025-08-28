@@ -51,12 +51,9 @@ jobs:
           python-version: "3.11"
 
       - name: Install deps
-    - name: Export sheet to CSV/JSON
-      run: |
-        export SPREADSHEET_ID="${{ secrets.SPREADSHEET_ID }}"
-        export SERVICE_ACCOUNT_JSON="${{ secrets.SERVICE_ACCOUNT_JSON }}"
-        export SHEET_RANGE="'AllVideos'!A1:M2000"
-        python scripts/export_sheet.py
+ - - name: Export sheet to CSV/JSON
+  r un: SPREADSHEET_ID="${{ secrets.SPREADSHEET_ID }}" SERVICE_ACCOUNT_JSON="${{ secrets.SERVICE_ACCOUNT_JSON }}" SHEET_RANGE="'AllVideos'!A1:M2000" python scripts/export_sheet.py
+  run:
 
   
 
