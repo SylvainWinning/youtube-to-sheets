@@ -4,31 +4,25 @@ on:
   workflow_dispatch:
   schedule:
     # ===== CEST (UTC+2) =====
-    # CEST: avril – septembre (mois 4-9)
-    - cron: "0 0,10-12,18-21 * 4-9 *"       # 02,12-14,20-23 heure Paris
-    - cron: "0 22,23 * 4-9 *"               # 00-01 heure Paris (J+1 côté UTC)
-
-    # CEST: 25-31 mars
-    - cron: "0 0,10-12,18-21 25-31 3 *"
+    # CEST : avril - septembre (mois 4-9)
+    - cron: "0 0,10,12,18-21 * 4-9 *"      # 02,12-14,20-23 heure Paris
+    - cron: "0 22,23 * 4-9 *"             # 00-01 heure Paris (J+1 côté UTC)
+    # CEST : 25-31 mars
+    - cron: "0 0,10,12,18-21 25-31 3 *"
     - cron: "0 22,23 25-31 3 *"
-
-    # CEST: 1-24 octobre
-    - cron: "0 0,10-12,18-21 1-24 10 *"
+    # CEST : 1-24 octobre
+    - cron: "0 0,10,12,18-21 1-24 10 *"
     - cron: "0 22,23 1-24 10 *"
-
     # ===== CET (UTC+1) =====
-    # CET: novembre – février
-    - cron: "0 0-1,11-13,19-22 * 11,12,1,2 *"  # 01‑02,12‑14,20‑23 heure Paris
-    - cron: "0 23 * 11,12,1,2 *"               # 00 heure Paris (J+1 côté UTC)
-
-    # CET: 1-24 mars
-    - cron: "0 0-1,11-13,19-22 1-24 3 *"
+    # CET : novembre - février
+    - cron: "0 0,1,11-13,19-22 * 11,12,1,2 *"   # 01-02,12-14,20-23 heure Paris
+    - cron: "0 23 * 11,12,1,2 *"                # 00 heure Paris (J+1 côté UTC)
+    # CET : 1-24 mars
+    - cron: "0 0,1,11-13,19-22 1-24 3 *"
     - cron: "0 23 1-24 3 *"
-
-    # CET: 25-31 octobre
-    - cron: "0 0-1,11-13,19-22 25-31 10 *"
+    # CET : 25-31 octobre
+    - cron: "0 0,1,11-13,19-22 25-31 10 *"
     - cron: "0 23 25-31 10 *"
-
   workflow_run:
     workflows: ["YouTube to Sheets Sync"]
     types: [completed]
@@ -49,24 +43,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install deps
- - - name: Export sheet to CSV/JSON
-  r un: SPREADSHEET_ID="${{ secrets.SPREADSHEET_ID }}" SERVICE_ACCOUNT_JSON="${{ secrets.SERVICE_ACCOUNT_JSON }}" SHEET_RANGE="'AllVideos'!A1:M2000" python scripts/export_sheet.py
-  run:
-
-  
-
+        run: pip install -r scripts/requirements.txt
+      - name: Export sheet to CSV/JSON
+        env:
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          SHEET_RANGE: "'AllVideos'!A1:M2000"
+        run: python scripts/export_sheet.py
       - name: Commit & push CSV and JSON update
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-
           git add bolt-app/public/data/videos.csv bolt-app/public/data/videos.json
-
           if git diff --cached --quiet; then
             echo "Data files have not changed. Nothing to commit."
             exit 0
           fi
-          git commit -m "chore(data): refresh videos from Google Sheets" -m "Updated videos from Google Sheets sync"
-          git push
+          git commit -m "chore: update exported data"
+          git push origin HEAD:main
