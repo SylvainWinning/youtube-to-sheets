@@ -1,54 +1,55 @@
-name: Deploy bolt-app to GitHub Pages
+name: Build and deploy to GitHub Pages
 
 on:
   push:
-    branches: ['main']
-  workflow_dispatch:
+    branches:
+      - main  # déploiement à chaque push sur la branche `main`
 
+# Nécessaire pour autoriser l’action de déploiement à publier sur Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Annule les builds en cours lorsque l’on repousse
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+  build-and-deploy:
+    runs-on: ubuntu‑latest
 
-      - name: Set up Node
+    steps:
+      # 1. Récupère le dépôt
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0      # nécessaire pour l’historique complet
+
+      # 2. Configure Node.js (choisir la version adaptée à votre projet)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: bolt-app/package-lock.json
+          node-version: 18    # ou 20 selon vos besoins
+          cache: 'npm'        # met en cache les dépendances
 
+      # 3. Installe les dépendances
       - name: Install dependencies
-        working-directory: bolt-app
         run: npm ci
 
-      - name: Build
-        working-directory: bolt-app
+      # 4. Compile le site (remplacez par la commande de build de votre projet)
+      - name: Build project
         run: npm run build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      # 5. Prépare l’artefact à publier (le dossier généré par la commande précédente)
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          enablement: true
+          path: ./build   # remplacez par votre dossier de sortie (ex.: dist, public, etc.)
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: bolt-app/dist
-
+      # 6. Déploie vers la branche GitHub Pages (gh-pages) en utilisant GitHub Pages
       - name: Deploy to GitHub Pages
-        id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
