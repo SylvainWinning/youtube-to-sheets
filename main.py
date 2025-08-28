@@ -90,12 +90,34 @@ def fetch_all_playlist_items(playlist_id, api_key):
     }
     items = []
     backoff = 1
+    attempts = 0
     while True:
         try:
             resp = requests.get(base_url, params=params, timeout=10)
             resp.raise_for_status()
             data = resp.json()
+        except requests.exceptions.HTTPError as err:
+            status = err.response.status_code if err.response else None
+            if status == 404:
+                logging.error("Playlist introuvable: %s", playlist_id)
+                return []
+            attempts += 1
+            if attempts >= 5:
+                logging.error(
+                    "Échec de récupération des items de la playlist après %d tentatives", attempts
+                )
+                return items
+            logging.warning("Erreur lors de l’appel API YouTube (playlistItems): %s", err)
+            time.sleep(min(backoff * 2, 60))
+            backoff += 1
+            continue
         except Exception as err:
+            attempts += 1
+            if attempts >= 5:
+                logging.error(
+                    "Échec de récupération des items de la playlist après %d tentatives", attempts
+                )
+                return items
             logging.warning("Erreur lors de l’appel API YouTube (playlistItems): %s", err)
             time.sleep(min(backoff * 2, 60))
             backoff += 1
@@ -107,9 +129,47 @@ def fetch_all_playlist_items(playlist_id, api_key):
         params["pageToken"] = next_page_token
     return items
 
+
+def fetch_videos_details(video_ids, api_key):
+    """Récupère les détails de plusieurs vidéos en une seule requête API."""
+    base_url = "https://www.googleapis.com/youtube/v3/videos"
+    details = {}
+    for i in range(0, len(video_ids), 50):
+        batch = video_ids[i : i + 50]
+        params = {
+            "part": "snippet,contentDetails,statistics",
+            "id": ",".join(batch),
+            "key": api_key,
+        }
+        backoff = 1
+        attempts = 0
+        while True:
+            try:
+                resp = requests.get(base_url, params=params, timeout=10)
+                resp.raise_for_status()
+                data = resp.json()
+                break
+            except Exception as err:
+                attempts += 1
+                if attempts >= 5:
+                    logging.error(
+                        "Abandon de la récupération des détails des vidéos après %d tentatives",
+                        attempts,
+                    )
+                    data = {"items": []}
+                    break
+                logging.warning(
+                    "Erreur lors de l’appel API YouTube (videos): %s", err
+                )
+                time.sleep(min(backoff * 2, 60))
+                backoff += 1
+        for item in data.get("items", []):
+            details[item["id"]] = item
+    return details
+
 def get_thumbnail_url(video_data):
     """Extrait l’URL de miniature la plus grande disponible."""
-    thumb_info = video_data["items"][0]["snippet"].get("thumbnails", {})
+    thumb_info = video_data.get("snippet", {}).get("thumbnails", {})
     for quality in ["high", "standard", "medium", "default"]:
         if quality in thumb_info:
             return thumb_info[quality]["url"]
@@ -178,6 +238,8 @@ def sync_videos():
     PLAYLIST_ID = "PLtBV_WamBQbAxyF88DPxAPxFwceTjsP9vR"
 
     items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
+    video_ids = [item["contentDetails"]["videoId"] for item in items]
+    videos_data = fetch_videos_details(video_ids, YOUTUBE_API_KEY)
 
     # Catégories de durée
     videos_by_category = {
@@ -197,27 +259,8 @@ def sync_videos():
         video_id = item["contentDetails"]["videoId"]
         video_link = f"https://www.youtube.com/watch?v={video_id}"
 
-        # Récupération sécurisée des infos vidéo
-        try:
-            video_response = requests.get(
-                "https://www.googleapis.com/youtube/v3/videos",
-                params={
-                    "part": "snippet,contentDetails,statistics",
-                    "id": video_id,
-                    "key": YOUTUBE_API_KEY,
-                },
-                timeout=10,
-            )
-            video_response.raise_for_status()
-            video_data = video_response.json()
-        except Exception as e:
-            logging.error(
-                f"Erreur lors de la récupération des informations pour la vidéo {video_id}: {e}"
-            )
-            video_data = {}
-
-        if video_data.get("items"):
-            info = video_data["items"][0]
+        info = videos_data.get(video_id, {})
+        if info:
             snippet = info.get("snippet", {})
             stats = info.get("statistics", {})
 
@@ -226,7 +269,7 @@ def sync_videos():
             channel_id = snippet.get("channelId", "")
             duration_iso = info.get("contentDetails", {}).get("duration", "PT0S")
             video_duration = parse_duration(duration_iso)
-            thumbnail_url = get_thumbnail_url(video_data)
+            thumbnail_url = get_thumbnail_url(info)
             avatar_url = get_channel_avatar(channel_id)
 
             view_count = stats.get("viewCount", "N/A")
