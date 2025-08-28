@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu‑latest
+    runs-on: ubuntu-latest
 
     steps:
       # 1. Récupère le dépôt
