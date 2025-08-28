@@ -40,7 +40,7 @@ def parse_duration(iso_duration):
     return f"{h:02d}:{m:02d}:{s:02d}"
 
 def get_duration_category(duration):
-    """Classe la durée en catégories (0‑5 min, 5‑10 min, etc.)."""
+    """Classe la durée en catégories (0-5 min, 5-10 min, etc.)."""
     parts = duration.split(":")
     if len(parts) != 3:
         return "Inconnue"
@@ -52,21 +52,21 @@ def get_duration_category(duration):
         return "Inconnue"
     total_seconds = h * 3600 + m * 60 + s
     if total_seconds <= 300:
-        return "0‑5min"
+        return "0-5min"
     elif total_seconds <= 600:
-        return "5‑10min"
+        return "5-10min"
     elif total_seconds <= 1200:
-        return "10‑20min"
+        return "10-20min"
     elif total_seconds <= 1800:
-        return "20‑30min"
+        return "20-30min"
     elif total_seconds <= 2400:
-        return "30‑40min"
+        return "30-40min"
     elif total_seconds <= 3000:
-        return "40‑50min"
+        return "40-50min"
     elif total_seconds <= 3600:
-        return "50‑60min"
+        return "50-60min"
     else:
-        return "60plussmin"
+        return "60Plusmin"
 
 def get_sheet_id(spreadsheet_id, sheet_title, service):
     """Retourne l’ID de feuille correspondant au titre dans un Google Sheet."""
@@ -116,9 +116,9 @@ def get_thumbnail_url(video_data):
     return DEFAULT_THUMBNAIL_URL
 
 def format_published_at(iso_timestamp):
-    """Formate la date de publication ISO en 'dd/mm/aa hh:mm:ss' (préfixée d’une apostrophe)."""
+    """Formate la date de publication ISO en 'dd/mm/YYYY HH:MM' (préfixée d'une apostrophe)."""
     dt = datetime.strptime(iso_timestamp, "%Y-%m-%dT%H:%M:%SZ")
-    return f"'{dt.strftime('%d/%m/%y %H:%M:%S')}"
+    return f"'{dt.strftime('%d/%m/%Y %H:%M')}"
 
 # Cache d’avatars de chaîne (évite de refaire des requêtes)
 channel_avatar_cache = {}
@@ -181,14 +181,14 @@ def sync_videos():
 
     # Catégories de durée
     videos_by_category = {
-        "0‑5min": [],
-        "5‑10min": [],
-        "10‑20min": [],
-        "20‑30min": [],
-        "30‑40min": [],
-        "40‑50min": [],
-        "50‑60min": [],
-        "60plussmin": [],
+        "0-5min": [],
+        "5-10min": [],
+        "10-20min": [],
+        "20-30min": [],
+        "30-40min": [],
+        "40-50min": [],
+        "50-60min": [],
+        "60Plusmin": [],
         "Inconnue": [],
     }
     all_videos = []
