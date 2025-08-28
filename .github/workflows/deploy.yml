@@ -5,13 +5,11 @@ on:
     branches:
       - main  # déploiement à chaque push sur la branche `main`
 
-# Nécessaire pour autoriser l’action de déploiement à publier sur Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Annule les builds en cours lorsque l’on repousse
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -27,31 +25,36 @@ jobs:
         with:
           fetch-depth: 0      # nécessaire pour l’historique complet
 
-      # 2. Configure Node.js (choisir la version adaptée à votre projet)
+      # 2. Configure Node.js (version et cache)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18    # ou 20 selon vos besoins
+          node-version: 18
           cache: npm
           cache-dependency-path: bolt-app/package-lock.json
 
-      # 3. Installe les dépendances
-      - name: Install dependencies
-        run: npm ci
+      # 3. Nettoie le cache npm (pour éviter les tarballs corrompus)
+      - name: Clean npm cache
+        run: npm cache clean --force
         working-directory: bolt-app
 
-      # 4. Compile le site (remplacez par la commande de build de votre projet)
+      # 4. Installe les dépendances
+      - name: Install dependencies
+        run: npm ci --prefer-online
+        working-directory: bolt-app
+
+      # 5. Compile le site
       - name: Build project
         run: npm run build
         working-directory: bolt-app
 
-      # 5. Prépare l’artefact à publier (le dossier généré par la commande précédente)
+      # 6. Prépare l’artefact à publier
       - name: Upload build artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: bolt-app/dist   # remplacez par votre dossier de sortie (ex.: dist, public, etc.)
+          path: bolt-app/dist
 
-      # 6. Déploie vers la branche GitHub Pages (gh-pages) en utilisant GitHub Pages
+      # 7. Déploie vers GitHub Pages
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
         with:
