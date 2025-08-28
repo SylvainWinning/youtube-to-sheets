@@ -7,6 +7,7 @@ import { SortSelect } from './components/SortSelect';
 import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
 import { SoundToggle } from './components/ui/SoundToggle';
+import { ThemeToggle } from './components/ui/ThemeToggle';
 import { SHEET_TABS } from './utils/constants';
 import { filterVideosByDuration } from './utils/videoFilters';
 import { filterVideosBySearch } from './utils/searchUtils';
@@ -107,7 +108,10 @@ export default function App() {
                   />
                 </h1>
               </button>
-              <SoundToggle />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <SoundToggle />
+              </div>
             </div>
 
             {!isLoading && !error && (
