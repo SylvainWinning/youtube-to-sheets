@@ -23,13 +23,13 @@ export function VideoCard({ video }: VideoCardProps) {
   };
 
   return (
-    <div 
+    <div
       onClick={handleClick}
-      className="group cursor-pointer p-3 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-neu-base dark:bg-neutral-700/50 shadow-[2px_2px_4px_#d1d9e6,_-2px_-2px_4px_#ffffff] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.2),_-2px_-2px_4px_rgba(255,255,255,0.05)] hover:shadow-[4px_4px_8px_#d1d9e6,_-4px_-4px_8px_#ffffff] dark:hover:shadow-[4px_4px_8px_rgba(0,0,0,0.25),_-4px_-4px_8px_rgba(255,255,255,0.1)]"
+      className="group cursor-pointer p-3 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-neu-base dark:bg-neutral-700/50 shadow-[2px_2px_4px_#d1d9e6,_-2px_-2px_4px_#ffffff] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.2),_-2px_-2px_4px_rgba(255,255,255,0.05)] hover:shadow-[4px_4px_8px_#d1d9e6,_-4px_-4px_8px_#ffffff] dark:hover:shadow-[4px_4px_8px_rgba(0,0,0,0.25),_-4px_-4px_8px_rgba(255,255,255,0.1)] flex flex-col"
     >
       <div className="relative aspect-video rounded-lg overflow-hidden mb-3 shadow-[inset_2px_2px_4px_rgba(209,217,230,0.4),_inset_-2px_-2px_4px_rgba(255,255,255,0.4)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),_inset_-2px_-2px_4px_rgba(255,255,255,0.05)]">
-        <img 
-          src={video.thumbnail} 
+        <img
+          src={video.thumbnail}
           alt={video.title}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
@@ -37,13 +37,13 @@ export function VideoCard({ video }: VideoCardProps) {
           {formatDuration(video.duration)}
         </div>
       </div>
-      
-      <div>
+
+      <div className="flex flex-col flex-1">
         <h3 className="font-medium text-[14px] leading-5 text-youtube-black dark:text-white line-clamp-2 group-hover:text-youtube-red transition-colors mb-1">
           {video.title}
         </h3>
-        
-        <div className="flex items-center text-[13px] text-youtube-gray-dark dark:text-gray-400">
+
+        <div className="flex items-center text-[13px] text-youtube-gray-dark dark:text-gray-400 mb-1">
           {video.channelAvatar && (
             <img
               src={video.channelAvatar}
@@ -51,17 +51,16 @@ export function VideoCard({ video }: VideoCardProps) {
               className="w-6 h-6 rounded-full mr-2"
             />
           )}
-          <div>
-            <div>{video.channel}</div>
-            <div className="flex items-center gap-1 mt-1">
-              <span className="flex items-center gap-1">
-                <Eye className="w-3.5 h-3.5" />
-                {formatNumber(video.views)}
-              </span>
-              <span className="mx-1">•</span>
-              <span>{formatPublishDate(video.publishedAt)}</span>
-            </div>
-          </div>
+          <div>{video.channel}</div>
+        </div>
+
+        <div className="mt-auto flex items-center gap-1 text-[13px] text-youtube-gray-dark dark:text-gray-400">
+          <span className="flex items-center gap-1">
+            <Eye className="w-3.5 h-3.5" />
+            {formatNumber(video.views)}
+          </span>
+          <span className="mx-1">•</span>
+          <span>{formatPublishDate(video.publishedAt)}</span>
         </div>
       </div>
     </div>
