@@ -43,16 +43,18 @@ export function VideoCard({ video }: VideoCardProps) {
           {video.title}
         </h3>
         
-        <div className="grid grid-cols-[auto_1fr] items-start text-[13px] text-youtube-gray-dark dark:text-gray-400">
-          {video.channelAvatar && (
-            <img
-              src={video.channelAvatar}
-              alt={`${video.channel} avatar`}
-              className="w-6 h-6 rounded-full mr-2 row-span-2"
-            />
-          )}
-          <div className="col-start-2">{video.channel}</div>
-          <div className="col-span-2 flex items-center gap-1 mt-1">
+        <div className="text-[13px] text-youtube-gray-dark dark:text-gray-400">
+          <div className="flex items-center mb-1">
+            {video.channelAvatar && (
+              <img
+                src={video.channelAvatar}
+                alt={`${video.channel} avatar`}
+                className="w-6 h-6 rounded-full mr-2"
+              />
+            )}
+            <span>{video.channel}</span>
+          </div>
+          <div className="flex items-center gap-1">
             <span className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
               {formatNumber(video.views)}
