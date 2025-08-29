@@ -35,6 +35,12 @@ Secrets GitHub à créer :
 
 Partage la feuille Google Sheets avec l’e‑mail du compte de service.
 
+Variables d’environnement pour l’application web `bolt-app` :
+- `VITE_SPREADSHEET_ID`
+- `VITE_API_KEY`
+
+Créer un fichier `.env` dans le dossier `bolt-app` avec ces entrées.
+
 ## Dépendances
 
 Voir `requirements.txt`.
