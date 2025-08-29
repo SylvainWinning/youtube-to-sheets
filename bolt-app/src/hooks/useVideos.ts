@@ -11,20 +11,23 @@ export function useVideos() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const { data, error: apiError, metadata } = await fetchAllVideos();
-      
+
       if (apiError) {
-        const errorMessage = metadata?.errors?.length 
+        const errorMessage = metadata?.errors?.length
           ? metadata.errors.join('\n')
           : apiError;
         setError(errorMessage);
         setVideos([]);
       } else {
-        if (data.length === 0) {
+        setVideos(data);
+
+        if (metadata?.errors?.length) {
+          setError(metadata.errors.join('\n'));
+        } else if (data.length === 0) {
           setError('Aucune vidéo trouvée.');
         } else {
-          setVideos(data);
           setError(null);
         }
       }

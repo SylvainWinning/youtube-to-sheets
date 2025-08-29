@@ -13,14 +13,14 @@ async function fetchSheetData(range: string): Promise<any[]> {
   try {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       const errorData: SheetError = await response.json();
       throw new Error(errorData.error?.message || `Erreur HTTP: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     if (!data.values) {
       console.warn(`Aucune donnée trouvée pour l'onglet: ${range}`);
       return [];
@@ -60,17 +60,16 @@ function mapRowToVideo(row: any[]): VideoData {
     thumbnail: String(row[12] || '')
   };
 }
-  
 
 export async function fetchAllVideos(): Promise<VideoResponse> {
+  const errors: string[] = [];
+
   try {
-  const allVideos: VideoData[] = [];
-   const errors: string[] = []; // Récupération des données de chaque onglet en parallèle
+    const allVideos: VideoData[] = [];
     const tabResults = await Promise.allSettled(
       SHEET_TABS.map(tab => fetchSheetData(tab.range))
     );
-    
-    // Traitement des résultats
+
     tabResults.forEach((result, index) => {
       if (result.status === 'fulfilled') {
         const validRows = result.value.filter(validateVideoData);
@@ -83,21 +82,34 @@ export async function fetchAllVideos(): Promise<VideoResponse> {
       }
     });
 
+    if (allVideos.length === 0 && errors.length > 0) {
+      throw new Error(errors.join('\n'));
+    }
+
     if (allVideos.length === 0) {
-      if (errors.length > 0) {
-        throw new Error(errors.join('\n'));
-      }
       console.warn('Aucune vidéo trouvée dans les onglets');
     }
 
-    return { data: allVideos };
+    const response: VideoResponse = { data: allVideos };
+
+    if (errors.length > 0) {
+      response.metadata = {
+        errors,
+        timestamp: Date.now()
+      };
+    }
+
+    return response;
   } catch (error) {
     console.error('Erreur globale:', error);
-    return { 
-      data: [], 
-      error: error instanceof Error 
-        ? error.message 
-        : 'Une erreur est survenue lors de la récupération des données'
+    return {
+      data: [],
+      error: error instanceof Error
+        ? error.message
+        : 'Une erreur est survenue lors de la récupération des données',
+      metadata: errors.length > 0
+        ? { errors, timestamp: Date.now() }
+        : undefined
     };
   }
 }
