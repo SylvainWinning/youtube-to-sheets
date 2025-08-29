@@ -62,6 +62,21 @@ function mapRowToVideo(row: any[]): VideoData {
 }
 
 export async function fetchAllVideos(): Promise<VideoResponse> {
+
+  // Fallback: load from static JSON if config missing
+      if (!SPREADSHEET_ID || !API_KEY) {
+    try {
+      const res = await fetch('/data/videos.json');
+      const json = await res.json();
+      // json[0] = header row; skip it
+      const [, ...rows] = json as any[][];
+      const videos = rows.filter(validateVideoData).map(mapRowToVideo);
+      return { data: videos };
+    } catch (err) {
+      console.error('Erreur lors du chargement des vidéos locales:', err);
+      return { data: [] };
+    }
+  }
   const errors: string[] = [];
 
   try {

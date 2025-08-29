@@ -41,16 +41,13 @@ export default function App() {
       query: '',
       fields: ['title', 'channel', 'category']
     });
-    if (hasValidConfig) {
-      await loadVideos();
-    }
-  }, [loadVideos, playClick, hasValidConfig]);
+    await loadVideos();    }
+  }, [lloadVideos, playClick
 
-  React.useEffect(() => {
-    if (hasValidConfig) {
-      loadVideos();
-    }
-  }, [loadVideos, hasValidConfig]);
+React.useEffect(() => {
+  loadVideos();
+}, [loadVideos]);
+
 
   // Filtrage par recherche
   const filteredBySearch = React.useMemo(() =>
@@ -72,9 +69,6 @@ export default function App() {
     [filteredByDuration, sortOptions]
   );
 
-  if (!hasValidConfig) {
-    return <MissingConfig />;
-  }
 
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden">

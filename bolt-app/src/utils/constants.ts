@@ -14,8 +14,9 @@ export const SHEET_TABS: SheetTab[] = [
 
 const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
 
-export const SPREADSHEET_ID = env.VITE_SPREADSHEET_ID ?? '';
-export const API_KEY = env.VITE_API_KEY ?? '';
+export const SPREADSHEET_ID = env.VITE_SPREADSHEET_ID ?? env.SPREADSHEET_ID ?? env.REACT_APP_SPREADSHEET_ID ?? '';
+export const API_KEY = env.VITE_API_KEY ?? env.API_KEY ?? env.REACT_APP_API_KEY ?? '';
+
 
 export function getConfig() {
   if (!SPREADSHEET_ID || !API_KEY) {
