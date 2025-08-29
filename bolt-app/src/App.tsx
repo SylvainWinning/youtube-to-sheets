@@ -8,7 +8,8 @@ import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
 import { SoundToggle } from './components/ui/SoundToggle';
 import { ThemeToggle } from './components/ui/ThemeToggle';
-import { SHEET_TABS } from './utils/constants';
+import { SHEET_TABS, getConfig } from './utils/constants';
+import { MissingConfig } from './components/MissingConfig';
 import { filterVideosByDuration } from './utils/videoFilters';
 import { filterVideosBySearch } from './utils/searchUtils';
 import { sortVideos } from './utils/sortUtils';
@@ -18,6 +19,9 @@ import { SearchFilters } from './types/search';
 import { SortOptions } from './types/sort';
 
 export default function App() {
+  const { SPREADSHEET_ID, API_KEY } = getConfig();
+  const hasValidConfig = Boolean(SPREADSHEET_ID && API_KEY);
+
   const { videos, isLoading, error, loadVideos } = useVideos();
   const { playClick } = useSound();
   const [selectedTab, setSelectedTab] = React.useState(-1);
@@ -37,12 +41,16 @@ export default function App() {
       query: '',
       fields: ['title', 'channel', 'category']
     });
-    await loadVideos();
-  }, [loadVideos, playClick]);
+    if (hasValidConfig) {
+      await loadVideos();
+    }
+  }, [loadVideos, playClick, hasValidConfig]);
 
   React.useEffect(() => {
-    loadVideos();
-  }, [loadVideos]);
+    if (hasValidConfig) {
+      loadVideos();
+    }
+  }, [loadVideos, hasValidConfig]);
 
   // Filtrage par recherche
   const filteredBySearch = React.useMemo(() =>
@@ -63,6 +71,10 @@ export default function App() {
     () => sortVideos(filteredByDuration, sortOptions),
     [filteredByDuration, sortOptions]
   );
+
+  if (!hasValidConfig) {
+    return <MissingConfig />;
+  }
 
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden">

@@ -17,6 +17,10 @@ const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
 export const SPREADSHEET_ID = env.VITE_SPREADSHEET_ID ?? '';
 export const API_KEY = env.VITE_API_KEY ?? '';
 
-if (!SPREADSHEET_ID || !API_KEY) {
-  throw new Error('Google Sheets API key or spreadsheet ID not configured');
+export function getConfig() {
+  if (!SPREADSHEET_ID || !API_KEY) {
+    console.error('Google Sheets API key or spreadsheet ID not configured');
+    return { SPREADSHEET_ID: '', API_KEY: '' };
+  }
+  return { SPREADSHEET_ID, API_KEY };
 }
