@@ -76,7 +76,12 @@ export async function fetchAllVideos(): Promise<VideoResponse> {
       return { data: videos };
     } catch (err) {
       console.error('Erreur lors du chargement des vidéos locales:', err);
-      return { data: [] };
+      return {
+        data: [],
+        error: err instanceof Error
+          ? err.message
+          : 'Erreur lors du chargement des vidéos locales'
+      };
     }
   }
   const errors: string[] = [];
