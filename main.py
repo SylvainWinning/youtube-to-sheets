@@ -96,6 +96,8 @@ def fetch_all_playlist_items(playlist_id, api_key):
             resp = requests.get(base_url, params=params, timeout=10)
             resp.raise_for_status()
             data = resp.json()
+            attempts = 0
+            backoff = 1
         except requests.exceptions.HTTPError as err:
             status = err.response.status_code if err.response else None
             if status == 404:
