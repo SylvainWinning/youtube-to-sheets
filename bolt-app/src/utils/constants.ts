@@ -1,4 +1,4 @@
-import type { SheetTab } from '../types/sheets.ts';
+import type { SheetTab } from '../types/sheets';
 
 export const SHEET_TABS: SheetTab[] = [
   { name: '0-5min', range: '0-5min!A2:M', durationRange: { min: 0, max: 5 } },
@@ -12,5 +12,7 @@ export const SHEET_TABS: SheetTab[] = [
   { name: 'Inconnue', range: 'Inconnue!A2:M', durationRange: { min: null, max: null } },
 ];
 
-export const SPREADSHEET_ID = '1ltnNUqmBjkCLmePBJgM5U3yf_CU44vDucDQ9Gq8FNzU';
-export const API_KEY = 'AIzaSyDHa0ZENKhJVKbeBMDewGosfvA0kB_uTBY';
+const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
+
+export const SPREADSHEET_ID = env.VITE_SPREADSHEET_ID ?? '';
+export const API_KEY = env.VITE_API_KEY ?? '';
