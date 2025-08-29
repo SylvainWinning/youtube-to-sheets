@@ -59,28 +59,10 @@ export default function App() {
   );
 
   // Tri final
-  const sortedVideos = React.useMemo(() => {
-    console.log('Applying sort:', {
-      totalVideos: filteredByDuration.length,
-      sortOptions,
-      sample: filteredByDuration.slice(0, 2).map(v => ({
-        title: v.title,
-        publishedAt: v.publishedAt
-      }))
-    });
-
-    const sorted = sortVideos(filteredByDuration, sortOptions);
-
-    console.log('Sort result:', {
-      totalVideos: sorted.length,
-      sample: sorted.slice(0, 2).map(v => ({
-        title: v.title,
-        publishedAt: v.publishedAt
-      }))
-    });
-
-    return sorted;
-  }, [filteredByDuration, sortOptions]);
+  const sortedVideos = React.useMemo(
+    () => sortVideos(filteredByDuration, sortOptions),
+    [filteredByDuration, sortOptions]
+  );
 
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden">
