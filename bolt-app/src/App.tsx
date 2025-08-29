@@ -6,6 +6,7 @@ import { SearchBar } from './components/SearchBar';
 import { SortSelect } from './components/SortSelect';
 import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
+import { MissingConfig } from './components/MissingConfig';
 import { SoundToggle } from './components/ui/SoundToggle';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { SHEET_TABS, getConfig } from './utils/constants';
@@ -20,7 +21,7 @@ import { SortOptions } from './types/sort';
 export default function App() {
   const { error: configError } = getConfig();
 
-  const { videos, isLoading, error: videosError, loadVideos } = useVideos();
+  const { videos, isLoading, error: videosError, loadVideos } = useVideos(configError);
   const { playClick } = useSound();
   const [selectedTab, setSelectedTab] = React.useState(-1);
   const [sortOptions, setSortOptions] = React.useState<SortOptions>({
@@ -65,7 +66,7 @@ export default function App() {
     [filteredByDuration, sortOptions]
   );
 
-  const appError = videosError || configError;
+  const appError = videosError;
 
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden">
@@ -114,6 +115,7 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {configError && <MissingConfig message={configError} />}
         {!isLoading && !appError && (
           <>
             <SearchBar

@@ -18,13 +18,22 @@ export const SPREADSHEET_ID = env.VITE_SPREADSHEET_ID ?? env.SPREADSHEET_ID ?? e
 export const API_KEY = env.VITE_API_KEY ?? env.API_KEY ?? env.REACT_APP_API_KEY ?? '';
 
 
+export function isValidSpreadsheetId(id: string): boolean {
+  return /^[A-Za-z0-9-_]{40,60}$/.test(id);
+}
+
 export function getConfig(): {
   SPREADSHEET_ID: string;
   API_KEY: string;
   error?: string;
 } {
-  if (!SPREADSHEET_ID || !API_KEY) {
-    const error = 'Google Sheets API key or spreadsheet ID not configured';
+  if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
+    const error = 'SPREADSHEET_ID invalide';
+    console.error(error);
+    return { SPREADSHEET_ID: '', API_KEY: '', error };
+  }
+  if (!API_KEY) {
+    const error = 'API_KEY manquant';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
