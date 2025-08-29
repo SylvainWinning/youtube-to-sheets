@@ -1,5 +1,5 @@
 export interface VideoData {
-  thumbnail: string;      // Colonne A
+  channelAvatar: string;  // Colonne A
   title: string;          // Colonne B
   link: string;           // Colonne C
   channel: string;        // Colonne D
@@ -11,7 +11,7 @@ export interface VideoData {
   shortDescription: string; // Colonne J
   tags: string;           // Colonne K
   category: string;       // Colonne L
-  channelAvatar: string;  // Colonne M
+  thumbnail: string;      // Colonne M
 }
 
 export interface VideoResponse {

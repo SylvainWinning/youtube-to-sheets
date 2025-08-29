@@ -36,6 +36,8 @@ async function fetchSheetData(range: string): Promise<any[]> {
 function validateVideoData(row: any[]): boolean {
   return (
     Array.isArray(row) &&
+    row.length >= 13 &&
+    typeof row[0] === 'string' && // Avatar de la chaîne
     typeof row[1] === 'string' && // Titre
     typeof row[2] === 'string' && // Lien
     row[1].trim() !== '' &&
