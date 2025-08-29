@@ -160,7 +160,10 @@ def get_thumbnail_url(video_data):
 
 def format_published_at(iso_timestamp):
     """Formate la date de publication ISO en 'dd/mm/YYYY HH:MM' (préfixée d'une apostrophe)."""
-    dt = datetime.strptime(iso_timestamp, "%Y-%m-%dT%H:%M:%SZ")
+    try:
+        dt = datetime.strptime(iso_timestamp, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return ""
     return f"'{dt.strftime('%d/%m/%Y %H:%M')}"
 
 # Cache d’avatars de chaîne (évite de refaire des requêtes)
