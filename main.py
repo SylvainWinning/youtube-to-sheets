@@ -314,8 +314,7 @@ def sync_videos():
     # en créant l’onglet s’il n’existe pas et en remplaçant les valeurs existantes.
     # Cette logique peut rester inchangée par rapport à votre implémentation actuelle.
     # Exemple succinct :
-    sheet_name = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sheet_id = get_sheet_id(SPREADSHEET_ID, sheet_name, service)
+sheet_name = os.environ.get("SHEET_TAB_NAME", "AllVideos")
     if sheet_id is None:
         # Ajout d’une nouvelle feuille
         requests_body = {
