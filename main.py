@@ -28,6 +28,16 @@ HEADERS = [
 DEFAULT_AVATAR_URL = "https://via.placeholder.com/48"
 DEFAULT_THUMBNAIL_URL = "https://via.placeholder.com/480x360?text=No+Thumbnail"
 
+_SPREADSHEET_RE = re.compile(r"/spreadsheets/d/([A-Za-z0-9-_]{25,60})")
+
+def parse_spreadsheet_id(value: str) -> str | None:
+    match = _SPREADSHEET_RE.search(value or "")
+    if match:
+        return match.group(1)
+    if re.fullmatch(r"[A-Za-z0-9-_]{25,60}", value or ""):
+        return value.strip()
+    return None
+
 def parse_duration(iso_duration: str) -> str:
     """Convertit une durée ISO 8601 (ex. 'PT5M20S') en 'HH:MM:SS'."""
     pattern = re.compile(r"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$")
@@ -223,7 +233,7 @@ def sync_videos() -> None:
     """
     # Variables d’environnement
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
-    SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
+    raw_spreadsheet_id = os.environ.get("SPREADSHEET_ID")
     SHEET_TAB_NAME = os.environ.get("SHEET_TAB_NAME", "AllVideos")
     PLAYLIST_ID = os.environ.get("PLAYLIST_ID", "PLtBV_WamBQbAxyF88DPxAPxFwceTjsP9vR")
     SERVICE_ACCOUNT_FILE = os.environ.get("SERVICE_ACCOUNT_FILE", "service_account.json")
@@ -232,8 +242,12 @@ def sync_videos() -> None:
     if not YOUTUBE_API_KEY:
         logging.error("Variable d'environnement YOUTUBE_API_KEY manquante")
         return
-    if not SPREADSHEET_ID:
+    if not raw_spreadsheet_id:
         logging.error("Variable d'environnement SPREADSHEET_ID manquante")
+        return
+    SPREADSHEET_ID = parse_spreadsheet_id(raw_spreadsheet_id)
+    if not SPREADSHEET_ID:
+        logging.error("SPREADSHEET_ID invalide")
         return
 
     # Authentification Google Sheets
