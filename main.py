@@ -76,10 +76,13 @@ def get_sheet_id(spreadsheet_id, sheet_title, service):
             return sheet["properties"]["sheetId"]
     return None
 
-def fetch_all_playlist_items(playlist_id, api_key):
+def fetch_all_playlist_items(playlist_id, api_key, max_retries=5):
     """
     Récupère tous les items d’une playlist YouTube en gérant la pagination,
     avec gestion d’erreurs réseau.
+
+    Limite le nombre de tentatives pour éviter des boucles infinies en cas
+    d'erreur persistante (ex. clé d'API invalide).
     """
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
@@ -91,15 +94,22 @@ def fetch_all_playlist_items(playlist_id, api_key):
     items = []
     backoff = 1
     while True:
-        try:
-            resp = requests.get(base_url, params=params, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as err:
-            logging.warning("Erreur lors de l’appel API YouTube (playlistItems): %s", err)
-            time.sleep(min(backoff * 2, 60))
-            backoff += 1
-            continue
+        data = None
+        for attempt in range(max_retries):
+            try:
+                resp = requests.get(base_url, params=params, timeout=10)
+                resp.raise_for_status()
+                data = resp.json()
+                break
+            except Exception as err:
+                logging.warning(
+                    "Erreur lors de l’appel API YouTube (playlistItems): %s", err
+                )
+                if attempt == max_retries - 1:
+                    return items
+                time.sleep(backoff)
+                backoff = min(backoff * 2, 60)
+
         items.extend(data.get("items", []))
         next_page_token = data.get("nextPageToken")
         if not next_page_token:
@@ -108,7 +118,7 @@ def fetch_all_playlist_items(playlist_id, api_key):
     return items
 
 
-def fetch_videos_details(video_ids, api_key):
+def fetch_videos_details(video_ids, api_key, max_retries=5):
     """Récupère les détails de plusieurs vidéos en une seule requête API."""
     base_url = "https://www.googleapis.com/youtube/v3/videos"
     details = {}
@@ -120,7 +130,8 @@ def fetch_videos_details(video_ids, api_key):
             "key": api_key,
         }
         backoff = 1
-        while True:
+        data = {}
+        for attempt in range(max_retries):
             try:
                 resp = requests.get(base_url, params=params, timeout=10)
                 resp.raise_for_status()
@@ -130,8 +141,11 @@ def fetch_videos_details(video_ids, api_key):
                 logging.warning(
                     "Erreur lors de l’appel API YouTube (videos): %s", err
                 )
-                time.sleep(min(backoff * 2, 60))
-                backoff += 1
+                if attempt == max_retries - 1:
+                    data = {}
+                    break
+                time.sleep(backoff)
+                backoff = min(backoff * 2, 60)
         for item in data.get("items", []):
             details[item["id"]] = item
     return details
@@ -196,6 +210,12 @@ def sync_videos():
     # On lit les clés/identifiants dans les variables d’environnement
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
+    if not YOUTUBE_API_KEY:
+        logging.error("Variable d'environnement YOUTUBE_API_KEY manquante")
+        return
+    if not SPREADSHEET_ID:
+        logging.error("Variable d'environnement SPREADSHEET_ID manquante")
+        return
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
     SERVICE_ACCOUNT_FILE = "service_account.json"
 
