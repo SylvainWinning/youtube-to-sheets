@@ -2,7 +2,7 @@ import os
 import json
 import csv
 import pathlib
-from typing import Iterable, List
+from typing import List
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -38,7 +38,7 @@ creds = service_account.Credentials.from_service_account_info(
 
 service = build("sheets", "v4", credentials=creds)
 
-all_values: List[Iterable[str]] = []
+all_values: List[List[str]] = []
 for idx, sheet_range in enumerate(SHEET_RANGES):
     resp = service.spreadsheets().values().get(
         spreadsheetId=SPREADSHEET_ID, range=sheet_range
