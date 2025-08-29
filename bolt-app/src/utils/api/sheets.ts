@@ -45,7 +45,7 @@ function validateVideoData(row: any[]): boolean {
 
 function mapRowToVideo(row: any[]): VideoData {
   return {
-    thumbnail: String(row[12] || ''),
+    channelAvatar: String(row[0] || ''),
     title: String(row[1] || ''),
     link: String(row[2] || ''),
     channel: String(row[3] || ''),
@@ -54,12 +54,12 @@ function mapRowToVideo(row: any[]): VideoData {
     views: String(row[6] || '0'),
     likes: String(row[7] || '0'),
     comments: String(row[8] || '0'),
-        channelAvatar: String(row[0] || '')
-     };
-  
- 
-   
-  }
+    shortDescription: String(row[9] || ''),
+    tags: String(row[10] || ''),
+    category: String(row[11] || ''),
+    thumbnail: String(row[12] || '')
+  };
+}
   
 
 export async function fetchAllVideos(): Promise<VideoResponse> {
