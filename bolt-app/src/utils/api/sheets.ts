@@ -63,26 +63,27 @@ function mapRowToVideo(row: any[]): VideoData {
   };
 }
 
-export async function fetchAllVideos(): Promise<VideoResponse> {
+export async function fetchLocalVideos(): Promise<VideoResponse> {
+  try {
+    const res = await fetch('/data/videos.json');
+    const json = await res.json();
+    const [, ...rows] = json as any[][]; // skip header row
+    const videos = rows.filter(validateVideoData).map(mapRowToVideo);
+    return { data: videos };
+  } catch (err) {
+    console.error('Erreur lors du chargement des vidéos locales:', err);
+    return {
+      data: [],
+      error: err instanceof Error
+        ? err.message
+        : 'Erreur lors du chargement des vidéos locales'
+    };
+  }
+}
 
-  // Fallback: load from static JSON if config missing
-      if (!SPREADSHEET_ID || !API_KEY) {
-    try {
-      const res = await fetch('/data/videos.json');
-      const json = await res.json();
-      // json[0] = header row; skip it
-      const [, ...rows] = json as any[][];
-      const videos = rows.filter(validateVideoData).map(mapRowToVideo);
-      return { data: videos };
-    } catch (err) {
-      console.error('Erreur lors du chargement des vidéos locales:', err);
-      return {
-        data: [],
-        error: err instanceof Error
-          ? err.message
-          : 'Erreur lors du chargement des vidéos locales'
-      };
-    }
+export async function fetchAllVideos(): Promise<VideoResponse> {
+  if (!SPREADSHEET_ID || !API_KEY) {
+    return fetchLocalVideos();
   }
   const errors: string[] = [];
 

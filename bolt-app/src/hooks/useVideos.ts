@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { VideoData } from '../types/video';
-import { fetchAllVideos } from '../utils/api/sheets';
+import { fetchAllVideos, fetchLocalVideos } from '../utils/api/sheets';
 
-export function useVideos() {
+export function useVideos(configError?: string) {
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -11,8 +11,9 @@ export function useVideos() {
     try {
       setIsLoading(true);
       setError(null);
-
-      const { data, error: apiError, metadata } = await fetchAllVideos();
+      const { data, error: apiError, metadata } = configError
+        ? await fetchLocalVideos()
+        : await fetchAllVideos();
 
       const errorMessage = apiError || (metadata?.errors?.length
         ? metadata.errors.join('\n')
@@ -33,7 +34,7 @@ export function useVideos() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [configError]);
 
   return {
     videos,
