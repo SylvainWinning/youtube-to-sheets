@@ -152,16 +152,18 @@ def format_published_at(iso_timestamp):
 # Cache d’avatars de chaîne (évite de refaire des requêtes)
 channel_avatar_cache = {}
 
-def get_channel_avatar(channel_id):
-    """
-    Retourne l’URL de l’avatar de chaîne. Utilise un cache et gère les erreurs réseau.
+def get_channel_avatar(channel_id, api_key):
+    """Retourne l'URL de l'avatar de chaîne.
+
+    Utilise un cache et gère les erreurs réseau. L'API key est passée en
+    paramètre pour éviter l'utilisation d'une variable globale.
     """
     if channel_id in channel_avatar_cache:
         return channel_avatar_cache[channel_id]
 
     channel_url = (
         "https://www.googleapis.com/youtube/v3/channels"
-        f"?part=snippet&id={channel_id}&key={YOUTUBE_API_KEY}"
+        f"?part=snippet&id={channel_id}&key={api_key}"
     )
     try:
         response = requests.get(channel_url, timeout=10)
@@ -239,7 +241,7 @@ def sync_videos():
             duration_iso = info.get("contentDetails", {}).get("duration", "PT0S")
             video_duration = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(info)
-            avatar_url = get_channel_avatar(channel_id)
+            avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
 
             view_count = stats.get("viewCount", "N/A")
             like_count = stats.get("likeCount", "N/A")
