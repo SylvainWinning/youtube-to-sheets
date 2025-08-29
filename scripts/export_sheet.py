@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import csv
 import pathlib
@@ -21,7 +22,16 @@ def parse_ranges(raw: str) -> List[str]:
     return [s.strip() for s in raw.split(",") if s.strip()]
 
 
-SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
+def parse_spreadsheet_id(value: str) -> str:
+    match = re.search(r"/spreadsheets/d/([A-Za-z0-9-_]{25,60})", value or "")
+    if match:
+        return match.group(1)
+    if re.fullmatch(r"[A-Za-z0-9-_]{25,60}", value or ""):
+        return value.strip()
+    raise ValueError("SPREADSHEET_ID invalide")
+
+
+SPREADSHEET_ID = parse_spreadsheet_id(os.environ["SPREADSHEET_ID"])
 SHEET_RANGES = parse_ranges(os.environ.get("SHEET_RANGE", "AllVideos!A1:Z"))
 for sheet_range in SHEET_RANGES:
     if "!" not in sheet_range:

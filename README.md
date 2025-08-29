@@ -30,13 +30,13 @@ Tu peux toujours déclencher manuellement via l’onglet **Actions**.
 
 Secrets GitHub à créer :
 - `YOUTUBE_API_KEY`
-- `SPREADSHEET_ID`
+- `SPREADSHEET_ID` — identifiant **ou URL complète** de la feuille Google Sheets
 - `SERVICE_ACCOUNT_JSON` contenu JSON du compte de service Google
 
 Partage la feuille Google Sheets avec l’e‑mail du compte de service.
 
 Variables d’environnement **obligatoires** pour l’application web `bolt-app` :
-- `VITE_SPREADSHEET_ID` — identifiant de la feuille Google Sheets
+- `VITE_SPREADSHEET_ID` — identifiant **ou URL complète** de la feuille Google Sheets
 - `VITE_API_KEY` — clé API Google Sheets
 
 Créer un fichier `.env` dans le dossier `bolt-app` avec ces entrées. L’application

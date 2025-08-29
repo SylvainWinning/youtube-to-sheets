@@ -14,12 +14,18 @@ export const SHEET_TABS: SheetTab[] = [
 
 const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
 
-export const SPREADSHEET_ID = env.VITE_SPREADSHEET_ID ?? env.SPREADSHEET_ID ?? env.REACT_APP_SPREADSHEET_ID ?? '';
+export function parseSpreadsheetId(input: string): string {
+  const match = input?.match(/\/spreadsheets\/d\/([A-Za-z0-9-_]{25,60})/);
+  return match ? match[1] : (input ?? '').trim();
+}
+
+const rawSpreadsheetId =
+  env.VITE_SPREADSHEET_ID ?? env.SPREADSHEET_ID ?? env.REACT_APP_SPREADSHEET_ID ?? '';
+export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
 export const API_KEY = env.VITE_API_KEY ?? env.API_KEY ?? env.REACT_APP_API_KEY ?? '';
 
-
 export function isValidSpreadsheetId(id: string): boolean {
-  return /^[A-Za-z0-9-_]{40,60}$/.test(id);
+  return /^[A-Za-z0-9-_]{25,60}$/.test(id);
 }
 
 export function getConfig(): {
