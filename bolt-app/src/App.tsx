@@ -18,10 +18,9 @@ import { SearchFilters } from './types/search';
 import { SortOptions } from './types/sort';
 
 export default function App() {
-  const { SPREADSHEET_ID, API_KEY } = getConfig();
-  const hasValidConfig = Boolean(SPREADSHEET_ID && API_KEY);
+  const { error: configError } = getConfig();
 
-  const { videos, isLoading, error, loadVideos } = useVideos();
+  const { videos, isLoading, error: videosError, loadVideos } = useVideos();
   const { playClick } = useSound();
   const [selectedTab, setSelectedTab] = React.useState(-1);
   const [sortOptions, setSortOptions] = React.useState<SortOptions>({
@@ -66,6 +65,8 @@ export default function App() {
     [filteredByDuration, sortOptions]
   );
 
+  const appError = videosError || configError;
+
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden">
       <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50">
@@ -98,7 +99,7 @@ export default function App() {
               </div>
             </div>
 
-            {!isLoading && !error && (
+            {!isLoading && !appError && (
               <div className="flex items-center justify-between gap-4">
                 <div className="w-full max-w-[280px]">
                   <SortSelect
@@ -113,7 +114,7 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {!isLoading && !error && (
+        {!isLoading && !appError && (
           <>
             <SearchBar
               filters={searchFilters}
@@ -128,8 +129,8 @@ export default function App() {
         )}
 
         {isLoading && <LoadingState />}
-        {error && <ErrorState message={error} />}
-        {!isLoading && !error && <VideoGrid videos={sortedVideos} />}
+        {appError && <ErrorState message={appError} />}
+        {!isLoading && !appError && <VideoGrid videos={sortedVideos} />}
       </main>
     </div>
   );
