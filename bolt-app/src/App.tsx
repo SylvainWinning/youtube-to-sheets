@@ -9,7 +9,6 @@ import { ErrorState } from './components/ErrorState';
 import { SoundToggle } from './components/ui/SoundToggle';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { SHEET_TABS, getConfig } from './utils/constants';
-import { MissingConfig } from './components/MissingConfig';
 import { filterVideosByDuration } from './utils/videoFilters';
 import { filterVideosBySearch } from './utils/searchUtils';
 import { sortVideos } from './utils/sortUtils';
@@ -41,34 +40,31 @@ export default function App() {
       query: '',
       fields: ['title', 'channel', 'category']
     });
-    await loadVideos();    }
-  }, [lloadVideos, playClick
+    await loadVideos();
+  }, [loadVideos, playClick]);
 
-React.useEffect(() => {
-  loadVideos();
-}, [loadVideos]);
+  // Charge toujours les vidéos, même sans configuration Sheets
+  React.useEffect(() => {
+    loadVideos();
+  }, [loadVideos]);
 
-
-  // Filtrage par recherche
-  const filteredBySearch = React.useMemo(() =>
-    filterVideosBySearch(videos, searchFilters),
+  const filteredBySearch = React.useMemo(
+    () => filterVideosBySearch(videos, searchFilters),
     [videos, searchFilters]
   );
 
-  // Filtrage par durée
-  const filteredByDuration = React.useMemo(() =>
-    selectedTab === -1
-      ? filteredBySearch
-      : filterVideosByDuration(filteredBySearch, SHEET_TABS[selectedTab]),
+  const filteredByDuration = React.useMemo(
+    () =>
+      selectedTab === -1
+        ? filteredBySearch
+        : filterVideosByDuration(filteredBySearch, SHEET_TABS[selectedTab]),
     [filteredBySearch, selectedTab]
   );
 
-  // Tri final
   const sortedVideos = React.useMemo(
     () => sortVideos(filteredByDuration, sortOptions),
     [filteredByDuration, sortOptions]
   );
-
 
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden">
@@ -82,17 +78,17 @@ React.useEffect(() => {
                 disabled={isLoading}
               >
                 <img
-                  src={`${import.meta.env.BASE_URL}youtube-logo.svg`}
+                  src={import.meta.env.BASE_URL + 'youtube-logo.svg'}
                   alt="YouTube logo"
                   className="h-8 w-8"
                 />
                 <h1 className="text-xl font-semibold text-youtube-black dark:text-white flex items-center gap-2">
                   Mes Vidéos YouTube
                   <RefreshCw
-                    className={`
-                      h-5 w-5 text-youtube-gray-light transition-all
-                      ${isLoading ? 'animate-spin' : 'group-hover:text-youtube-red'}
-                    `}
+                    className={
+                      'h-5 w-5 text-youtube-gray-light transition-all ' +
+                      (isLoading ? 'animate-spin' : 'group-hover:text-youtube-red')
+                    }
                   />
                 </h1>
               </button>
@@ -138,4 +134,3 @@ React.useEffect(() => {
     </div>
   );
 }
-
