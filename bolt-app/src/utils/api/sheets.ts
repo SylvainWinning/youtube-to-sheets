@@ -1,5 +1,5 @@
 import { VideoData, VideoResponse } from '../../types/video';
-import { SHEET_TABS, SPREADSHEET_ID, API_KEY } from '../constants';
+import { SHEET_TABS, getConfig } from '../constants';
 
 interface SheetError {
   error: {
@@ -9,9 +9,13 @@ interface SheetError {
   };
 }
 
-async function fetchSheetData(range: string): Promise<any[]> {
+async function fetchSheetData(
+  range: string,
+  spreadsheetId: string,
+  apiKey: string
+): Promise<any[]> {
   try {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -82,15 +86,16 @@ export async function fetchLocalVideos(): Promise<VideoResponse> {
 }
 
 export async function fetchAllVideos(): Promise<VideoResponse> {
-  if (!SPREADSHEET_ID || !API_KEY) {
-    return fetchLocalVideos();
+  const { SPREADSHEET_ID, API_KEY, error } = getConfig();
+  if (error) {
+    return { data: [], error };
   }
   const errors: string[] = [];
 
   try {
     const allVideos: VideoData[] = [];
     const tabResults = await Promise.allSettled(
-      SHEET_TABS.map(tab => fetchSheetData(tab.range))
+      SHEET_TABS.map(tab => fetchSheetData(tab.range, SPREADSHEET_ID, API_KEY))
     );
 
     tabResults.forEach((result, index) => {

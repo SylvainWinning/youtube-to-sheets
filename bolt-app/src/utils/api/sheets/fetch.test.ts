@@ -1,10 +1,14 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchSheetData } from './fetch.ts';
 
 // Verify that fetchSheetData correctly handles ranges without an upper bound
 // and returns all available rows.
 test('fetchSheetData retrieves all rows for unbounded range', async () => {
+  process.env.VITE_SPREADSHEET_ID = '1234567890123456789012345';
+  process.env.VITE_API_KEY = 'test_key';
+
+  const { fetchSheetData } = await import('./fetch.ts');
+
   const rows = Array.from({ length: 1201 }, () => ['value']);
 
   mock.method(globalThis as any, 'fetch', async (input: any) => {

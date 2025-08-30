@@ -1,11 +1,15 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { synchronizeSheets } from './sync.ts';
-import { SHEET_TABS } from '../../constants.ts';
 
 // Ensure the sheet synchronization can handle more than 1000 rows
 // by mocking the global fetch to return 1201 unique entries.
 test('synchronizeSheets handles large sheet ranges', async () => {
+  process.env.VITE_SPREADSHEET_ID = '1234567890123456789012345';
+  process.env.VITE_API_KEY = 'test_key';
+
+  const { synchronizeSheets } = await import('./sync.ts');
+  const { SHEET_TABS } = await import('../../constants.ts');
+
   const rows = Array.from({ length: 1201 }, (_, i) => [
     'https://example.com/avatar.jpg',
     `Title ${i}`,

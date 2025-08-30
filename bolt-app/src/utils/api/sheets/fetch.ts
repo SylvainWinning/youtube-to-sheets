@@ -1,5 +1,5 @@
 import type { SheetResponse } from './types.ts';
-import { SPREADSHEET_ID, API_KEY } from '../../constants.ts';
+import { getConfig } from '../../constants.ts';
 
 const RATE_LIMIT = {
   requests: 0,
@@ -76,6 +76,11 @@ async function fetchWithRetry(url: string, retryCount = 0): Promise<Response> {
 export async function fetchSheetData(range: string): Promise<SheetResponse> {
   try {
     checkRateLimit();
+
+    const { SPREADSHEET_ID, API_KEY, error } = getConfig();
+    if (error) {
+      return { error, values: [] };
+    }
 
     // Properly encode the range parameter
     const encodedRange = encodeURIComponent(range);
