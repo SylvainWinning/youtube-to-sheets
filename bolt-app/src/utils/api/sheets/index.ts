@@ -1,6 +1,9 @@
 import type { VideoData } from '../../../types/video.ts';
 import type { ApiResponse } from './types.ts';
 import { synchronizeSheets } from './sync.ts';
+import { fetchLocalVideos } from './local.ts';
+
+export { fetchLocalVideos };
 
 export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
   try {
