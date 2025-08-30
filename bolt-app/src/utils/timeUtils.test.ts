@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseDate, formatPublishDate } from './timeUtils.ts';
+import { sortVideos } from './sortUtils.ts';
 
 test('parseDate parses DD/MM/YYYY HH:MM format', () => {
   const result = parseDate('17/05/2024 14:30');
@@ -10,6 +11,14 @@ test('parseDate parses DD/MM/YYYY HH:MM format', () => {
   assert.equal(result?.getDate(), 17);
   assert.equal(result?.getHours(), 14);
   assert.equal(result?.getMinutes(), 30);
+});
+
+test('parseDate parses French date format', () => {
+  const result = parseDate('11 avril 2024');
+  assert.ok(result);
+  assert.equal(result?.getFullYear(), 2024);
+  assert.equal(result?.getMonth(), 3);
+  assert.equal(result?.getDate(), 11);
 });
 
 test('formatPublishDate handles minutes', () => {
@@ -62,4 +71,15 @@ test('formatPublishDate handles dates older than a week', () => {
   const dateString = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
   const expected = new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }).format(older);
   assert.equal(formatPublishDate(dateString), expected);
+});
+
+test('sortVideos orders videos by chronological publishedAt', () => {
+  const videos = [
+    { title: 'A', publishedAt: '11 avril 2024' },
+    { title: 'B', publishedAt: '10 avril 2024' },
+    { title: 'C', publishedAt: '' }
+  ];
+
+  const sorted = sortVideos(videos as any, { field: 'publishedAt', direction: 'asc' });
+  assert.deepEqual(sorted.map(v => v.title), ['B', 'A', 'C']);
 });
