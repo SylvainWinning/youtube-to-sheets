@@ -1,5 +1,14 @@
 import type { VideoData } from '../../../types/video.ts';
 
+function isValidHttpUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export function validateRow(row: any[]): boolean {
   if (!Array.isArray(row)) {
     console.warn('Row validation failed: Not an array');
@@ -15,12 +24,8 @@ export function validateRow(row: any[]): boolean {
   const hasValidLinkFormat = link.startsWith('http://') ||
                             link.startsWith('https://') ||
                             link.startsWith('www.');
-  const hasValidAvatar = channelAvatar === '' ||
-                         channelAvatar.startsWith('http://') ||
-                         channelAvatar.startsWith('https://');
-  const hasValidThumbnail = thumbnail === '' ||
-                           thumbnail.startsWith('http://') ||
-                           thumbnail.startsWith('https://');
+  const hasValidAvatar = channelAvatar === '' || isValidHttpUrl(channelAvatar);
+  const hasValidThumbnail = thumbnail === '' || isValidHttpUrl(thumbnail);
 
   if (!hasValidAvatar && channelAvatar) {
     console.warn('Invalid channel avatar URL:', {
