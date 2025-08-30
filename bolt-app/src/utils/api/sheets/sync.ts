@@ -2,7 +2,6 @@ import { fetchSheetData } from './fetch.ts';
 import { SHEET_TABS } from '../../constants.ts';
 import type { VideoData } from '../../../types/video.ts';
 import { validateRow } from './validation.ts';
-import { processVideoData } from '../../youtube.ts';
 import { parseDate } from '../../timeUtils.ts';
 
 interface VideoMap {
@@ -77,7 +76,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
       
       validRows.forEach(row => {
         const [
-          thumbnail,
+          channelAvatar,
           title,
           link,
           channel,
@@ -89,7 +88,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
           description,
           tags,
           category,
-          channelAvatar
+          thumbnail
         ] = row.map(cell => String(cell || '').trim());
 
         if (!link || !link.includes('youtube.com')) {
@@ -99,7 +98,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
 
         if (!videoMap[link]) {
           const video: VideoData = {
-            thumbnail: thumbnail || '',
+            channelAvatar: channelAvatar || '',
             title: title || '',
             link,
             channel: channel || '',
@@ -111,10 +110,10 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
             shortDescription: description || '',
             tags: tags || '',
             category: category || 'Non catégorisé',
-            channelAvatar: channelAvatar || ''
+            thumbnail: thumbnail || ''
           };
 
-          videoMap[link] = processVideoData(video);
+          videoMap[link] = video;
         }
       });
     });

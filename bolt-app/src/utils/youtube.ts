@@ -1,4 +1,3 @@
-import type { VideoData } from '../types/video.ts';
 
 // Supported YouTube URL patterns
 const URL_PATTERNS = {
@@ -38,37 +37,3 @@ export function extractYouTubeId(url: string): string | null {
   }
 }
 
-/**
- * Generates thumbnail URL for a YouTube video
- * Uses hqdefault.jpg as it's more reliable than maxresdefault.jpg
- */
-export function generateThumbnail(url: string): string {
-  const videoId = extractYouTubeId(url);
-  if (!videoId) {
-    console.warn('Could not generate thumbnail - invalid YouTube URL:', url);
-    return '';
-  }
-  
-  // Use hqdefault.jpg for better reliability
-  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-}
-
-/**
- * Validates and processes video data to ensure proper thumbnail URLs
- */
-export function processVideoData(video: VideoData): VideoData {
-  // Generate thumbnail if not provided or invalid
-  if (!video.thumbnail || !video.thumbnail.includes('youtube.com')) {
-    const newThumbnail = generateThumbnail(video.link);
-    if (newThumbnail) {
-      console.log('Generated new thumbnail for video:', {
-        title: video.title,
-        oldThumbnail: video.thumbnail,
-        newThumbnail
-      });
-      return { ...video, thumbnail: newThumbnail };
-    }
-  }
-  
-  return video;
-}

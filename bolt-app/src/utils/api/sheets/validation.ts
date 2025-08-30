@@ -8,29 +8,30 @@ export function validateRow(row: any[]): boolean {
 
   const title = String(row[1] || '').trim();
   const link = String(row[2] || '').trim();
-  const thumbnail = String(row[0] || '').trim(); // Validate thumbnail from column A
-  const channelAvatar = String(row[12] || '').trim(); // Validate channel avatar from column M
+  const channelAvatar = String(row[0] || '').trim(); // Validate channel avatar from column A
+  const thumbnail = String(row[12] || '').trim(); // Validate thumbnail from column M
 
   const hasTitleAndLink = title !== '' && link !== '';
   const hasValidLinkFormat = link.startsWith('http://') ||
                             link.startsWith('https://') ||
                             link.startsWith('www.');
-  const hasValidThumbnail = thumbnail.startsWith('http://') ||
-                           thumbnail.startsWith('https://');
   const hasValidAvatar = channelAvatar === '' ||
                          channelAvatar.startsWith('http://') ||
                          channelAvatar.startsWith('https://');
-
-  if (!hasValidThumbnail) {
-    console.warn('Invalid thumbnail URL:', {
-      thumbnail,
-      rowIndex: row[0] ? `Row with title ${row[1]}` : 'Unknown row'
-    });
-  }
+  const hasValidThumbnail = thumbnail === '' ||
+                           thumbnail.startsWith('http://') ||
+                           thumbnail.startsWith('https://');
 
   if (!hasValidAvatar && channelAvatar) {
     console.warn('Invalid channel avatar URL:', {
       channelAvatar,
+      rowIndex: row[0] ? `Row with title ${row[1]}` : 'Unknown row'
+    });
+  }
+
+  if (!hasValidThumbnail && thumbnail) {
+    console.warn('Invalid thumbnail URL:', {
+      thumbnail,
       rowIndex: row[0] ? `Row with title ${row[1]}` : 'Unknown row'
     });
   }
@@ -41,12 +42,12 @@ export function validateRow(row: any[]): boolean {
     console.warn('Row validation failed:', {
       hasTitleAndLink,
       hasValidLinkFormat,
-      hasValidThumbnail,
       hasValidAvatar,
+      hasValidThumbnail,
       title,
       link,
-      thumbnail,
       channelAvatar,
+      thumbnail,
       reason: !hasTitleAndLink ? 'Missing title or link' : 'Invalid link format'
     });
   }
