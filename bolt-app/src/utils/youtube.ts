@@ -2,9 +2,9 @@ import type { VideoData } from '../types/video.ts';
 
 // Supported YouTube URL patterns
 const URL_PATTERNS = {
-  STANDARD: /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-  SHORTS: /youtube\.com\/shorts\/([^&\n?#]+)/,
-  PLAYLIST: /youtube\.com\/playlist\?list=([^&\n?#]+)/
+  STANDARD: /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/i,
+  SHORTS: /youtube\.com\/shorts\/([^&\n?#]+)/i,
+  PLAYLIST: /youtube\.com\/playlist\?list=([^&\n?#]+)/i
 };
 
 /**
@@ -12,8 +12,8 @@ const URL_PATTERNS = {
  */
 export function extractYouTubeId(url: string): string | null {
   try {
-    // Clean and normalize the URL
-    const cleanUrl = url.trim().toLowerCase();
+    // Clean the URL but preserve original case for video IDs
+    const cleanUrl = url.trim();
     
     // Try each pattern
     for (const [format, pattern] of Object.entries(URL_PATTERNS)) {
