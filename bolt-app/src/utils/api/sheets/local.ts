@@ -2,7 +2,6 @@ import type { VideoData } from '../../../types/video.ts';
 import type { ApiResponse } from './types.ts';
 import { validateRow } from './validation.ts';
 import { mapRowToVideo } from './transform.ts';
-import { processVideoData } from '../../youtube.ts';
 
 export async function fetchLocalVideos(): Promise<ApiResponse<VideoData[]>> {
   try {
@@ -12,8 +11,7 @@ const baseUrl = (import.meta as any).env?.BASE_URL ?? '';
     const [, ...rows] = json as any[][]; // skip header row
     const videos = rows
       .filter(validateRow)
-      .map(mapRowToVideo)
-      .map(processVideoData);
+      .map(mapRowToVideo);
 
     return { data: videos };
   } catch (err) {
