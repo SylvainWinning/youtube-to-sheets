@@ -30,6 +30,7 @@ DEFAULT_THUMBNAIL_URL = "https://via.placeholder.com/480x360?text=No+Thumbnail"
 
 _SPREADSHEET_RE = re.compile(r"/spreadsheets/d/([A-Za-z0-9-_]{25,60})")
 
+
 def parse_spreadsheet_id(value: str) -> str | None:
     match = _SPREADSHEET_RE.search(value or "")
     if match:
@@ -38,8 +39,9 @@ def parse_spreadsheet_id(value: str) -> str | None:
         return value.strip()
     return None
 
+
 def parse_duration(iso_duration: str) -> str:
-    """Convertit une durée ISO 8601 (ex. 'PT5M20S') en 'HH:MM:SS'."""
+    """Convertit une durée ISO 8601 (ex. 'PT5M20S') en 'HH:MM:SS'."""
     pattern = re.compile(r"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$")
     match = pattern.match(iso_duration or "")
     if not match:
@@ -49,8 +51,9 @@ def parse_duration(iso_duration: str) -> str:
     s = int(match.group(3)) if match.group(3) else 0
     return f"{h:02d}:{m:02d}:{s:02d}"
 
+
 def get_duration_category(duration: str) -> str:
-    """Classe la durée en catégories (0-5 min, 5-10 min, etc.)."""
+    """Classe la durée en catégories (0‑5 min, 5‑10 min, etc.)."""
     parts = (duration or "").split(":")
     if len(parts) != 3:
         return "Inconnue"
@@ -78,34 +81,28 @@ def get_duration_category(duration: str) -> str:
     else:
         return "60Plusmin"
 
+
 def get_sheet_id(spreadsheet_id: str, sheet_title: str, service) -> int | None:
-    """Retourne l’ID de feuille correspondant au titre dans un Google Sheet."""
+    """Retourne l’ID de feuille correspondant au titre dans un Google Sheet."""
     spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     for sheet in spreadsheet.get("sheets", []):
         if sheet["properties"]["title"] == sheet_title:
             return sheet["properties"]["sheetId"]
     return None
 
+
 def ensure_sheet_exists(service, spreadsheet_id: str, sheet_name: str) -> int:
     """Vérifie l’existence de l’onglet et le crée au besoin. Retourne le sheetId."""
     sheet_id = get_sheet_id(spreadsheet_id, sheet_name, service)
     if sheet_id is not None:
         return sheet_id
-
-    requests_body = {
-        "requests": [
-            {"addSheet": {"properties": {"title": sheet_name}}}
-        ]
-    }
-    service.spreadsheets().batchUpdate(
-        spreadsheetId=spreadsheet_id,
-        body=requests_body,
-    ).execute()
-    # Relire l’ID après création
+    requests_body = {"requests": [{"addSheet": {"properties": {"title": sheet_name}}}]}
+    service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=requests_body).execute()
     sheet_id = get_sheet_id(spreadsheet_id, sheet_name, service)
     if sheet_id is None:
         raise RuntimeError(f"Impossible de créer l’onglet '{sheet_name}'.")
     return sheet_id
+
 
 def fetch_all_playlist_items(playlist_id: str, api_key: str, max_retries: int = 5) -> list[dict]:
     """
@@ -132,24 +129,22 @@ def fetch_all_playlist_items(playlist_id: str, api_key: str, max_retries: int = 
                 data = resp.json()
                 break
             except Exception as err:
-                logging.warning("Erreur API YouTube (playlistItems): %s", err)
+                logging.warning("Erreur API YouTube (playlistItems): %s", err)
                 if attempt == max_retries - 1:
                     logging.error(
                         "Toutes les tentatives (%s) ont échoué pour récupérer les items de la playlist.",
                         max_retries,
                     )
-                    raise RuntimeError(
-                        "Échec de récupération des items de la playlist"
-                    ) from err
+                    raise RuntimeError("Échec de récupération des items de la playlist") from err
                 time.sleep(backoff)
                 backoff = min(backoff * 2, 60)
-
         items.extend(data.get("items", []))
         next_page_token = data.get("nextPageToken")
         if not next_page_token:
             break
         params["pageToken"] = next_page_token
     return items
+
 
 def fetch_videos_details(video_ids: list[str], api_key: str, max_retries: int = 5) -> dict[str, dict]:
     """Récupère les détails de plusieurs vidéos en une seule requête API."""
@@ -171,7 +166,7 @@ def fetch_videos_details(video_ids: list[str], api_key: str, max_retries: int = 
                 data = resp.json()
                 break
             except Exception as err:
-                logging.warning("Erreur API YouTube (videos): %s", err)
+                logging.warning("Erreur API YouTube (videos): %s", err)
                 if attempt == max_retries - 1:
                     data = {}
                     break
@@ -181,6 +176,7 @@ def fetch_videos_details(video_ids: list[str], api_key: str, max_retries: int = 
             details[item["id"]] = item
     return details
 
+
 def get_thumbnail_url(video_data: dict) -> str:
     """Extrait l’URL de miniature la plus grande disponible."""
     thumb_info = video_data.get("snippet", {}).get("thumbnails", {})
@@ -189,22 +185,24 @@ def get_thumbnail_url(video_data: dict) -> str:
             return thumb_info[quality]["url"]
     return DEFAULT_THUMBNAIL_URL
 
+
 def format_published_at(iso_timestamp: str) -> str:
-    """Formate la date de publication ISO en 'dd/mm/YYYY HH:MM' (préfixée d'une apostrophe)."""
+    """Formate la date de publication ISO en 'dd/mm/YYYY HH:MM' (préfixée d'une apostrophe)."""
     try:
         dt = datetime.strptime(iso_timestamp or "", "%Y-%m-%dT%H:%M:%SZ")
     except ValueError:
         return ""
     return f"'{dt.strftime('%d/%m/%Y %H:%M')}"
 
+
 # Cache d’avatars de chaîne (évite de refaire des requêtes)
 channel_avatar_cache: dict[str, str] = {}
+
 
 def get_channel_avatar(channel_id: str, api_key: str) -> str:
     """Retourne l'URL de l'avatar de chaîne (avec cache et gestion d’erreurs)."""
     if channel_id in channel_avatar_cache:
         return channel_avatar_cache[channel_id]
-
     channel_url = (
         "https://www.googleapis.com/youtube/v3/channels"
         f"?part=snippet&id={channel_id}&key={api_key}"
@@ -214,39 +212,63 @@ def get_channel_avatar(channel_id: str, api_key: str) -> str:
         response.raise_for_status()
         data = response.json()
     except Exception as e:
-        logging.error(
-            "Erreur lors de la récupération de l'avatar pour la chaîne %s: %s",
-            channel_id, e
-        )
+        logging.error("Erreur lors de la récupération de l'avatar pour la chaîne %s: %s", channel_id, e)
         data = {}
-
     avatar_url = DEFAULT_AVATAR_URL
     if data.get("items"):
         thumbs = data["items"][0].get("snippet", {}).get("thumbnails", {})
         avatar_url = thumbs.get("default", {}).get("url", DEFAULT_AVATAR_URL)
-
     channel_avatar_cache[channel_id] = avatar_url
     return avatar_url
 
-def add_video_to_categories(entry: list, duration_category: str,
-                            videos_by_category: dict[str, list], all_videos: list) -> None:
+
+def add_video_to_categories(entry: list, duration_category: str, videos_by_category: dict[str, list], all_videos: list) -> None:
     """Ajoute une entrée vidéo à la catégorie correspondante et à la liste globale."""
     videos_by_category[duration_category].append(entry)
     all_videos.append(entry)
 
+
 def sync_videos() -> None:
     """
-    Récupère les vidéos d’une playlist YouTube et met à jour un Google Sheet.
-    Regroupe par catégorie de durée.
+    Récupère les vidéos d’une playlist YouTube et met à jour un Google Sheet.
+    Regroupe par catégorie de durée et alimente les onglets correspondants.
     """
     # Variables d’environnement
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     raw_spreadsheet_id = os.environ.get("SPREADSHEET_ID")
     SHEET_TAB_NAME = os.environ.get("SHEET_TAB_NAME", "AllVideos")
-    PLAYLIST_ID = os.environ.get("PLAYLIST_ID", "PLtBV_WamBQbAxyF88DPxAPxFwceTjsP9vR")
+    # Nettoyage de l'ID de playlist
+    raw_playlist = os.environ.get("PLAYLIST_ID", "")
+    PLAYLIST_ID = raw_playlist.strip()
+    if not PLAYLIST_ID:
+        logging.error("Variable d'environnement PLAYLIST_ID manquante ou vide")
+        return
+    # Accepter un ID de chaîne (UC…) en récupérant la playlist 'uploads'
+    if PLAYLIST_ID.startswith("UC"):
+        try:
+            resp = requests.get(
+                "https://www.googleapis.com/youtube/v3/channels",
+                params={"part": "contentDetails", "id": PLAYLIST_ID, "key": YOUTUBE_API_KEY},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            uploads = (
+                resp.json()
+                .get("items", [{}])[0]
+                .get("contentDetails", {})
+                .get("relatedPlaylists", {})
+                .get("uploads")
+            )
+            if uploads:
+                PLAYLIST_ID = uploads
+            else:
+                logging.error("Impossible de récupérer la playlist 'uploads' du canal %s", raw_playlist)
+                return
+        except Exception as e:
+            logging.error("Erreur lors de la récupération du canal %s : %s", raw_playlist, e)
+            return
     SERVICE_ACCOUNT_FILE = os.environ.get("SERVICE_ACCOUNT_FILE", "service_account.json")
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-
     if not YOUTUBE_API_KEY:
         logging.error("Variable d'environnement YOUTUBE_API_KEY manquante")
         return
@@ -257,43 +279,42 @@ def sync_videos() -> None:
     if not SPREADSHEET_ID:
         logging.error("SPREADSHEET_ID invalide")
         return
-
-    # Authentification Google Sheets
-    creds = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES
-    )
+    # Authentification Google Sheets
+    creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     service = build("sheets", "v4", credentials=creds)
-
     # Récupération des vidéos
     try:
         items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
     except RuntimeError as err:
-        logging.error(
-            "Impossible de récupérer les vidéos de la playlist %s: %s",
-            PLAYLIST_ID,
-            err,
-        )
+        logging.error("Impossible de récupérer les vidéos de la playlist %s: %s", PLAYLIST_ID, err)
         return
-
+    if not items:
+        logging.warning(
+            "Aucun élément récupéré pour la playlist %s. Vérifiez l'identifiant ou la visibilité.",
+            PLAYLIST_ID,
+        )
     video_ids = [it["contentDetails"]["videoId"] for it in items]
     videos_data = fetch_videos_details(video_ids, YOUTUBE_API_KEY)
-
     # Catégories et accumulations
     videos_by_category: dict[str, list] = {
-        "0-5min": [], "5-10min": [], "10-20min": [], "20-30min": [],
-        "30-40min": [], "40-50min": [], "50-60min": [], "60Plusmin": [], "Inconnue": [],
+        "0-5min": [],
+        "5-10min": [],
+        "10-20min": [],
+        "20-30min": [],
+        "30-40min": [],
+        "40-50min": [],
+        "50-60min": [],
+        "60Plusmin": [],
+        "Inconnue": [],
     }
     all_videos: list[list] = []
-
     for item in items:
         video_id = item["contentDetails"]["videoId"]
         video_link = f"https://www.youtube.com/watch?v={video_id}"
-
         info = videos_data.get(video_id, {})
         if info:
             snippet = info.get("snippet", {})
             stats = info.get("statistics", {})
-
             title = snippet.get("title", "Inconnu")
             channel = snippet.get("channelTitle", "Inconnu")
             channel_id = snippet.get("channelId", "")
@@ -301,17 +322,12 @@ def sync_videos() -> None:
             video_duration = parse_duration(duration_iso)
             thumbnail_url = get_thumbnail_url(info)
             avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
-
             view_count = stats.get("viewCount", "N/A")
             like_count = stats.get("likeCount", "N/A")
             comment_count = stats.get("commentCount", "N/A")
-
             short_description = snippet.get("description", "")
             tags_str = ", ".join(snippet.get("tags", []))
-            published_at_formatted = format_published_at(
-                snippet.get("publishedAt", "")
-            )
-
+            published_at_formatted = format_published_at(snippet.get("publishedAt", ""))
             thumbnail_formula = thumbnail_url
         else:
             # Valeurs par défaut si l’API ne renvoie rien
@@ -327,7 +343,6 @@ def sync_videos() -> None:
             comment_count = "N/A"
             short_description = ""
             tags_str = ""
-
         duration_category = get_duration_category(video_duration)
         entry = [
             avatar_url,
@@ -345,32 +360,34 @@ def sync_videos() -> None:
             thumbnail_formula,
         ]
         add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
-
-    # À ce stade, on dispose de la liste complète all_videos.
-    # On écrit ces données dans l’onglet (créé si nécessaire).
+    # À ce stade, on dispose de la liste complète all_videos. Écrire ces données.
     sheet_name = SHEET_TAB_NAME
     ensure_sheet_exists(service, SPREADSHEET_ID, sheet_name)
-
-    # Préparation des données (en-tête + lignes)
-    values = [HEADERS]
-    values.extend(all_videos)
-
-    body = {"values": values}
-    # Effacement du contenu existant et insertion des nouvelles valeurs
-    range_name = f"{sheet_name}!A1"
-    # Optionnel : nettoyer l’onglet avant d’écrire (désactivé par défaut)
-    # service.spreadsheets().values().clear(
-    #     spreadsheetId=SPREADSHEET_ID, range=f"{sheet_name}!A:Z"
-    # ).execute()
-
+    # Mise à jour de l’onglet principal (AllVideos ou nom personnalisé)
+    values = [HEADERS] + all_videos
     service.spreadsheets().values().update(
         spreadsheetId=SPREADSHEET_ID,
-        range=range_name,
+        range=f"{sheet_name}!A1",
         valueInputOption="RAW",
-        body=body,
+        body={"values": values},
     ).execute()
+    # Mise à jour des onglets par durée
+    for cat_name, rows in videos_by_category.items():
+        if not rows:
+            continue
+        ensure_sheet_exists(service, SPREADSHEET_ID, cat_name)
+        cat_values = [HEADERS] + rows
+        service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"{cat_name}!A1",
+            valueInputOption="RAW",
+            body={"values": cat_values},
+        ).execute()
+    logging.info(
+        "Synchronisation terminée : %d vidéos mises à jour et onglets catégories actualisés.",
+        len(all_videos),
+    )
 
-    logging.info("Synchronisation terminée : %d vidéos mises à jour.", len(all_videos))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
