@@ -36,6 +36,15 @@ Secrets GitHub à créer :
 
 Partage la feuille Google Sheets avec l’e‑mail du compte de service.
 
+### Authentification YouTube (OAuth 2.0)
+
+Pour accéder aux playlists **privées** de l’utilisateur, le script utilise OAuth 2.0 :
+
+1. Crée un identifiant OAuth de type « Application installée » dans la console Google Cloud et télécharge le fichier `client_secret.json`.
+2. Place ce fichier à la racine du projet.
+3. Au premier lancement, exécute `main.py` : une fenêtre de navigateur s’ouvre pour autoriser l’accès.
+4. Un fichier `token.json` est généré et réutilisé pour les exécutions suivantes.
+
 Variables d’environnement **obligatoires** pour l’application web `bolt-app` :
 - `VITE_SPREADSHEET_ID` — identifiant **ou URL complète** de la feuille Google Sheets
   (25 à 60 caractères alphanumériques, tirets ou soulignés)

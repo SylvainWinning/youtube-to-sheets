@@ -5,7 +5,12 @@ import logging
 from datetime import datetime
 
 import requests
+from typing import Any
+
 from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 # Colonnes attendues pour l’export CSV/Google Sheets
@@ -107,17 +112,37 @@ def ensure_sheet_exists(service, spreadsheet_id: str, sheet_name: str) -> int:
         raise RuntimeError(f"Impossible de créer l’onglet '{sheet_name}'.")
     return sheet_id
 
-def fetch_all_playlist_items(playlist_id: str, api_key: str, max_retries: int = 5) -> list[dict]:
+YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
+
+
+def get_youtube_service() -> Any:
+    """Retourne un client YouTube authentifié via OAuth 2.0."""
+    creds: Credentials | None = None
+    if os.path.exists("token.json"):
+        creds = Credentials.from_authorized_user_file("token.json", YOUTUBE_SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                "client_secret.json", YOUTUBE_SCOPES
+            )
+            creds = flow.run_local_server(port=0)
+        with open("token.json", "w") as token:
+            token.write(creds.to_json())
+    return build("youtube", "v3", credentials=creds)
+
+def fetch_all_playlist_items(
+    playlist_id: str, service: Any, max_retries: int = 5
+) -> list[dict]:
     """
     Récupère tous les items d’une playlist YouTube en gérant la pagination,
     avec gestion d’erreurs réseau et backoff exponentiel.
     """
-    base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
         "part": "snippet,contentDetails",
         "playlistId": playlist_id,
         "maxResults": 50,
-        "key": api_key,
     }
     items: list[dict] = []
     backoff = 1
@@ -125,9 +150,7 @@ def fetch_all_playlist_items(playlist_id: str, api_key: str, max_retries: int = 
         data = None
         for attempt in range(max_retries):
             try:
-                resp = requests.get(base_url, params=params, timeout=10)
-                resp.raise_for_status()
-                data = resp.json()
+                data = service.playlistItems().list(**params).execute()
                 break
             except Exception as err:
                 logging.warning("Erreur API YouTube (playlistItems): %s", err)
@@ -256,8 +279,11 @@ def sync_videos() -> None:
     )
     service = build("sheets", "v4", credentials=creds)
 
+    # Authentification YouTube via OAuth
+    youtube_service = get_youtube_service()
+
     # Récupération des vidéos
-    items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
+    items = fetch_all_playlist_items(PLAYLIST_ID, youtube_service)
     video_ids = [it["contentDetails"]["videoId"] for it in items]
     videos_data = fetch_videos_details(video_ids, YOUTUBE_API_KEY)
 
