@@ -14,18 +14,32 @@ export const SHEET_TABS: SheetTab[] = [
 
 const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
 
+/**
+ * Extrait l’ID du classeur à partir d’une URL complète ou renvoie la chaîne fournie.
+ * On applique toujours trim() pour éliminer les espaces ou retours à la ligne.
+ */
 export function parseSpreadsheetId(input: string): string {
   const match = input?.match(/\/spreadsheets\/d\/([A-Za-z0-9-_]+)/);
-  return match ? match[1] : (input ?? '').trim();
+  const id = match ? match[1] : (input ?? '');
+  return id.trim();
 }
 
 const rawSpreadsheetId =
-  env.VITE_SPREADSHEET_ID ?? env.SPREADSHEET_ID ?? env.REACT_APP_SPREADSHEET_ID ?? '';
-export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
-export const API_KEY = env.VITE_API_KEY ?? env.API_KEY ?? env.REACT_APP_API_KEY ?? '';
+  env.VITE_SPREADSHEET_ID ??
+  env.SPREADSHEET_ID ??
+  env.REACT_APP_SPREADSHEET_ID ??
+  '';
 
+export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
+export const API_KEY =
+  env.VITE_API_KEY ?? env.API_KEY ?? env.REACT_APP_API_KEY ?? '';
+
+/**
+ * Valide l’ID : il doit contenir au moins un caractère et ne comporter que
+ * des lettres, chiffres, tirets ou soulignés.
+ */
 export function isValidSpreadsheetId(id: string): boolean {
-  return /^[A-Za-z0-9-_]+$/.test(id);
+  return id.length > 0 && /^[A-Za-z0-9-_]+$/.test(id);
 }
 
 export function getConfig(): {
@@ -33,15 +47,24 @@ export function getConfig(): {
   API_KEY: string;
   error?: string;
 } {
+  // Si l’ID est vide, on considère qu’il est manquant et on affiche le message approprié.
+  if (!SPREADSHEET_ID) {
+    const error = 'SPREADSHEET_ID manquant';
+    console.error(error);
+    return { SPREADSHEET_ID: '', API_KEY: '', error };
+  }
+  // Si l’ID n’est pas composé uniquement de caractères valides, on le signale comme invalide.
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
     const error = 'SPREADSHEET_ID invalide';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
+  // Si la clé API est absente, on l’indique.
   if (!API_KEY) {
     const error = 'API_KEY manquant';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
+  // Retourne la configuration correcte.
   return { SPREADSHEET_ID, API_KEY };
 }
