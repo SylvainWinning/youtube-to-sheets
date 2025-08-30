@@ -1,6 +1,6 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchSheetData } from './fetch.ts';
+import { fetchSheetData, type SheetsConfig } from './fetch.ts';
 
 // Verify that fetchSheetData correctly handles ranges without an upper bound
 // and returns all available rows.
@@ -13,7 +13,8 @@ test('fetchSheetData retrieves all rows for unbounded range', async () => {
     return new Response(JSON.stringify({ values: rows }), { status: 200 });
   });
 
-  const result = await fetchSheetData('tab!A2:M');
+  const config: SheetsConfig = { SPREADSHEET_ID: 'spreadsheet', API_KEY: 'key' };
+  const result = await fetchSheetData('tab!A2:M', config);
   assert.equal(result.values.length, 1201);
 
   mock.restoreAll();

@@ -1,5 +1,5 @@
-import { fetchSheetData } from './fetch.ts';
-import { SHEET_TABS } from '../../constants.ts';
+import { fetchSheetData, type SheetsConfig } from './fetch.ts';
+import { SHEET_TABS, getConfig } from '../../constants.ts';
 import type { VideoData } from '../../../types/video.ts';
 import { validateRow } from './validation.ts';
 import { processVideoData } from '../../youtube.ts';
@@ -37,12 +37,17 @@ function validateAndFormatDate(rawDate: any, videoTitle: string): string {
 export async function synchronizeSheets(): Promise<VideoData[]> {
   try {
     console.log('Starting sheet synchronization...');
+    const { SPREADSHEET_ID, API_KEY, error } = getConfig();
+    if (error) {
+      throw new Error(error);
+    }
+    const config: SheetsConfig = { SPREADSHEET_ID, API_KEY };
     const videoMap: VideoMap = {};
     const errors: string[] = [];
 
     // Process all tabs in parallel for better performance
     const tabResults = await Promise.allSettled(
-      SHEET_TABS.map(tab => fetchSheetData(tab.range))
+      SHEET_TABS.map(tab => fetchSheetData(tab.range, config))
     );
 
     // Process results from each tab

@@ -1,5 +1,9 @@
 import type { SheetResponse } from './types.ts';
-import { SPREADSHEET_ID, API_KEY } from '../../constants.ts';
+
+export interface SheetsConfig {
+  SPREADSHEET_ID: string;
+  API_KEY: string;
+}
 
 const RATE_LIMIT = {
   requests: 0,
@@ -73,13 +77,16 @@ async function fetchWithRetry(url: string, retryCount = 0): Promise<Response> {
   }
 }
 
-export async function fetchSheetData(range: string): Promise<SheetResponse> {
+export async function fetchSheetData(
+  range: string,
+  config: SheetsConfig
+): Promise<SheetResponse> {
   try {
     checkRateLimit();
 
     // Properly encode the range parameter
     const encodedRange = encodeURIComponent(range);
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodedRange}?key=${API_KEY}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.SPREADSHEET_ID}/values/${encodedRange}?key=${config.API_KEY}`;
     
     const response = await fetchWithRetry(url);
     const data = await response.json();
