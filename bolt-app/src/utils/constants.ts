@@ -19,7 +19,7 @@ const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
  * On applique toujours trim() pour éliminer les espaces ou retours à la ligne.
  */
 export function parseSpreadsheetId(input: string): string {
-  const match = input?.match(/\/spreadsheets\/d\/([A-Za-z0-9-_]+)/);
+  const match = input?.match(/\/spreadsheets\/d\/([A-Za-z0-9-_]{25,60})/);
   const id = match ? match[1] : (input ?? '');
   return id.trim();
 }
@@ -39,7 +39,7 @@ export const API_KEY =
  * des lettres, chiffres, tirets ou soulignés.
  */
 export function isValidSpreadsheetId(id: string): boolean {
-  return id.length > 0 && /^[A-Za-z0-9-_]+$/.test(id);
+  return /^[A-Za-z0-9-_]{25,60}$/.test(id);
 }
 
 export function getConfig(): {
@@ -49,7 +49,7 @@ export function getConfig(): {
 } {
   // Si l’ID est vide, on considère qu’il est manquant et on affiche le message approprié.
   if (!SPREADSHEET_ID) {
-    const error = 'SPREADSHEET_ID manquant';
+    const error = 'SPREADSHEET_ID manquant : définissez VITE_SPREADSHEET_ID';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
