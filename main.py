@@ -265,7 +265,16 @@ def sync_videos() -> None:
     service = build("sheets", "v4", credentials=creds)
 
     # Récupération des vidéos
-    items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
+    try:
+        items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
+    except RuntimeError as err:
+        logging.error(
+            "Impossible de récupérer les vidéos de la playlist %s: %s",
+            PLAYLIST_ID,
+            err,
+        )
+        return
+
     video_ids = [it["contentDetails"]["videoId"] for it in items]
     videos_data = fetch_videos_details(video_ids, YOUTUBE_API_KEY)
 
