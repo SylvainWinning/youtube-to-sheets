@@ -15,7 +15,7 @@ export const SHEET_TABS: SheetTab[] = [
 const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
 
 export function parseSpreadsheetId(input: string): string {
-  const match = input?.match(/\/spreadsheets\/d\/([A-Za-z0-9-_]{25,60})/);
+  const match = input?.match(/\/spreadsheets\/d\/([A-Za-z0-9-_]+)/);
   return match ? match[1] : (input ?? '').trim();
 }
 
@@ -25,7 +25,7 @@ export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
 export const API_KEY = env.VITE_API_KEY ?? env.API_KEY ?? env.REACT_APP_API_KEY ?? '';
 
 export function isValidSpreadsheetId(id: string): boolean {
-  return /^[A-Za-z0-9-_]{25,60}$/.test(id);
+  return /^[A-Za-z0-9-_]+$/.test(id);
 }
 
 export function getConfig(): {
