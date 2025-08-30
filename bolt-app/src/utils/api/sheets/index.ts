@@ -2,13 +2,32 @@ import type { VideoData } from '../../../types/video.ts';
 import type { ApiResponse } from './types.ts';
 import { synchronizeSheets } from './sync.ts';
 import { fetchLocalVideos } from './local.ts';
+import { getConfig } from '../../constants.ts';
 
 export { fetchLocalVideos };
 
 export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
+  const config = getConfig();
+
+  if (config.error) {
+    const localResponse = await fetchLocalVideos();
+    return {
+      ...localResponse,
+      error: config.error,
+      metadata: {
+        errors: [
+          ...(localResponse.metadata?.errors ?? []),
+          config.error,
+          ...(localResponse.error ? [localResponse.error] : [])
+        ],
+        timestamp: Date.now()
+      }
+    };
+  }
+
   try {
     const videos = await synchronizeSheets();
-    
+
     return {
       data: videos,
       metadata: {
