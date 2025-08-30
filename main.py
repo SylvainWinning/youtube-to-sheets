@@ -111,6 +111,8 @@ def fetch_all_playlist_items(playlist_id: str, api_key: str, max_retries: int = 
     """
     Récupère tous les items d’une playlist YouTube en gérant la pagination,
     avec gestion d’erreurs réseau et backoff exponentiel.
+
+    Lève RuntimeError si toutes les tentatives pour récupérer une page échouent.
     """
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
@@ -132,7 +134,13 @@ def fetch_all_playlist_items(playlist_id: str, api_key: str, max_retries: int = 
             except Exception as err:
                 logging.warning("Erreur API YouTube (playlistItems): %s", err)
                 if attempt == max_retries - 1:
-                    return items
+                    logging.error(
+                        "Toutes les tentatives (%s) ont échoué pour récupérer les items de la playlist.",
+                        max_retries,
+                    )
+                    raise RuntimeError(
+                        "Échec de récupération des items de la playlist"
+                    ) from err
                 time.sleep(backoff)
                 backoff = min(backoff * 2, 60)
 
@@ -257,7 +265,16 @@ def sync_videos() -> None:
     service = build("sheets", "v4", credentials=creds)
 
     # Récupération des vidéos
-    items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
+    try:
+        items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
+    except RuntimeError as err:
+        logging.error(
+            "Impossible de récupérer les vidéos de la playlist %s: %s",
+            PLAYLIST_ID,
+            err,
+        )
+        return
+
     video_ids = [it["contentDetails"]["videoId"] for it in items]
     videos_data = fetch_videos_details(video_ids, YOUTUBE_API_KEY)
 
