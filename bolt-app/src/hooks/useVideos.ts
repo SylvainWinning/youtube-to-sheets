@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { VideoData } from '../types/video';
-import { fetchAllVideos, fetchLocalVideos } from '../utils/api/sheets';
+import { fetchAllVideos, fetchLocalVideos } from '../utils/api/sheets/index.ts';
 
 export function useVideos(configError?: string) {
   const [videos, setVideos] = useState<VideoData[]>([]);
