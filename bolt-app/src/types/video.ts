@@ -1,5 +1,5 @@
 export interface VideoData {
-  channelAvatar: string;  // Colonne A
+  channelAvatar?: string;  // Colonne A
   title: string;          // Colonne B
   link: string;           // Colonne C
   channel: string;        // Colonne D

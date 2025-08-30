@@ -34,7 +34,7 @@ export function VideoCard({ video }: VideoCardProps) {
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         <img
-          src={video.channelAvatar}
+          src={video.channelAvatar ?? ''}
           alt={video.channel}
           className="absolute bottom-2 left-2 w-8 h-8 rounded-full border border-white shadow-md"
         />
