@@ -23,10 +23,10 @@ def parse_ranges(raw: str) -> List[str]:
 
 
 def parse_spreadsheet_id(value: str) -> str:
-    match = re.search(r"/spreadsheets/d/([A-Za-z0-9-_]{25,60})", value or "")
+    match = re.search(r"/spreadsheets/d/([A-Za-z0-9-_]{25,90})", value or "")
     if match:
         return match.group(1)
-    if re.fullmatch(r"[A-Za-z0-9-_]{25,60}", value or ""):
+    if re.fullmatch(r"[A-Za-z0-9-_]{25,90}", value or ""):
         return value.strip()
     raise ValueError("SPREADSHEET_ID invalide")
 

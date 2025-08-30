@@ -28,13 +28,13 @@ HEADERS = [
 DEFAULT_AVATAR_URL = "https://via.placeholder.com/48"
 DEFAULT_THUMBNAIL_URL = "https://via.placeholder.com/480x360?text=No+Thumbnail"
 
-_SPREADSHEET_RE = re.compile(r"/spreadsheets/d/([A-Za-z0-9-_]{25,60})")
+_SPREADSHEET_RE = re.compile(r"/spreadsheets/d/([A-Za-z0-9-_]{25,90})")
 
 def parse_spreadsheet_id(value: str) -> str | None:
     match = _SPREADSHEET_RE.search(value or "")
     if match:
         return match.group(1)
-    if re.fullmatch(r"[A-Za-z0-9-_]{25,60}", value or ""):
+    if re.fullmatch(r"[A-Za-z0-9-_]{25,90}", value or ""):
         return value.strip()
     return None
 
