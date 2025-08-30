@@ -1,7 +1,5 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { synchronizeSheets } from './sync.ts';
-import { SHEET_TABS } from '../../constants.ts';
 
 // Ensure the sheet synchronization can handle more than 1000 rows
 // by mocking the global fetch to return 1201 unique entries.
@@ -22,16 +20,38 @@ test('synchronizeSheets handles large sheet ranges', async () => {
     'https://example.com/thumb.jpg'
   ]);
 
-  // Limit to a single tab to simplify the mock
-  SHEET_TABS.length = 1;
-  SHEET_TABS[0].range = 'tab!A2:M';
+  const originalSpreadsheetId = process.env.VITE_SPREADSHEET_ID;
+  const originalApiKey = process.env.VITE_API_KEY;
+  process.env.VITE_SPREADSHEET_ID = 'test-id';
+  process.env.VITE_API_KEY = 'test-key';
 
-  mock.method(globalThis, 'fetch', async () => {
-    return new Response(JSON.stringify({ values: rows }), { status: 200 });
-  });
+  const { synchronizeSheets } = await import('./sync.ts');
+  const { SHEET_TABS } = await import('../../constants.ts');
+  const originalTabs = SHEET_TABS.map(tab => ({ ...tab }));
 
-  const videos = await synchronizeSheets();
-  assert.equal(videos.length, 1201);
+  try {
+    // Limit to a single tab to simplify the mock
+    SHEET_TABS.length = 1;
+    SHEET_TABS[0].range = 'tab!A2:M';
 
-  mock.restoreAll();
+    mock.method(globalThis, 'fetch', async () => {
+      return new Response(JSON.stringify({ values: rows }), { status: 200 });
+    });
+
+    const videos = await synchronizeSheets();
+    assert.equal(videos.length, 1201);
+  } finally {
+    mock.restoreAll();
+    SHEET_TABS.splice(0, SHEET_TABS.length, ...originalTabs);
+    if (originalSpreadsheetId === undefined) {
+      delete process.env.VITE_SPREADSHEET_ID;
+    } else {
+      process.env.VITE_SPREADSHEET_ID = originalSpreadsheetId;
+    }
+    if (originalApiKey === undefined) {
+      delete process.env.VITE_API_KEY;
+    } else {
+      process.env.VITE_API_KEY = originalApiKey;
+    }
+  }
 });
