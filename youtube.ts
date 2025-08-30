@@ -4,9 +4,9 @@ import type { VideoData } from '../types/video.ts';
 // expressions régulières capturent l'identifiant de la vidéo ou de la playlist
 // afin de le réutiliser pour générer des miniatures fiables.
 const URL_PATTERNS = {
-  STANDARD: /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-  SHORTS: /youtube\.com\/shorts\/([^&\n?#]+)/,
-  PLAYLIST: /youtube\.com\/playlist\?list=([^&\n?#]+)/
+  STANDARD: /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/i,
+  SHORTS: /youtube\.com\/shorts\/([^&\n?#]+)/i,
+  PLAYLIST: /youtube\.com\/playlist\?list=([^&\n?#]+)/i
 };
 
 /**
@@ -17,7 +17,7 @@ const URL_PATTERNS = {
  */
 export function extractYouTubeId(url: string): string | null {
   try {
-    const cleanUrl = url.trim().toLowerCase();
+    const cleanUrl = url.trim();
     for (const [_key, pattern] of Object.entries(URL_PATTERNS)) {
       const match = cleanUrl.match(pattern);
       if (match && match[1]) {
