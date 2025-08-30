@@ -3,6 +3,7 @@ import { SHEET_TABS } from '../../constants.ts';
 import type { VideoData } from '../../../types/video.ts';
 import { validateRow } from './validation.ts';
 import { processVideoData } from '../../youtube.ts';
+import { parseDate } from '../../timeUtils.ts';
 
 interface VideoMap {
   [link: string]: VideoData;
@@ -11,17 +12,17 @@ interface VideoMap {
 function validateAndFormatDate(rawDate: any, videoTitle: string): string {
   if (!rawDate) {
     console.warn('Missing date for video:', videoTitle);
-    return new Date().toISOString();
+    return '';
   }
 
   try {
-    const date = new Date(rawDate);
-    if (isNaN(date.getTime())) {
+    const date = parseDate(String(rawDate));
+    if (!date) {
       console.warn('Invalid date for video:', {
         title: videoTitle,
         date: rawDate
       });
-      return new Date().toISOString();
+      return String(rawDate || '');
     }
     return date.toISOString();
   } catch (error) {
@@ -30,7 +31,7 @@ function validateAndFormatDate(rawDate: any, videoTitle: string): string {
       date: rawDate,
       error: error instanceof Error ? error.message : 'Unknown error'
     });
-    return new Date().toISOString();
+    return String(rawDate || '');
   }
 }
 
