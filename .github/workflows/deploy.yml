@@ -18,12 +18,21 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    # REND LES SECRETS VISIBLES PAR Vite (clé API + ID de la feuille)
+    # => import.meta.env.VITE_* sera injecté au build
+    env:
+      VITE_SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+      VITE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      # (facultatif, pour d’éventuels fallback côté Node/tests)
+      SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+
     steps:
       # 1. Récupère le dépôt
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0      # nécessaire pour l’historique complet
+          fetch-depth: 0  # nécessaire pour l’historique complet
 
       # 2. Configure Node.js (version et cache)
       - name: Setup Node.js
@@ -43,7 +52,11 @@ jobs:
         run: npm ci
         working-directory: bolt-app
 
-      # 5. Compile le site
+      # (Optionnel mais recommandé) configure Pages
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      # 5. Compile le site (Vite lira VITE_SPREADSHEET_ID / VITE_API_KEY)
       - name: Build project
         run: npm run build
         working-directory: bolt-app
