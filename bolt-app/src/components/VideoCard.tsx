@@ -33,13 +33,6 @@ export function VideoCard({ video }: VideoCardProps) {
           alt={video.title}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        {video.channelAvatar && (
-          <img
-            src={video.channelAvatar}
-            alt={video.channel}
-            className="absolute bottom-2 left-2 w-8 h-8 rounded-full border border-white shadow-md"
-          />
-        )}
         <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 text-white text-xs font-medium rounded">
           {formatDuration(video.duration)}
         </div>
@@ -50,7 +43,14 @@ export function VideoCard({ video }: VideoCardProps) {
           {video.title}
         </h3>
 
-        <div className="flex items-center text-[13px] text-youtube-gray-dark dark:text-gray-400 mb-1">
+        <div className="flex items-center gap-2 text-[13px] text-youtube-gray-dark dark:text-gray-400 mb-1">
+          {video.channelAvatar && (
+            <img
+              src={video.channelAvatar}
+              alt={video.channel}
+              className="w-6 h-6 rounded-full"
+            />
+          )}
           <div>{video.channel}</div>
         </div>
 
