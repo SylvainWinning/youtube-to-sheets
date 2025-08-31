@@ -5,7 +5,6 @@ from main import sync_videos
 def test_sync_videos_handles_fetch_error(monkeypatch, caplog, tmp_path):
     monkeypatch.setenv("YOUTUBE_API_KEY", "key")
     monkeypatch.setenv("SPREADSHEET_ID", "A" * 25)
-    monkeypatch.setenv("PLAYLIST_ID", "PL123")
     monkeypatch.setenv("SERVICE_ACCOUNT_JSON", "{}")
 
     monkeypatch.setattr(
@@ -20,5 +19,5 @@ def test_sync_videos_handles_fetch_error(monkeypatch, caplog, tmp_path):
     monkeypatch.setattr("main.fetch_all_playlist_items", fake_fetch)
 
     with caplog.at_level(logging.ERROR):
-        sync_videos()
+        sync_videos("PL123")
     assert "Impossible de récupérer les vidéos de la playlist" in caplog.text
