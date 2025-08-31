@@ -27,12 +27,10 @@ export function parseSpreadsheetId(input: string): string {
 const rawSpreadsheetId =
   env.VITE_SPREADSHEET_ID ??
   env.SPREADSHEET_ID ??
-  env.REACT_APP_SPREADSHEET_ID ??
   '';
 
 export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
-export const API_KEY =
-  env.VITE_API_KEY ?? env.API_KEY ?? env.REACT_APP_API_KEY ?? '';
+export const API_KEY = env.VITE_API_KEY ?? '';
 
 /**
  * Valide l’ID : il doit contenir au moins un caractère et ne comporter que
@@ -61,7 +59,7 @@ export function getConfig(): {
   }
   // Si la clé API est absente, on l’indique.
   if (!API_KEY) {
-    const error = 'API_KEY manquant';
+    const error = 'API_KEY manquant : définissez VITE_API_KEY';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }

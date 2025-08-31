@@ -34,14 +34,16 @@ Secrets GitHub à créer :
   (une suite de 25 à 60 caractères alphanumériques, tirets ou soulignés)
 - `SERVICE_ACCOUNT_JSON` contenu JSON du compte de service Google
 
-La même valeur `SPREADSHEET_ID` est également utilisée pour identifier la playlist YouTube à synchroniser.
+Variables d’environnement supplémentaires :
+- `PLAYLIST_ID` — identifiant **ou URL complète** de la playlist YouTube à synchroniser (peut être défini comme variable GitHub non secrète)
 
 Partage la feuille Google Sheets avec l’e‑mail du compte de service.
+Le script lit directement `SERVICE_ACCOUNT_JSON` depuis l’environnement : aucun fichier local n’est requis.
 
 Variables d’environnement **obligatoires** pour l’application web `bolt-app` :
 - `VITE_SPREADSHEET_ID` — identifiant **ou URL complète** de la feuille Google Sheets
   (25 à 60 caractères alphanumériques, tirets ou soulignés)
-- `VITE_API_KEY` — clé API Google Sheets
+- `VITE_API_KEY` — clé API Google Sheets (ne pas réutiliser `YOUTUBE_API_KEY`)
 
 Créer un fichier `.env` dans le dossier `bolt-app` avec ces entrées (un modèle
 est fourni dans `.env.example`). L’application échouera au démarrage si l’une de

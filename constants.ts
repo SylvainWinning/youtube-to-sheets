@@ -65,9 +65,9 @@ function deriveConfigFromParams() {
 const { spreadsheetIdParam, apiKeyParam } = deriveConfigFromParams();
 
 // Determine the raw spreadsheet ID by preferring the query parameter over
-// environment variables. Accept both `VITE_SPREADSHEET_ID` and un-prefixed
-// versions for convenience. If nothing is provided, the string will be
-// empty and will trigger a configuration error later.
+// environment variables. Accept both `VITE_SPREADSHEET_ID` and `SPREADSHEET_ID`.
+// If nothing is provided, the string will be empty and will trigger a
+// configuration error later.
 const rawSpreadsheetId =
   // Prefer the ID from the query string over any environment variable.  In
   // production builds, only variables prefixed with VITE_ are exposed to
@@ -77,21 +77,16 @@ const rawSpreadsheetId =
   spreadsheetIdParam ||
   env.VITE_SPREADSHEET_ID ||
   env.SPREADSHEET_ID ||
-  env.REACT_APP_SPREADSHEET_ID ||
   '';
 
 export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
 
-// Derive the API key. When deploying via GitHub Actions, the secrets are
-// injected as environment variables without the VITE_ prefix (e.g. YOUTUBE_API_KEY).
-// We therefore check the common names in order of specificity.  A query
-// parameter always overrides environment variables.
+// Derive the API key. A query parameter always overrides environment
+// variables. Seule la variable `VITE_API_KEY` est prise en compte côté
+// environnement.
 export const API_KEY =
   apiKeyParam ||
   env.VITE_API_KEY ||
-  env.API_KEY ||
-  env.REACT_APP_API_KEY ||
-  env.YOUTUBE_API_KEY ||
   '';
 
 /**
@@ -127,12 +122,9 @@ export function getConfig(): {
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
-  // If the API key is missing, signal it explicitly. Mention the supported
-  // environment variable names (VITE_API_KEY or YOUTUBE_API_KEY) to help
-  // repository owners configure secrets correctly.
+  // If the API key is missing, signal it explicitly.
   if (!API_KEY) {
-    const error =
-      'API_KEY manquant : définissez VITE_API_KEY, YOUTUBE_API_KEY ou utilisez ?apiKey=';
+    const error = 'API_KEY manquant : définissez VITE_API_KEY ou utilisez ?apiKey=';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
