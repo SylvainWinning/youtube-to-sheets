@@ -240,16 +240,18 @@ def sync_videos() -> None:
     if not SPREADSHEET_ID:
         logging.error("SPREADSHEET_ID invalide")
         return
-    service_account_json = os.environ.get("SERVICE_ACCOUNT_JSON")
-    if not service_account_json:
+    service_account_json_str = os.environ.get("SERVICE_ACCOUNT_JSON")
+    if not service_account_json_str:
         logging.error("Variable d'environnement SERVICE_ACCOUNT_JSON manquante")
         return
     try:
-        creds_info = json.loads(service_account_json)
-    except json.JSONDecodeError:
+        creds_info = json.loads(service_account_json_str)
+        creds = service_account.Credentials.from_service_account_info(
+            creds_info, scopes=SCOPES
+        )
+    except (ValueError, json.JSONDecodeError):
         logging.error("SERVICE_ACCOUNT_JSON invalide")
         return
-    creds = service_account.Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     service = build("sheets", "v4", credentials=creds)
     # Récupération des vidéos
     try:
