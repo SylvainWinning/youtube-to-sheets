@@ -82,16 +82,14 @@ const rawSpreadsheetId =
 
 export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
 
-// Derive the API key. When deploying via GitHub Actions, the secrets are
-// injected as environment variables without the VITE_ prefix. We therefore
-// check the common names in order of specificity. Uniquement les variables
-// dédiées à Google Sheets sont prises en compte.
-// A query parameter always overrides environment variables.
+// Derive the API key. When deploying via GitHub Actions, the secret is
+// injected as an environment variable without the VITE_ prefix. We therefore
+// check the two supported names. A query parameter always overrides
+// environment variables.
 export const API_KEY =
   apiKeyParam ||
-  env.VITE_API_KEY ||
-  env.API_KEY ||
-  env.REACT_APP_API_KEY ||
+  env.VITE_YOUTUBE_API_KEY ||
+  env.YOUTUBE_API_KEY ||
   '';
 
 /**
@@ -131,7 +129,7 @@ export function getConfig(): {
   // environment variable names to help repository owners configure secrets correctly.
   if (!API_KEY) {
     const error =
-      'API_KEY manquant : définissez VITE_API_KEY ou API_KEY, ou utilisez ?apiKey=';
+      'API_KEY manquant : définissez VITE_YOUTUBE_API_KEY ou YOUTUBE_API_KEY, ou utilisez ?apiKey=';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }

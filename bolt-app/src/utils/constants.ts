@@ -32,7 +32,7 @@ const rawSpreadsheetId =
 
 export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
 export const API_KEY =
-  env.VITE_API_KEY ?? env.API_KEY ?? env.REACT_APP_API_KEY ?? '';
+  env.VITE_YOUTUBE_API_KEY ?? env.YOUTUBE_API_KEY ?? '';
 
 /**
  * Valide l’ID : il doit contenir au moins un caractère et ne comporter que
@@ -61,7 +61,7 @@ export function getConfig(): {
   }
   // Si la clé API est absente, on l’indique.
   if (!API_KEY) {
-    const error = 'API_KEY manquant';
+    const error = 'API_KEY manquant : définissez VITE_YOUTUBE_API_KEY ou YOUTUBE_API_KEY';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
