@@ -4,6 +4,7 @@ import time
 import logging
 import json
 from datetime import datetime
+import argparse
 
 import requests
 from google.oauth2 import service_account
@@ -227,7 +228,7 @@ def add_video_to_categories(entry: list, duration_category: str, videos_by_categ
     videos_by_category[duration_category].append(entry)
     all_videos.append(entry)
 
-def sync_videos() -> None:
+def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
     """
     Récupère les vidéos d’une playlist YouTube et met à jour un Google Sheet.
     Regroupe par catégorie de durée et alimente les onglets correspondants.
@@ -235,12 +236,8 @@ def sync_videos() -> None:
     # Variables d’environnement
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     raw_spreadsheet_id = os.environ.get("SPREADSHEET_ID")
-    raw_playlist_id = os.environ.get("PLAYLIST_ID")
-    SHEET_TAB_NAME = os.environ.get("SHEET_TAB_NAME", "AllVideos")
-    if not raw_playlist_id:
-        logging.error("Variable d'environnement PLAYLIST_ID manquante")
-        return
-    playlist_source_id = parse_playlist_id(raw_playlist_id)
+    playlist_source_id = parse_playlist_id(playlist_id)
+    SHEET_TAB_NAME = sheet_tab_name
     if not playlist_source_id:
         logging.error("PLAYLIST_ID invalide")
         return
@@ -360,4 +357,8 @@ def sync_videos() -> None:
 
 
 if __name__ == "__main__":
-    sync_videos()
+    parser = argparse.ArgumentParser(description="Synchronise une playlist YouTube vers Google Sheets")
+    parser.add_argument("playlist_id", help="Identifiant ou URL de la playlist YouTube")
+    parser.add_argument("--sheet-tab-name", default="AllVideos", help="Nom de l'onglet cible dans Google Sheets")
+    args = parser.parse_args()
+    sync_videos(args.playlist_id, args.sheet_tab_name)
