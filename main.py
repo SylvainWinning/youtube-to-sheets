@@ -2,6 +2,7 @@ import os
 import re
 import time
 import logging
+import json
 from datetime import datetime
 
 import requests
@@ -223,10 +224,12 @@ def sync_videos() -> None:
     # Variables d’environnement
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     raw_spreadsheet_id = os.environ.get("SPREADSHEET_ID")
+    playlist_source_id = os.environ.get("PLAYLIST_ID")
     SHEET_TAB_NAME = os.environ.get("SHEET_TAB_NAME", "AllVideos")
-    SERVICE_ACCOUNT_FILE = os.environ.get("SERVICE_ACCOUNT_FILE", "service_account.json")
-    playlist_source_id = raw_spreadsheet_id
     if not playlist_source_id:
+        logging.error("Variable d'environnement PLAYLIST_ID manquante")
+        return
+    if not raw_spreadsheet_id:
         logging.error("Variable d'environnement SPREADSHEET_ID manquante")
         return
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -237,8 +240,16 @@ def sync_videos() -> None:
     if not SPREADSHEET_ID:
         logging.error("SPREADSHEET_ID invalide")
         return
-    # Authentification Google Sheets
-    creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    service_account_json = os.environ.get("SERVICE_ACCOUNT_JSON")
+    if not service_account_json:
+        logging.error("Variable d'environnement SERVICE_ACCOUNT_JSON manquante")
+        return
+    try:
+        creds_info = json.loads(service_account_json)
+    except json.JSONDecodeError:
+        logging.error("SERVICE_ACCOUNT_JSON invalide")
+        return
+    creds = service_account.Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     service = build("sheets", "v4", credentials=creds)
     # Récupération des vidéos
     try:
