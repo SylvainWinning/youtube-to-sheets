@@ -17,10 +17,9 @@ export const SHEET_TABS: SheetTab[] = [
   { name: 'Inconnue', range: 'Inconnue!A2:M', durationRange: { min: null, max: null } }
 ];
 
-// Vite and Node both expose environment variables in different places. We
-// attempt to read from import.meta.env first (Vite), then fall back to
-// process.env (Node) for completeness. Note that only variables prefixed
-// with VITE_ are exposed to the client in a Vite build.
+// Vite et Node exposent les variables d’environnement à des endroits
+// différents. On lit d’abord `import.meta.env` (Vite), puis on se replie sur
+// `process.env` (Node).
 const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
 
 /**
@@ -65,30 +64,19 @@ function deriveConfigFromParams() {
 const { spreadsheetIdParam, apiKeyParam } = deriveConfigFromParams();
 
 // Determine the raw spreadsheet ID by preferring the query parameter over
-// environment variables. Accept both `VITE_SPREADSHEET_ID` and un-prefixed
-// versions for convenience. If nothing is provided, the string will be
-// empty and will trigger a configuration error later.
+// the environment variable. Si rien n’est fourni, la chaîne sera vide et
+// provoquera une erreur de configuration plus loin.
 const rawSpreadsheetId =
-  // Prefer the ID from the query string over any environment variable.  In
-  // production builds, only variables prefixed with VITE_ are exposed to
-  // the client, but we also support un‑prefixed names for convenience when
-  // running locally or injecting via GitHub secrets.  The SPREADSHEET_ID
-  // secret defined in this repository will be captured here.
   spreadsheetIdParam ||
-  env.VITE_SPREADSHEET_ID ||
   env.SPREADSHEET_ID ||
-  env.REACT_APP_SPREADSHEET_ID ||
   '';
 
 export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
 
-// Derive the API key. When deploying via GitHub Actions, the secret is
-// injected as an environment variable without the VITE_ prefix. We therefore
-// check the two supported names. A query parameter always overrides
-// environment variables.
+// Derive the API key. A query parameter always overrides the environment
+// variable.
 export const API_KEY =
   apiKeyParam ||
-  env.VITE_YOUTUBE_API_KEY ||
   env.YOUTUBE_API_KEY ||
   '';
 
@@ -115,7 +103,7 @@ export function getConfig(): {
 } {
   // If the ID is empty, mark it as missing.
   if (!SPREADSHEET_ID) {
-    const error = 'SPREADSHEET_ID manquant : définissez VITE_SPREADSHEET_ID ou utilisez ?spreadsheetId=';
+    const error = 'SPREADSHEET_ID manquant : définissez SPREADSHEET_ID ou utilisez ?spreadsheetId=';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
@@ -128,8 +116,7 @@ export function getConfig(): {
   // If the API key is missing, signal it explicitly. Mention the supported
   // environment variable names to help repository owners configure secrets correctly.
   if (!API_KEY) {
-    const error =
-      'API_KEY manquant : définissez VITE_YOUTUBE_API_KEY ou YOUTUBE_API_KEY, ou utilisez ?apiKey=';
+    const error = 'API_KEY manquant : définissez YOUTUBE_API_KEY ou utilisez ?apiKey=';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
