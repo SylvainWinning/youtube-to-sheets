@@ -20,10 +20,10 @@ test('synchronizeSheets handles large sheet ranges', async () => {
     'https://example.com/thumb.jpg'
   ]);
 
-  const originalSpreadsheetId = process.env.VITE_SPREADSHEET_ID;
-  const originalApiKey = process.env.VITE_YOUTUBE_API_KEY;
-  process.env.VITE_SPREADSHEET_ID = 'test-id';
-  process.env.VITE_YOUTUBE_API_KEY = 'test-key';
+  const originalSpreadsheetId = process.env.SPREADSHEET_ID;
+  const originalApiKey = process.env.YOUTUBE_API_KEY;
+  process.env.SPREADSHEET_ID = 'test-id';
+  process.env.YOUTUBE_API_KEY = 'test-key';
 
   const { synchronizeSheets } = await import('./sync.ts');
   const { SHEET_TABS } = await import('../../constants.ts');
@@ -44,14 +44,14 @@ test('synchronizeSheets handles large sheet ranges', async () => {
     mock.restoreAll();
     SHEET_TABS.splice(0, SHEET_TABS.length, ...originalTabs);
     if (originalSpreadsheetId === undefined) {
-      delete process.env.VITE_SPREADSHEET_ID;
+      delete process.env.SPREADSHEET_ID;
     } else {
-      process.env.VITE_SPREADSHEET_ID = originalSpreadsheetId;
+      process.env.SPREADSHEET_ID = originalSpreadsheetId;
     }
     if (originalApiKey === undefined) {
-      delete process.env.VITE_YOUTUBE_API_KEY;
+      delete process.env.YOUTUBE_API_KEY;
     } else {
-      process.env.VITE_YOUTUBE_API_KEY = originalApiKey;
+      process.env.YOUTUBE_API_KEY = originalApiKey;
     }
   }
 });

@@ -41,16 +41,16 @@ Partage la feuille Google Sheets avec l’e‑mail du compte de service.
 Le script lit directement `SERVICE_ACCOUNT_JSON` depuis l’environnement : aucun fichier local n’est requis.
 
 Variables d’environnement **obligatoires** pour l’application web `bolt-app` :
-- `VITE_SPREADSHEET_ID` — identifiant **ou URL complète** de la feuille Google Sheets
+- `SPREADSHEET_ID` — identifiant **ou URL complète** de la feuille Google Sheets
   (25 à 60 caractères alphanumériques, tirets ou soulignés)
-- `VITE_YOUTUBE_API_KEY` — clé API Google exposée côté client
+- `YOUTUBE_API_KEY` — clé API Google
 
 Créer un fichier `.env` dans le dossier `bolt-app` avec ces entrées (un modèle
 est fourni dans `.env.example`). L’application échouera au démarrage si l’une de
 ces variables est absente.
 
-Seules les variables préfixées par `VITE_` sont exposées côté client ; des noms
-comme `SPREADSHEET_ID` ou `API_KEY` ne seront pas accessibles.
+Le fichier de configuration Vite expose automatiquement ces variables au
+code client : aucun préfixe `VITE_` n’est nécessaire.
 
 Pour des tests rapides, ces valeurs peuvent aussi être fournies via l’URL :
 `?spreadsheetId=` et `?apiKey=`.
