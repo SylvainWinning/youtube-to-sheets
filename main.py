@@ -105,7 +105,7 @@ def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5)
 
     Lève RuntimeError si toutes les tentatives pour récupérer une page échouent.
     """
-    base_url = "https://www.googleapis.com/youtube/v3playlistItems
+    base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
         "part": "snippet,contentDetails",
         "playlistId": source_id,
