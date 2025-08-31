@@ -31,11 +31,22 @@ DEFAULT_THUMBNAIL_URL = "https://via.placeholder.com/480x360?text=No+Thumbnail"
 
 _SPREADSHEET_RE = re.compile(r"/spreadsheets/d/([A-Za-z0-9-_]{25,60})")
 
+_PLAYLIST_RE = re.compile(r"list=([A-Za-z0-9-_]{5,60})")
+
 def parse_spreadsheet_id(value: str) -> str | None:
     match = _SPREADSHEET_RE.search(value or "")
     if match:
         return match.group(1)
     if re.fullmatch(r"[A-Za-z0-9-_]{25,60}", value or ""):
+        return value.strip()
+    return None
+
+
+def parse_playlist_id(value: str) -> str | None:
+    match = _PLAYLIST_RE.search(value or "")
+    if match:
+        return match.group(1)
+    if re.fullmatch(r"[A-Za-z0-9-_]{5,60}", value or ""):
         return value.strip()
     return None
 
@@ -224,10 +235,14 @@ def sync_videos() -> None:
     # Variables d’environnement
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     raw_spreadsheet_id = os.environ.get("SPREADSHEET_ID")
-    playlist_source_id = os.environ.get("PLAYLIST_ID")
+    raw_playlist_id = os.environ.get("PLAYLIST_ID")
     SHEET_TAB_NAME = os.environ.get("SHEET_TAB_NAME", "AllVideos")
-    if not playlist_source_id:
+    if not raw_playlist_id:
         logging.error("Variable d'environnement PLAYLIST_ID manquante")
+        return
+    playlist_source_id = parse_playlist_id(raw_playlist_id)
+    if not playlist_source_id:
+        logging.error("PLAYLIST_ID invalide")
         return
     if not raw_spreadsheet_id:
         logging.error("Variable d'environnement SPREADSHEET_ID manquante")

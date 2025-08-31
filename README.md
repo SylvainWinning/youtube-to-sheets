@@ -35,7 +35,7 @@ Secrets GitHub à créer :
 - `SERVICE_ACCOUNT_JSON` contenu JSON du compte de service Google
 
 Variables d’environnement supplémentaires :
-- `PLAYLIST_ID` — identifiant de la playlist YouTube à synchroniser (peut être défini comme variable GitHub non secrète)
+- `PLAYLIST_ID` — identifiant **ou URL complète** de la playlist YouTube à synchroniser (peut être défini comme variable GitHub non secrète)
 
 Partage la feuille Google Sheets avec l’e‑mail du compte de service.
 Le script lit directement `SERVICE_ACCOUNT_JSON` depuis l’environnement : aucun fichier local n’est requis.
