@@ -5,12 +5,11 @@ from main import sync_videos
 def test_sync_videos_handles_fetch_error(monkeypatch, caplog, tmp_path):
     monkeypatch.setenv("YOUTUBE_API_KEY", "key")
     monkeypatch.setenv("SPREADSHEET_ID", "A" * 25)
-    service_file = tmp_path / "dummy.json"
-    service_file.write_text("{}")
-    monkeypatch.setenv("SERVICE_ACCOUNT_FILE", str(service_file))
+    monkeypatch.setenv("PLAYLIST_ID", "PL123")
+    monkeypatch.setenv("SERVICE_ACCOUNT_JSON", "{}")
 
     monkeypatch.setattr(
-        "main.service_account.Credentials.from_service_account_file",
+        "main.service_account.Credentials.from_service_account_info",
         lambda *a, **k: object(),
     )
     monkeypatch.setattr("main.build", lambda *a, **k: None)
