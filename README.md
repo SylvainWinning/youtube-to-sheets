@@ -23,37 +23,23 @@ Le fichier `.github/workflows/sync.yml` convertit ces heures en UTC suivant la s
 - CEST (heure d’été, UTC+2) pour avril à septembre, 1–24 octobre, 25–31 mars.
 - CET (heure d’hiver, UTC+1) pour novembre à février, 1–24 mars, 25–31 octobre.
 
-Aucune exécution n’est programmée en dehors de ces créneaux.  
+Aucune exécution n’est programmée en dehors de ces créneaux.
 Tu peux toujours déclencher manuellement via l’onglet **Actions**.
 
 ## Configuration
 
 Secrets GitHub à créer :
-- `YOUTUBE_API_KEY`
-- `SPREADSHEET_ID` — identifiant **ou URL complète** de la feuille Google Sheets
+- `YOUTUBE_API_KEY` — clé API YouTube
+- `SPREADSHEET_ID` — identifiant ou URL complète de la feuille Google Sheets
   (une suite de 25 à 60 caractères alphanumériques, tirets ou soulignés)
-- `SERVICE_ACCOUNT_JSON` contenu JSON du compte de service Google
+- `SERVICE_ACCOUNT_JSON` — contenu JSON du compte de service Google
 
-Variables d’environnement supplémentaires :
-- `PLAYLIST_ID` — identifiant de la playlist YouTube à synchroniser (peut être défini comme variable GitHub non secrète)
+Variable d’environnement optionnelle :
+- `PLAYLIST_ID` — identifiant ou URL de la playlist YouTube à synchroniser
+  (peut être définie comme variable GitHub non secrète)
 
 Partage la feuille Google Sheets avec l’e‑mail du compte de service.
 Le script lit directement `SERVICE_ACCOUNT_JSON` depuis l’environnement : aucun fichier local n’est requis.
-
-Variables d’environnement **obligatoires** pour l’application web `bolt-app` :
-- `VITE_SPREADSHEET_ID` — identifiant **ou URL complète** de la feuille Google Sheets
-  (25 à 60 caractères alphanumériques, tirets ou soulignés)
-- `VITE_API_KEY` — clé API Google Sheets (ne pas réutiliser `YOUTUBE_API_KEY`)
-
-Créer un fichier `.env` dans le dossier `bolt-app` avec ces entrées (un modèle
-est fourni dans `.env.example`). L’application échouera au démarrage si l’une de
-ces variables est absente.
-
-Seules les variables préfixées par `VITE_` sont exposées côté client ; des noms
-comme `SPREADSHEET_ID` ou `API_KEY` ne seront pas accessibles.
-
-Pour des tests rapides, ces valeurs peuvent aussi être fournies via l’URL :
-`?spreadsheetId=` et `?apiKey=`.
 
 ## Dépendances
 
