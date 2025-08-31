@@ -98,7 +98,7 @@ def ensure_sheet_exists(service, spreadsheet_id: str, sheet_name: str) -> int:
         raise RuntimeError(f"Impossible de créer l’onglet '{sheet_name}'.")
     return sheet_id
 
-def fetch_all_playlist_items(playlist_id: str, api_key: str, max_retries: int = 5) -> list[dict]:
+def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5) -> list[dict]:
     """
     Récupère tous les items d’une playlist YouTube en gérant la pagination,
     avec gestion d’erreurs réseau et backoff exponentiel.
@@ -108,7 +108,7 @@ def fetch_all_playlist_items(playlist_id: str, api_key: str, max_retries: int = 
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
         "part": "snippet,contentDetails",
-        "playlistId": playlist_id,
+        "playlistId": source_id,
         "maxResults": 50,
         "key": api_key,
     }
@@ -224,42 +224,14 @@ def sync_videos() -> None:
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     raw_spreadsheet_id = os.environ.get("SPREADSHEET_ID")
     SHEET_TAB_NAME = os.environ.get("SHEET_TAB_NAME", "AllVideos")
-    # Nettoyage de l'ID de playlist
-    raw_playlist = os.environ.get("PLAYLIST_ID", "")
-    PLAYLIST_ID = raw_playlist.strip()
-    # Si aucun identifiant de playlist n'est fourni, on continue avec une chaîne vide.
-    # Une erreur générique sera consignée plus bas si la récupération échoue.
-    # Accepter un ID de chaîne (UC…) en récupérant la playlist 'uploads'
-    if PLAYLIST_ID.startswith("UC"):
-        try:
-            resp = requests.get(
-                "https://www.googleapis.com/youtube/v3/channels",
-                params={"part": "contentDetails", "id": PLAYLIST_ID, "key": YOUTUBE_API_KEY},
-                timeout=10,
-            )
-            resp.raise_for_status()
-            uploads = (
-                resp.json()
-                .get("items", [{}])[0]
-                .get("contentDetails", {})
-                .get("relatedPlaylists", {})
-                .get("uploads")
-            )
-            if uploads:
-                PLAYLIST_ID = uploads
-            else:
-                logging.error("Impossible de récupérer la playlist 'uploads' du canal %s", raw_playlist)
-                return
-        except Exception as e:
-            logging.error("Erreur lors de la récupération du canal %s : %s", raw_playlist, e)
-            return
     SERVICE_ACCOUNT_FILE = os.environ.get("SERVICE_ACCOUNT_FILE", "service_account.json")
+    playlist_source_id = raw_spreadsheet_id
+    if not playlist_source_id:
+        logging.error("Variable d'environnement SPREADSHEET_ID manquante")
+        return
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
     if not YOUTUBE_API_KEY:
         logging.error("Variable d'environnement YOUTUBE_API_KEY manquante")
-        return
-    if not raw_spreadsheet_id:
-        logging.error("Variable d'environnement SPREADSHEET_ID manquante")
         return
     SPREADSHEET_ID = parse_spreadsheet_id(raw_spreadsheet_id)
     if not SPREADSHEET_ID:
@@ -270,7 +242,7 @@ def sync_videos() -> None:
     service = build("sheets", "v4", credentials=creds)
     # Récupération des vidéos
     try:
-        items = fetch_all_playlist_items(PLAYLIST_ID, YOUTUBE_API_KEY)
+        items = fetch_all_playlist_items(playlist_source_id, YOUTUBE_API_KEY)
     except RuntimeError:
         # En cas d'erreur lors de la récupération, consigne un message générique
         logging.error("Impossible de récupérer les vidéos de la playlist")
@@ -278,7 +250,7 @@ def sync_videos() -> None:
     if not items:
         logging.warning(
             "Aucun élément récupéré pour la playlist %s. Vérifiez l'identifiant ou la visibilité.",
-            PLAYLIST_ID,
+            playlist_source_id,
         )
     video_ids = [it["contentDetails"]["videoId"] for it in items]
     videos_data = fetch_videos_details(video_ids, YOUTUBE_API_KEY)
@@ -359,3 +331,7 @@ def sync_videos() -> None:
         valueInputOption="RAW",
         body=body,
     ).execute()
+
+
+if __name__ == "__main__":
+    sync_videos()

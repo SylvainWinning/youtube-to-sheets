@@ -2,10 +2,12 @@ import logging
 from main import sync_videos
 
 
-def test_sync_videos_handles_fetch_error(monkeypatch, caplog):
+def test_sync_videos_handles_fetch_error(monkeypatch, caplog, tmp_path):
     monkeypatch.setenv("YOUTUBE_API_KEY", "key")
     monkeypatch.setenv("SPREADSHEET_ID", "A" * 25)
-    monkeypatch.setenv("SERVICE_ACCOUNT_FILE", "dummy.json")
+    service_file = tmp_path / "dummy.json"
+    service_file.write_text("{}")
+    monkeypatch.setenv("SERVICE_ACCOUNT_FILE", str(service_file))
 
     monkeypatch.setattr(
         "main.service_account.Credentials.from_service_account_file",

@@ -34,6 +34,8 @@ Secrets GitHub à créer :
   (une suite de 25 à 60 caractères alphanumériques, tirets ou soulignés)
 - `SERVICE_ACCOUNT_JSON` contenu JSON du compte de service Google
 
+La même valeur `SPREADSHEET_ID` est également utilisée pour identifier la playlist YouTube à synchroniser.
+
 Partage la feuille Google Sheets avec l’e‑mail du compte de service.
 
 Variables d’environnement **obligatoires** pour l’application web `bolt-app` :
