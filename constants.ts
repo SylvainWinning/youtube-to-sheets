@@ -97,12 +97,13 @@ export function getConfig(): {
 }  {  // Si l'ID est vide, on renvoie une erreur descriptive (pas de saisie utilisateur).
   if (!SPREADSHEET_ID) {
     return {
- return {
-    SPREADSHEET_ID: '',
-    API_KEY,
-    error: ' ,',
-  };
+ 
+      SPREADSHEET_ID: '',
+      API_KEY,
+      error: ' ',
+    };
 
+  
 
   // Si l'ID n'est pas composé uniquement de caractères valides, on le signale comme invalide.
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
