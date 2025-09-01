@@ -103,12 +103,19 @@ export function getConfig(): {
   SPREADSHEET_ID: string;
   API_KEY: string;
   error?: string;
+  help?: string;
 } {
-  // If the ID is empty, mark it as missing.
+  // If the ID is empty, provide a gentle hint instead of logging an error.
   if (!SPREADSHEET_ID) {
-    const error = 'SPREADSHEET_ID manquant : définissez SPREADSHEET_ID ou utilisez ?spreadsheetId=';
-    console.error(error);
-    return { SPREADSHEET_ID: '', API_KEY: '', error };
+    let userInput = '';
+    if (typeof window !== 'undefined' && typeof window.prompt === 'function') {
+      userInput = parseSpreadsheetId(window.prompt('Veuillez saisir l\'ID du Google Sheet :') || '');
+    }
+    return {
+      SPREADSHEET_ID: userInput,
+      API_KEY,
+      help: "SPREADSHEET_ID manquant : définissez SPREADSHEET_ID, utilisez ?spreadsheetId= ou saisissez-le dans la boîte de dialogue.",
+    };
   }
   // If the ID contains characters outside the allowed set, flag it as invalid.
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {

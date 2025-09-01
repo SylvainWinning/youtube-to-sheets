@@ -21,3 +21,14 @@ def test_sync_videos_handles_fetch_error(monkeypatch, caplog, tmp_path):
     with caplog.at_level(logging.ERROR):
         sync_videos("PL123")
     assert "Impossible de récupérer les vidéos de la playlist" in caplog.text
+
+
+def test_sync_videos_missing_spreadsheet_id(monkeypatch, caplog):
+    """Vérifie qu'un message clair est journalisé si SPREADSHEET_ID est absent."""
+    monkeypatch.setenv("YOUTUBE_API_KEY", "key")
+    monkeypatch.setenv("SERVICE_ACCOUNT_JSON", "{}")
+
+    with caplog.at_level(logging.ERROR):
+        sync_videos("PL123")
+
+    assert "Variable d'environnement SPREADSHEET_ID manquante" in caplog.text

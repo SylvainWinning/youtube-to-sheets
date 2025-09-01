@@ -1,6 +1,24 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 
+test("getConfig propose une aide si l'ID est absent", async () => {
+  const originalSpreadsheetId = process.env.SPREADSHEET_ID;
+  delete process.env.SPREADSHEET_ID;
+
+  const { getConfig } = await import(`../../constants.ts?sync=${Date.now()}`);
+  const config = getConfig();
+
+  assert.equal(config.SPREADSHEET_ID, '');
+  assert.ok(config.help);
+  assert.ok(!('error' in config));
+
+  if (originalSpreadsheetId === undefined) {
+    delete process.env.SPREADSHEET_ID;
+  } else {
+    process.env.SPREADSHEET_ID = originalSpreadsheetId;
+  }
+});
+
 // Ensure the sheet synchronization can handle more than 1000 rows
 // by mocking the global fetch to return 1201 unique entries.
 test('synchronizeSheets handles large sheet ranges', async () => {

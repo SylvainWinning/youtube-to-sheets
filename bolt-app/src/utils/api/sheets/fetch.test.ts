@@ -1,6 +1,24 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 
+test('getConfig fournit un message d\'aide quand SPREADSHEET_ID est absent', async () => {
+  const originalSpreadsheetId = process.env.SPREADSHEET_ID;
+  delete process.env.SPREADSHEET_ID;
+
+  const { getConfig } = await import(`../../constants.ts?fetch=${Date.now()}`);
+  const config = getConfig();
+
+  assert.equal(config.SPREADSHEET_ID, '');
+  assert.ok(config.help);
+  assert.ok(!('error' in config));
+
+  if (originalSpreadsheetId === undefined) {
+    delete process.env.SPREADSHEET_ID;
+  } else {
+    process.env.SPREADSHEET_ID = originalSpreadsheetId;
+  }
+});
+
 // Verify that fetchSheetData correctly handles ranges without an upper bound
 // and returns all available rows.
 test('fetchSheetData retrieves all rows for unbounded range', async () => {
