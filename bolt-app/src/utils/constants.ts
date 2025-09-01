@@ -24,10 +24,36 @@ export function parseSpreadsheetId(input: string): string {
   return id.trim();
 }
 
-const rawSpreadsheetId = env.SPREADSHEET_ID ?? '';
+function deriveConfigFromParams() {
+  let spreadsheetIdParam: string | null = null;
+  let apiKeyParam: string | null = null;
+
+  if (typeof window !== 'undefined' && window.location) {
+    const params = new URLSearchParams(window.location.search);
+    spreadsheetIdParam = params.get('spreadsheetId');
+    apiKeyParam = params.get('apiKey');
+  }
+
+  const parsedId = spreadsheetIdParam ? parseSpreadsheetId(spreadsheetIdParam) : '';
+  return {
+    spreadsheetIdParam: parsedId,
+    apiKeyParam: apiKeyParam ?? ''
+  };
+}
+
+const { spreadsheetIdParam, apiKeyParam } = deriveConfigFromParams();
+
+const rawSpreadsheetId =
+  spreadsheetIdParam ||
+  env.SPREADSHEET_ID ||
+  '';
 
 export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
-export const API_KEY = env.YOUTUBE_API_KEY ?? '';
+
+export const API_KEY =
+  apiKeyParam ||
+  env.YOUTUBE_API_KEY ||
+  '';
 
 /**
  * Valide l’ID : il doit contenir au moins un caractère et ne comporter que
@@ -44,7 +70,7 @@ export function getConfig(): {
 } {
   // Si l’ID est vide, on considère qu’il est manquant et on affiche le message approprié.
   if (!SPREADSHEET_ID) {
-    const error = 'SPREADSHEET_ID manquant : définissez SPREADSHEET_ID';
+    const error = 'SPREADSHEET_ID manquant : définissez SPREADSHEET_ID ou utilisez ?spreadsheetId=';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
@@ -56,7 +82,7 @@ export function getConfig(): {
   }
   // Si la clé API est absente, on l’indique.
   if (!API_KEY) {
-    const error = 'API_KEY manquant : définissez YOUTUBE_API_KEY';
+    const error = 'API_KEY manquant : définissez YOUTUBE_API_KEY ou utilisez ?apiKey=';
     console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
