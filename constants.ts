@@ -102,10 +102,10 @@ export function getConfig(): {
     return {
       SPREADSHEET_ID: '',
       API_KEY,
-      error: "SPREADSHEET_ID manquant : définissez SPREADSHEET_ID ou utilisez '?spreadsheetId=' dans l'URL.",
+      eerror: '',
     };
-  }
-
+  };
+}
   // L'ID est fourni mais ne respecte pas le format attendu : retourne une
   // erreur pour éviter de lancer des requêtes inutiles.
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
