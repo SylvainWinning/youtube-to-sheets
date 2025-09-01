@@ -1,8 +1,8 @@
 name: Export Google Sheet to public data
 
 on:
-  workflow_dispatch:
-  schedule:
+     workflow_dispatch:
+      schedule:
     # ===== CEST (UTC+2) =====
     # CEST: avril - septembre (mois 4-9)
     - cron: "0 0,10,12,18-21 * 4-9 *"
