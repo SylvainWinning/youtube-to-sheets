@@ -21,10 +21,9 @@ export const SHEET_TABS: SheetTab[] = [
 // différents. On lit d’abord `import.meta.env` (Vite), puis on se replie sur
 // `process.env` (Node).
 const env = {
-  ...(globalThis as any).process?.env ?? {},
-  ...(import.meta as any).env ?? {},
+  ...((import.meta as any)?.env ?? {}),
+  ...((typeof process !== 'undefined' ? (process as any).env : {})),
 };
-
 /**
  * Extracts the spreadsheet ID from a full Google Sheets URL. If the input
  * already resembles an ID (consisting solely of allowed characters), it
