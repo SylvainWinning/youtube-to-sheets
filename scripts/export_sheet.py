@@ -64,7 +64,13 @@ for idx, sheet_range in enumerate(SHEET_RANGES):
 out_dir = pathlib.Path("bolt-app/public/data")
 out_dir.mkdir(parents=True, exist_ok=True)
 
+# Filter out rows with unknown title "Inconnu"
+ifall_values:
+header, *rows = all_values
+    rows = [row for row in rows if len(row) > 1 and row[1] != "Inconnu"]
 # Save CSV
+
+
 csv_path = out_dir / "videos.csv"
 with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
     writer = csv.writer(csvfile)
