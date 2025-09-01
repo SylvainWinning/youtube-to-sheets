@@ -72,11 +72,11 @@ export function getConfig(): {
   error?: string;
   help?: string;
 } {
-  // Si l’ID est vide, on propose une saisie utilisateur sans consigner d’erreur.
-  i  if (!SPREADSHEET_ID) {
+  // Si l’ID est vide, on renvoie une erreur descriptive (pas de saisie utilisateur).
+  iif (!SPREADSHEET_ID) {
     return {
       SPREADSHEET_ID: '',
-      API_KEY,
+     API_KEY,
       error: "SPREADSHEET_ID manquant : définissez SPREADSHEET_ID ou utilisez '?spreadsheetId=' dans l'URL.",
     };
   }
