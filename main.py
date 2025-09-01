@@ -10,6 +10,18 @@ import requests
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
+"""
+Ce module fournit une fonction permettant de synchroniser une playlist YouTube
+vers un classeur Google Sheets. Les vidéos sont regroupées par tranche de
+durée (0‑5 min, 5‑10 min, etc.) et écrites dans des onglets séparés
+correspondants à leur catégorie. L’onglet principal (AllVideos par défaut)
+contient l’ensemble des vidéos.
+
+La structure est basée sur le dépôt original github.com/SylvainWinning/youtube-to-sheets,
+mais le comportement a été adapté pour écrire dans tous les onglets de
+catégories plutôt que de fusionner toutes les vidéos dans une seule feuille.
+"""
+
 # Colonnes attendues pour l’export CSV/Google Sheets
 HEADERS = [
     "channelAvatar",
@@ -27,14 +39,17 @@ HEADERS = [
     "thumbnail",
 ]
 
+# Valeurs par défaut pour les miniatures et avatars en cas d’absence de données
 DEFAULT_AVATAR_URL = "https://via.placeholder.com/48"
 DEFAULT_THUMBNAIL_URL = "https://via.placeholder.com/480x360?text=No+Thumbnail"
 
+# Expressions régulières pour extraire l’ID du classeur et celui de la playlist
 _SPREADSHEET_RE = re.compile(r"/spreadsheets/d/([A-Za-z0-9-_]{25,60})")
-
 _PLAYLIST_RE = re.compile(r"list=([A-Za-z0-9-_]{5,60})")
 
+
 def parse_spreadsheet_id(value: str) -> str | None:
+    """Extrait l'identifiant du classeur Google Sheets depuis une URL ou une chaîne brute."""
     match = _SPREADSHEET_RE.search(value or "")
     if match:
         return match.group(1)
@@ -44,6 +59,7 @@ def parse_spreadsheet_id(value: str) -> str | None:
 
 
 def parse_playlist_id(value: str) -> str | None:
+    """Extrait l'identifiant de playlist YouTube depuis une URL ou une chaîne brute."""
     match = _PLAYLIST_RE.search(value or "")
     if match:
         return match.group(1)
@@ -51,8 +67,9 @@ def parse_playlist_id(value: str) -> str | None:
         return value.strip()
     return None
 
+
 def parse_duration(iso_duration: str) -> str:
-    """Convertit une durée ISO 8601 (ex. 'PT5M20S') en 'HH:MM:SS'."""
+    """Convertit une durée ISO 8601 (ex. 'PT5M20S') en format 'HH:MM:SS'."""
     pattern = re.compile(r"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$")
     match = pattern.match(iso_duration or "")
     if not match:
@@ -61,6 +78,7 @@ def parse_duration(iso_duration: str) -> str:
     m = int(match.group(2)) if match.group(2) else 0
     s = int(match.group(3)) if match.group(3) else 0
     return f"{h:02d}:{m:02d}:{s:02d}"
+
 
 def get_duration_category(duration: str) -> str:
     """Classe la durée en catégories (0‑5 min, 5‑10 min, etc.)."""
@@ -91,6 +109,7 @@ def get_duration_category(duration: str) -> str:
     else:
         return "60Plusmin"
 
+
 def get_sheet_id(spreadsheet_id: str, sheet_title: str, service) -> int | None:
     """Retourne l’ID de feuille correspondant au titre dans un Google Sheet."""
     spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
@@ -98,6 +117,7 @@ def get_sheet_id(spreadsheet_id: str, sheet_title: str, service) -> int | None:
         if sheet["properties"]["title"] == sheet_title:
             return sheet["properties"]["sheetId"]
     return None
+
 
 def ensure_sheet_exists(service, spreadsheet_id: str, sheet_name: str) -> int:
     """Vérifie l’existence de l’onglet et le crée au besoin. Retourne le sheetId."""
@@ -110,6 +130,7 @@ def ensure_sheet_exists(service, spreadsheet_id: str, sheet_name: str) -> int:
     if sheet_id is None:
         raise RuntimeError(f"Impossible de créer l’onglet '{sheet_name}'.")
     return sheet_id
+
 
 def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5) -> list[dict]:
     """
@@ -152,6 +173,7 @@ def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5)
         params["pageToken"] = next_page_token
     return items
 
+
 def fetch_videos_details(video_ids: list[str], api_key: str, max_retries: int = 5) -> dict[str, dict]:
     """Récupère les détails de plusieurs vidéos en une seule requête API."""
     base_url = "https://www.googleapis.com/youtube/v3/videos"
@@ -164,7 +186,7 @@ def fetch_videos_details(video_ids: list[str], api_key: str, max_retries: int = 
             "key": api_key,
         }
         backoff = 1
-        data = {}
+        data: dict[str, dict] = {}
         for attempt in range(max_retries):
             try:
                 resp = requests.get(base_url, params=params, timeout=10)
@@ -174,6 +196,7 @@ def fetch_videos_details(video_ids: list[str], api_key: str, max_retries: int = 
             except Exception as err:
                 logging.warning("Erreur API YouTube (videos): %s", err)
                 if attempt == max_retries - 1:
+                    # Si toutes les tentatives échouent pour ce batch, passe au suivant
                     data = {}
                     break
                 time.sleep(backoff)
@@ -181,6 +204,7 @@ def fetch_videos_details(video_ids: list[str], api_key: str, max_retries: int = 
         for item in data.get("items", []):
             details[item["id"]] = item
     return details
+
 
 def get_thumbnail_url(video_data: dict) -> str:
     """Extrait l’URL de miniature la plus grande disponible."""
@@ -190,6 +214,7 @@ def get_thumbnail_url(video_data: dict) -> str:
             return thumb_info[quality]["url"]
     return DEFAULT_THUMBNAIL_URL
 
+
 def format_published_at(iso_timestamp: str) -> str:
     """Formate la date de publication ISO en 'dd/mm/YYYY HH:MM' (préfixée d'une apostrophe)."""
     try:
@@ -198,8 +223,10 @@ def format_published_at(iso_timestamp: str) -> str:
         return ""
     return f"'{dt.strftime('%d/%m/%Y %H:%M')}"
 
+
 # Cache d’avatars de chaîne (évite de refaire des requêtes)
 channel_avatar_cache: dict[str, str] = {}
+
 
 def get_channel_avatar(channel_id: str, api_key: str) -> str:
     """Retourne l'URL de l'avatar de chaîne (avec cache et gestion d’erreurs)."""
@@ -223,17 +250,53 @@ def get_channel_avatar(channel_id: str, api_key: str) -> str:
     channel_avatar_cache[channel_id] = avatar_url
     return avatar_url
 
+
 def add_video_to_categories(entry: list, duration_category: str, videos_by_category: dict[str, list], all_videos: list) -> None:
     """Ajoute une entrée vidéo à la catégorie correspondante et à la liste globale."""
     videos_by_category[duration_category].append(entry)
     all_videos.append(entry)
 
+
+def write_category(service, spreadsheet_id: str, sheet_name: str, rows: list[list]) -> None:
+    """
+    Écrit les données de vidéos dans un onglet spécifique. Cette fonction assure
+    la création de l’onglet si nécessaire, efface son contenu actuel puis
+    insère les en‑têtes et les lignes fournies.
+    """
+    # Assure que l’onglet existe et obtient son ID
+    sheet_id = ensure_sheet_exists(service, spreadsheet_id, sheet_name)
+    # Efface tout le contenu de l’onglet
+    clear_body = {
+        "requests": [
+            {
+                "updateCells": {
+                    "range": {
+                        "sheetId": sheet_id,
+                    },
+                    "fields": "*",
+                }
+            }
+        ]
+    }
+    service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=clear_body).execute()
+    # Prépare les valeurs à insérer : en‑tête suivi des lignes
+    values = [HEADERS] + rows
+    body = {"values": values}
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id,
+        range=f"{sheet_name}!A1",
+        valueInputOption="RAW",
+        body=body,
+    ).execute()
+
+
 def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
     """
     Récupère les vidéos d’une playlist YouTube et met à jour un Google Sheet.
-    Regroupe par catégorie de durée et alimente les onglets correspondants.
+    Regroupe les vidéos par catégorie de durée et alimente les onglets
+    correspondants, en plus de l’onglet principal (AllVideos).
     """
-    # Variables d’environnement
+    # Variables d’environnement requises
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     raw_spreadsheet_id = os.environ.get("SPREADSHEET_ID")
     playlist_source_id = parse_playlist_id(playlist_id)
@@ -263,11 +326,10 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
         return
     creds = service_account.Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     service = build("sheets", "v4", credentials=creds)
-    # Récupération des vidéos
+    # Récupération des vidéos de la playlist
     try:
         items = fetch_all_playlist_items(playlist_source_id, YOUTUBE_API_KEY)
     except RuntimeError:
-        # En cas d'erreur lors de la récupération, consigne un message générique
         logging.error("Impossible de récupérer les vidéos de la playlist")
         return
     if not items:
@@ -277,7 +339,7 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
         )
     video_ids = [it["contentDetails"]["videoId"] for it in items]
     videos_data = fetch_videos_details(video_ids, YOUTUBE_API_KEY)
-    # Catégories et accumulations
+    # Catégories de durée pré‑définies
     videos_by_category: dict[str, list] = {
         "0-5min": [],
         "5-10min": [],
@@ -289,6 +351,7 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
         "60Plusmin": [],
         "Inconnue": [],
     }
+    # Liste globale de toutes les vidéos
     all_videos: list[list] = []
     for item in items:
         video_id = item["contentDetails"]["videoId"]
@@ -322,38 +385,11 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
                 thumbnail_url,
             ]
             add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
-    # Prépare les données à écrire dans Google Sheets
-    try:
-        sheet_id = ensure_sheet_exists(service, SPREADSHEET_ID, SHEET_TAB_NAME)
-    except RuntimeError as err:
-        logging.error("%s", err)
-        return
-    # Effacer l'onglet avant d'écrire
-    requests_body = {
-        "requests": [
-            {
-                "updateCells": {
-                    "range": {
-                        "sheetId": sheet_id,
-                    },
-                    "fields": "*",
-                }
-            }
-        ]
-    }
-    service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID, body=requests_body).execute()
-    # Préparer les valeurs à écrire (en-tête + vidéos regroupées)
-    values = [HEADERS]
-    for category in videos_by_category:
-        for video in videos_by_category[category]:
-            values.append(video)
-    body = {"values": values}
-    service.spreadsheets().values().update(
-        spreadsheetId=SPREADSHEET_ID,
-        range=f"{SHEET_TAB_NAME}!A1",
-        valueInputOption="RAW",
-        body=body,
-    ).execute()
+    # Écriture des données dans chaque onglet de catégorie
+    for category_name, rows in videos_by_category.items():
+        write_category(service, SPREADSHEET_ID, category_name, rows)
+    # Enfin, écrire l’ensemble des vidéos dans l’onglet principal
+    write_category(service, SPREADSHEET_ID, SHEET_TAB_NAME, all_videos)
 
 
 if __name__ == "__main__":
