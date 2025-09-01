@@ -12,7 +12,10 @@ export const SHEET_TABS: SheetTab[] = [
   { name: 'Inconnue', range: 'Inconnue!A2:M', durationRange: { min: null, max: null } },
 ];
 
-const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
+const env = {
+  ...(globalThis as any).process?.env ?? {},
+  ...(import.meta as any).env ?? {},
+};
 
 /**
  * Extrait l’ID du classeur à partir d’une URL complète ou renvoie la chaîne fournie.
