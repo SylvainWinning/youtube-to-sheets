@@ -3,7 +3,26 @@ name: Export Google Sheet to public data
 on:
   workflow_dispatch:
   schedule:
-    # (horaires inchangés ici pour la lisibilité)
+    # ===== CEST (UTC+2) =====
+    # CEST: avril - septembre (mois 4-9)
+    - cron: "0 0,10,12,18-21 * 4-9 *"
+    - cron: "0 22,23 * 4-9 *"
+    # CEST: 25-31 mars
+    - cron: "0 0,10,12,18-21 25-31 3 *"
+    - cron: "0 22,23 25-31 3 *"
+    # CEST: 1-24 octobre
+    - cron: "0 0,10,12,18-21 1-24 10 *"
+    - cron: "0 22,23 1-24 10 *"
+    # ===== CET (UTC+1) =====
+    # CET: novembre - février
+    - cron: "0 0-1,11-13,19-22 11,12,1,2 *"
+    - cron: "0 23 * 11,12,1,2 *"
+    # CET: 1-24 mars
+    - cron: "0 0,1-11,13,19-22 1-24 3 *"
+    - cron: "0 23 1-24 3 *"
+    # CET: 25-31 octobre
+    - cron: "0 0-1,11-13,19-22 25-31 10 *"
+    - cron: "0 23 25-31 10 *"
 
 permissions:
   contents: write
