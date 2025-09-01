@@ -77,7 +77,7 @@ export function getConfig(): {
     return {
       SPREADSHEET_ID: '',
      API_KEY,
-      error: "SPREADSHEET_ID manquant : définissez SPREADSHEET_ID ou utilisez '?spreadsheetId=' dans l'URL.",
+      error: '',
     };
   }
 
