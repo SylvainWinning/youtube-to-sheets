@@ -1,8 +1,8 @@
 name: Export Google Sheet to public data
 
 on:
-     workflow_dispatch:
-      schedule:
+  workflow_dispatch:
+  schedule:
     # ===== CEST (UTC+2) =====
     # CEST: avril - septembre (mois 4-9)
     - cron: "0 0,10,12,18-21 * 4-9 *"
@@ -15,7 +15,7 @@ on:
     - cron: "0 22,23 1-24 10 *"
     # ===== CET (UTC+1) =====
     # CET: novembre - février
-   - cron: "0 0-1,11-13,19-22 * 11,12,1,2 *"
+    - cron: "0 0-1,11-13,19-22 * 11,12,1,2 *"
     - cron: "0 23 * 11,12,1,2 *"
     # CET: 1-24 mars
     - cron: "0 0,1-11,13,19-22 1-24 3 *"
@@ -34,7 +34,7 @@ concurrency:
 jobs:
   export:
     # ne lance le workflow qu’après la réussite d’un workflow_run
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
+        cache: "pip"
 
       - name: Install deps
         run: |
@@ -53,8 +53,7 @@ jobs:
         env:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          # Liste des onglets existants ; chaque plage commence en A1 et s’étend jusqu’à Z (colonnes 1 à 26)
-          SHEET_RANGE: "'0-5min'!A1:Z,'5-10min'!A1:Z,'10-20min'!A1:Z,'20-30min'!A1:Z,'30-40min'!A1:Z,'40-50min'!A1:Z,'50-60min'!A1:Z,'60Plusmin'!A1:Z"
+          SHEET_RANGE: "'0-5min'!A1:Z, '5-10min'!A1:Z, '10-20min'!A1:Z, '20-30min'!A1:Z"
         run: python scripts/export_sheet.py
 
       - name: Commit & push CSV and JSON update
