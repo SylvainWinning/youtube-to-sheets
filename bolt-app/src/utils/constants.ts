@@ -1,5 +1,6 @@
 import type { SheetTab } from '../types/sheets';
 
+// Tableau des onglets et durées associées pour filtrer les vidéos.
 export const SHEET_TABS: SheetTab[] = [
   { name: '0-5min', range: '0-5min!A2:M', durationRange: { min: 0, max: 5 } },
   { name: '5-10min', range: '5-10min!A2:M', durationRange: { min: 5, max: 10 } },
@@ -12,6 +13,7 @@ export const SHEET_TABS: SheetTab[] = [
   { name: 'Inconnue', range: 'Inconnue!A2:M', durationRange: { min: null, max: null } },
 ];
 
+// Récupération des variables d’environnement (Vite, .env, etc.).
 const env = {
   ...(globalThis as any).process?.env ?? {},
   ...(import.meta as any).env ?? {},
@@ -23,10 +25,13 @@ const env = {
  */
 export function parseSpreadsheetId(input: string): string {
   const match = input?.match(/\/spreadsheets\/d\/([A-Za-z0-9-_]{25,60})/);
-  const id = match ? match[1] : (input ?? '');
+  const id = match ? match[1] : input ?? '';
   return id.trim();
 }
 
+/**
+ * Récupère éventuellement le spreadsheetId et l’apiKey dans l’URL (`?spreadsheetId=` et `?apiKey=`).
+ */
 function deriveConfigFromParams() {
   let spreadsheetIdParam: string | null = null;
   let apiKeyParam: string | null = null;
@@ -40,57 +45,59 @@ function deriveConfigFromParams() {
   const parsedId = spreadsheetIdParam ? parseSpreadsheetId(spreadsheetIdParam) : '';
   return {
     spreadsheetIdParam: parsedId,
-    apiKeyParam: apiKeyParam ?? ''
+    apiKeyParam: apiKeyParam ?? '',
   };
 }
 
+// Utilise d’abord les paramètres d’URL, puis les variables d’environnement.
 const { spreadsheetIdParam, apiKeyParam } = deriveConfigFromParams();
 
-const rawSpreadsheetId =
-  spreadsheetIdParam ||
-  env.SPREADSHEET_ID ||
-  '';
-
+const rawSpreadsheetId = spreadsheetIdParam || env.SPREADSHEET_ID || '';
 export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
 
-export const API_KEY =
-  apiKeyParam ||
-  env.YOUTUBE_API_KEY ||
-  '';
+export const API_KEY = apiKeyParam || env.YOUTUBE_API_KEY || '';
 
 /**
- * Valide l’ID : il doit contenir au moins un caractère et ne comporter que
- * des lettres, chiffres, tirets ou soulignés.
+ * Vérifie qu’un ID de feuille est composé uniquement de lettres, chiffres, tirets ou soulignés.
  */
 export function isValidSpreadsheetId(id: string): boolean {
   return /^[A-Za-z0-9-_]{25,60}$/.test(id);
 }
 
+/**
+ * Renvoie la configuration pour l’application.  
+ * - Si l’ID manque, on renvoie un objet vide avec une chaîne d’erreur non vide (un espace) pour déclencher l’utilisation des vidéos locales sans afficher de message à l’écran.  
+ * - Si l’ID est invalide, on renvoie une erreur explicite.  
+ * - Si la clé API est absente, on renvoie une erreur explicite.
+ */
 export function getConfig(): {
   SPREADSHEET_ID: string;
   API_KEY: string;
   error?: string;
   help?: string;
 } {
-  // Si l’ID est vide, on renvoie une erreur descriptive (pas de saisie utilisateur).
+  // ID manquant : déclenche l’utilisation du fallback local.
   if (!SPREADSHEET_ID) {
     return {
-    
-     SPREADSHEET_ID: '',
+      SPREADSHEET_ID: '',
       API_KEY,
-      error: ' ',
+      error: ' ', // chaîne contenant un espace pour être « truthy » sans afficher de message
     };
+  }
 
- l’ID n’est pas composé uniquement de caractères valides, on le signale comme invalide.
+  // ID invalide : message explicite.
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
     const error = 'SPREADSHEET_ID invalide';
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
-  // Si la clé API est absente, on l’indique.
+
+  // Clé API manquante : message explicite.
   if (!API_KEY) {
-    const error = 'API_KEY manquant : définissez YOUTUBE_API_KEY ou utilisez ?apiKey=';
+    const error =
+      'API_KEY manquant : définissez YOUTUBE_API_KEY ou utilisez ?apiKey=';
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
-  // Retourne la configuration correcte.
+
+  // Configuration correcte.
   return { SPREADSHEET_ID, API_KEY };
 }
