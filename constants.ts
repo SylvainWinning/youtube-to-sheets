@@ -94,33 +94,28 @@ export function getConfig(): {
   API_KEY: string;
   error?: string;
   help?: string;
-} {
-  // L'ID n'est pas défini : retour d'une erreur descriptive. Aucune
-  // interaction avec l'utilisateur n'est déclenchée, ce qui évite une
-  // fenêtre pop‑up bloquante lors du chargement de l'application.
+}  {  // Si l'ID est vide, on renvoie une erreur descriptive (pas de saisie utilisateur).
   if (!SPREADSHEET_ID) {
     return {
       SPREADSHEET_ID: '',
       API_KEY,
-      eerror: '',
+      error: '',
     };
-  };
-}
-  // L'ID est fourni mais ne respecte pas le format attendu : retourne une
-  // erreur pour éviter de lancer des requêtes inutiles.
+  }
+
+  // Si l'ID n'est pas composé uniquement de caractères valides, on le signale comme invalide.
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
     const error = 'SPREADSHEET_ID invalide';
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
 
-  // Absence de clé API : signale également une erreur afin d'informer
-  // l'utilisateur qu'il doit fournir `YOUTUBE_API_KEY` ou utiliser `?apiKey=`.
+  // Si la clé API est absente, on l'indique.
   if (!API_KEY) {
     const error = "API_KEY manquant : définissez YOUTUBE_API_KEY ou utilisez '?apiKey='";
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
 
-  // Toutes les valeurs requises sont présentes et valides : renvoie la
-  // configuration sans erreur.
+  // Retourne la configuration correcte.
   return { SPREADSHEET_ID, API_KEY };
+
 }
