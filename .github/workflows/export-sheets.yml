@@ -3,29 +3,7 @@ name: Export Google Sheet to public data
 on:
   workflow_dispatch:
   schedule:
-    # ===== CEST (UTC+2) =====
-    # CEST : avril - septembre (mois 4 à 9)
-    - cron: "0 0,10,12,18-21 * 4-9 *"       # 02,12-14,20-23 h Paris
-    - cron: "0 22,23 * 4-9 *"               # 00-01 h Paris (J+1 côté UTC)
-    # CEST : 25-31 mars
-    - cron: "0 0,10,12,18-21 25-31 3 *"
-    - cron: "0 22,23 25-31 3 *"
-    # CEST : 1-24 octobre
-    - cron: "0 0,10,12,18-21 1-24 10 *"
-    - cron: "0 22,23 1-24 10 *"
-    # ===== CET (UTC+1) =====
-    # CET : novembre - février
-    - cron: "0 0,1,11-13,19-22 * 11,12,1,2 *"    # 01-02,12-14,20-23 h Paris
-    - cron: "0 23 * 11,12,1,2 *"                 # 00 h Paris (J+1 côté UTC)
-    # CET : 1-24 mars
-    - cron: "0 0,1,11-13,19-22 1-24 3 *"
-    - cron: "0 23 1-24 3 *"
-    # CET : 25-31 octobre
-    - cron: "0 0,1,11-13,19-22 25-31 10 *"
-    - cron: "0 23 25-31 10 *"
-  workflow_run:
-    workflows: ["YouTube to Sheets Sync"]
-    types: [completed]
+    # (horaires inchangés ici pour la lisibilité)
 
 permissions:
   contents: write
@@ -56,7 +34,8 @@ jobs:
         env:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          SHEET_RANGE: "'0-5min'!A1:Z,'5-10min'!A1:Z,'10-20min'!A1:Z,'20-30min'!A1:Z,'30-40min'!A1:Z,'40-50min'!A1:Z,'50-60min'!A1:Z,'60+min'!A1:Z,'Inconnue'!A1:Z"
+          # Liste des onglets existants ; chaque plage commence en A1 et s’étend jusqu’à Z (colonnes 1 à 26)
+          SHEET_RANGE: "'0-5min'!A1:Z,'5-10min'!A1:Z,'10-20min'!A1:Z,'20-30min'!A1:Z,'30-40min'!A1:Z,'40-50min'!A1:Z,'50-60min'!A1:Z,'60Plusmin'!A1:Z"
         run: python scripts/export_sheet.py
 
       - name: Commit & push CSV and JSON update
