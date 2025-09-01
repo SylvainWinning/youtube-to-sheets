@@ -18,12 +18,8 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
-    # REND LES SECRETS VISIBLES PAR Vite (clé API + ID de la feuille)
-    # => import.meta.env.VITE_* sera injecté au build
+    # Expose les secrets au build (clé API + ID de la feuille)
     env:
-      VITE_SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-      VITE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-      # (facultatif, pour d’éventuels fallback côté Node/tests)
       SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
       YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
 
@@ -56,7 +52,7 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      # 5. Compile le site (Vite lira VITE_SPREADSHEET_ID / VITE_API_KEY)
+      # 5. Compile le site (Vite lira SPREADSHEET_ID / YOUTUBE_API_KEY)
       - name: Build project
         run: npm run build
         working-directory: bolt-app
