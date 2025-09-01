@@ -1,5 +1,8 @@
 // Exporte la fonction parseDate pour qu'elle soit utilisable par d'autres modules
 export function parseDate(dateString: string): Date | null {
+  // Supprime les apostrophes en début de chaîne et les espaces, par exemple "'01/09/2025 11:14" devient "01/09/2025 11:14"
+  const cleaned = (dateString ?? '').trim().replace(/^'+/, '');
+
   // Essaie différents formats de date
   const formats = [
     // Format ISO
@@ -8,35 +11,35 @@ export function parseDate(dateString: string): Date | null {
     /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/,
     // Format DD/MM/YYYY
     /^(\d{2})\/(\d{2})\/(\d{4})/,
-    // Format français (ex: 11 avril 2024)
+    // Format français (ex : 11 avril 2024)
     /^(\d{1,2})\s+(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+(\d{4})/i
   ];
 
   try {
     // Test format ISO
-    if (formats[0].test(dateString)) {
+    if (formats[0].test(cleaned)) {
       // Certaines dates ISO provenant de l'API peuvent ne pas spécifier explicitement le fuseau horaire
       // Ajoute "Z" par défaut pour les interpréter comme UTC
-      const hasTimeZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(dateString);
-      return new Date(hasTimeZone ? dateString : `${dateString}Z`);
+      const hasTimeZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(cleaned);
+      return new Date(hasTimeZone ? cleaned : `${cleaned}Z`);
     }
-    
+
     // Test format DD/MM/YYYY HH:MM
-    const ddmmyyyyTime = formats[1].exec(dateString);
+    const ddmmyyyyTime = formats[1].exec(cleaned);
     if (ddmmyyyyTime) {
       const [, day, month, year, hour, minute] = ddmmyyyyTime;
       return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
     }
 
     // Test format DD/MM/YYYY
-    const ddmmyyyy = formats[2].exec(dateString);
+    const ddmmyyyy = formats[2].exec(cleaned);
     if (ddmmyyyy) {
       const [, day, month, year] = ddmmyyyy;
       return new Date(Number(year), Number(month) - 1, Number(day));
     }
-    
+
     // Test format français
-    const frenchDate = formats[3].exec(dateString);
+    const frenchDate = formats[3].exec(cleaned);
     if (frenchDate) {
       const [, day, month, year] = frenchDate;
       const monthMap: { [key: string]: string } = {
@@ -46,10 +49,10 @@ export function parseDate(dateString: string): Date | null {
       };
       const monthNumber = Number(monthMap[month.toLowerCase()]);
       return new Date(Number(year), monthNumber - 1, Number(day));
-    }
+      }
 
     // Si aucun format ne correspond, essaie le parsing natif
-    const date = new Date(dateString);
+    const date = new Date(cleaned);
     return isNaN(date.getTime()) ? null : date;
   } catch {
     return null;
