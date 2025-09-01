@@ -120,14 +120,12 @@ export function getConfig(): {
   // If the ID contains characters outside the allowed set, flag it as invalid.
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
     const error = 'SPREADSHEET_ID invalide';
-    console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
   // If the API key is missing, signal it explicitly. Mention the supported
   // environment variable names to help repository owners configure secrets correctly.
   if (!API_KEY) {
     const error = 'API_KEY manquant : définissez YOUTUBE_API_KEY ou utilisez ?apiKey=';
-    console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
   return { SPREADSHEET_ID, API_KEY };

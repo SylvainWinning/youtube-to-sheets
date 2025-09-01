@@ -87,13 +87,11 @@ export function getConfig(): {
   // Si l’ID n’est pas composé uniquement de caractères valides, on le signale comme invalide.
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
     const error = 'SPREADSHEET_ID invalide';
-    console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
   // Si la clé API est absente, on l’indique.
   if (!API_KEY) {
     const error = 'API_KEY manquant : définissez YOUTUBE_API_KEY ou utilisez ?apiKey=';
-    console.error(error);
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
   // Retourne la configuration correcte.
