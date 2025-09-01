@@ -20,7 +20,10 @@ export const SHEET_TABS: SheetTab[] = [
 // Vite et Node exposent les variables d’environnement à des endroits
 // différents. On lit d’abord `import.meta.env` (Vite), puis on se replie sur
 // `process.env` (Node).
-const env = (import.meta as any).env ?? (globalThis as any).process?.env ?? {};
+const env = {
+  ...(globalThis as any).process?.env ?? {},
+  ...(import.meta as any).env ?? {},
+};
 
 /**
  * Extracts the spreadsheet ID from a full Google Sheets URL. If the input
