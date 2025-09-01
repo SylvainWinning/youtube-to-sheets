@@ -73,17 +73,14 @@ export function getConfig(): {
   help?: string;
 } {
   // Si l’ID est vide, on propose une saisie utilisateur sans consigner d’erreur.
-  if (!SPREADSHEET_ID) {
-    let userInput = '';
-    if (typeof window !== 'undefined' && typeof window.prompt === 'function') {
-      userInput = parseSpreadsheetId(window.prompt("Veuillez saisir l'ID du Google Sheet :") || '');
-    }
+  i  if (!SPREADSHEET_ID) {
     return {
-      SPREADSHEET_ID: userInput,
+      SPREADSHEET_ID: '',
       API_KEY,
-      help: "SPREADSHEET_ID manquant : définissez SPREADSHEET_ID, utilisez ?spreadsheetId= ou saisissez-le dans la boîte de dialogue.",
+      error: "SPREADSHEET_ID manquant : définissez SPREADSHEET_ID ou utilisez '?spreadsheetId=' dans l'URL.",
     };
   }
+
   // Si l’ID n’est pas composé uniquement de caractères valides, on le signale comme invalide.
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
     const error = 'SPREADSHEET_ID invalide';
