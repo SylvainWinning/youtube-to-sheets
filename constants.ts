@@ -1,103 +1,79 @@
-import type { SheetTab } from '../types/sheets';
+import { dev } from '$app/environment';
 
 /**
- * Definition of all known sheet tabs. Each tab corresponds to a duration
- * interval and maps to a particular range within the Google Sheet. The
- * `durationRange` property is used by the UI to filter videos by length.
+ * Extrait un paramètre de requête depuis l’URL.
  */
-export const SHEET_TABS: SheetTab[] = [
-  { name: '0-5min', range: '0-5min!A2:M', durationRange: { min: 0, max: 5 } },
-  { name: '5-10min', range: '5-10min!A2:M', durationRange: { min: 5, max: 10 } },
-  { name: '10-20min', range: '10-20min!A2:M', durationRange: { min: 10, max: 20 } },
-  { name: '20-30min', range: '20-30min!A2:M', durationRange: { min: 20, max: 30 } },
-  { name: '30-40min', range: '30-40min!A2:M', durationRange: { min: 30, max: 40 } },
-  { name: '40-50min', range: '40-50min!A2:M', durationRange: { min: 40, max: 50 } },
-  { name: '50-60min', range: '50-60min!A2:M', durationRange: { min: 50, max: 60 } },
-  { name: '60Plusmin', range: '60Plusmin!A2:M', durationRange: { min: 60, max: null } },
-  { name: 'Inconnue', range: 'Inconnue!A2:M', durationRange: { min: null, max: null } }
-];
+function getParamFromUrl(name: string): string {
+  const params = new URLSearchParams(globalThis.location?.search ?? '');
+  return params.get(name) ?? '';
+}
 
-// Vite et Node exposent les variables d’environnement à des endroits
-// différents. On lit d’abord `import.meta.env` (Vite), puis on se replie sur
-// `process.env` (Node).
+/**
+ * Analyse une URL Google Sheets ou renvoie l’ID si elle est déjà fournie directement.
+ */
+function parseSpreadsheetId(idOrUrl: string): string {
+  const match = idOrUrl.match(/^[A-Za-z0-9-_]{25,60}$/);
+  if (match) return idOrUrl;
+  try {
+    const url = new URL(idOrUrl);
+    const parts = url.pathname.split('/');
+    const dIndex = parts.indexOf('d');
+    if (dIndex >= 0 && parts.length > dIndex + 1) {
+      return parts[dIndex + 1];
+    }
+  } catch {
+    // ignore
+  }
+  return '';
+}
+
+/**
+ * Fusionne les variables d’environnement exposées par Vite et par Node.
+ * Vite injecte les variables dans import.meta.env au build, tandis que Node les stocke dans process.env.
+ */
 const env = {
+  // Variables injectées par Vite lors du build
   ...((import.meta as any)?.env ?? {}),
+  // Variables Node pour l’exécution côté serveur ou scripts
   ...((typeof process !== 'undefined' ? (process as any).env : {})),
 };
-/**
- * Extracts the spreadsheet ID from a full Google Sheets URL. If the input
- * already resembles an ID (consisting solely of allowed characters), it
- * returns it unchanged. Leading/trailing whitespace is always trimmed.
- */
-export function parseSpreadsheetId(input: string): string {
-  const match = input?.match(/\/spreadsheets\/d\/([A-Za-z0-9-_]{25,60})/);
-  const id = match ? match[1] : (input ?? '');
-  return id.trim();
-}
+
+const spreadsheetIdParam = getParamFromUrl('spreadsheetId');
+const apikeyParam = getParamFromUrl('apiKey');
 
 /**
- * Derives the spreadsheet ID and API key by first looking at the current URL
- * query parameters (`?spreadsheetId=...&apiKey=...`) and then falling back to
- * environment variables. This allows testers to quickly override the
- * configuration in the browser without modifying the build. The values are
- * parsed and validated before being returned.
+ * Détermine l’ID brut de la feuille de calcul en privilégiant le paramètre d’URL puis les variables d’environnement.
+ * Si rien n’est fourni, une valeur par défaut est utilisée ; si cette valeur est vide, une erreur de configuration surviendra plus loin.
  */
-function deriveConfigFromParams() {
-  let spreadsheetIdParam: string | null = null;
-  let apiKeyParam: string | null = null;
-
-  // In a browser environment, use the URLSearchParams API to extract query
-  // parameters. Guard against SSR by checking typeof window.
-  if (typeof window !== 'undefined' && window.location) {
-    const params = new URLSearchParams(window.location.search);
-    spreadsheetIdParam = params.get('spreadsheetId');
-    apiKeyParam = params.get('apiKey');
-  }
-
-  // Always parse the ID to support full URLs in the query parameter. An
-  // undefined or empty string will remain empty after parsing.
-  const parsedId = spreadsheetIdParam ? parseSpreadsheetId(spreadsheetIdParam) : '';
-  return {
-    spreadsheetIdParam: parsedId,
-    apiKeyParam: apiKeyParam ?? ''
-  };
-}
-
-const { spreadsheetIdParam, apiKeyParam } = deriveConfigFromParams();
-
-// Determine the raw spreadsheet ID by preferring the query parameter over
-// the environment variable. Si rien n’est fourni, la chaîne sera vide et
-// provoquera une erreur de configuration plus loin.
 const rawSpreadsheetId =
   spreadsheetIdParam ||
-
-   env.SPREADSHEET_ID ||
+  env.SPREADSHEET_ID ||
   env.VITE_SPREADSHEET_ID ||
-      '1ltnNUqmBjkCLmePBJgM5U3yf_CU44vDucDQ9Gq8FNzU';
+  '1ltnNUqmBjkCLmePBJgM5U3yf_CU44vDucDQ9Gq8FNzU';
+
 export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
 
-// Derive the API key. A query parameter always overrides the environment
-// variable.
+/**
+ * Calcule la clé API. Un paramètre d’URL a toujours la priorité sur la variable d’environnement.
+ */
 export const API_KEY =
-  apiKeyParam ||
+  apikeyParam ||
   env.YOUTUBE_API_KEY ||
   '';
 
 /**
- * Validates a spreadsheet ID. A valid ID contains only alphanumeric
- * characters, hyphens, or underscores and has a length between 25 and 60
- * characters. This does not guarantee the sheet exists, only that the format
- * is plausible.
+ * Valide un ID de feuille Google. Un ID valide contient uniquement des caractères alphanumériques,
+ * des tirets ou des underscores, et a une longueur comprise entre 25 et 60 caractères.
+ * Cela ne garantit pas que la feuille existe, mais seulement que le format est plausible.
  */
 export function isValidSpreadsheetId(id: string): boolean {
   return /^[A-Za-z0-9-_]{25,60}$/.test(id);
 }
 
 /**
- * Returns the final configuration object consumed by the rest of the app. If
- * required fields are missing or invalid, an `error` string is returned
- * alongside empty values. This message can be displayed to the user to help
- * diagnose configuration issues.
+ * Retourne l’objet de configuration consommé par le reste de l’application.
+ * Si des champs requis sont manquants ou invalides, une chaîne `error` est renvoyée
+ * en plus de valeurs vides. Ce message peut être affiché à l’utilisateur pour l’aider à diagnostiquer les problèmes de configuration.
  */
 export function getConfig(): {
   SPREADSHEET_ID: string;
@@ -105,28 +81,31 @@ export function getConfig(): {
   error?: string;
   help?: string;
 } {
-  // If the ID is empty, provide a gentle hint instead of logging an error.
+  // Si l’ID est vide, proposer à l’utilisateur de le saisir
   if (!SPREADSHEET_ID) {
     let userInput = '';
     if (typeof window !== 'undefined' && typeof window.prompt === 'function') {
-      userInput = parseSpreadsheetId(window.prompt('Veuillez saisir l\'ID du Google Sheet :') || '');
+      userInput = parseSpreadsheetId(window.prompt("Veuillez saisir l'ID du Google Sheet :") || '');
     }
     return {
       SPREADSHEET_ID: userInput,
       API_KEY,
-      help: "SPREADSHEET_ID manquant : définissez SPREADSHEET_ID, utilisez ?spreadsheetId= ou saisissez-le dans la boîte de dialogue.",
+      help: "SPREADSHEET_ID manquant : définissez SPREADSHEET_ID ou VITE_SPREADSHEET_ID, ou saisissez-le dans la boîte de dialogue.",
     };
   }
-  // If the ID contains characters outside the allowed set, flag it as invalid.
+
+  // Signale explicitement un ID invalide
   if (!isValidSpreadsheetId(SPREADSHEET_ID)) {
     const error = 'SPREADSHEET_ID invalide';
-    return { SPREADSHEET_ID: '', API_KEY: '', error };
+    return { SPREADSHEET_ID: '', API_KEY, error };
   }
-  // If the API key is missing, signal it explicitly. Mention the supported
-  // environment variable names to help repository owners configure secrets correctly.
+
+  // Si la clé API est manquante, signale-le explicitement
   if (!API_KEY) {
-    const error = 'API_KEY manquant : définissez YOUTUBE_API_KEY ou utilisez ?apiKey=';
+    const error = "API_KEY manquant : définissez YOUTUBE_API_KEY ou ?apiKey= dans l’URL.";
     return { SPREADSHEET_ID: '', API_KEY: '', error };
   }
+
+  // Configuration valide
   return { SPREADSHEET_ID, API_KEY };
 }
