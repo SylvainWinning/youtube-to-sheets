@@ -35,13 +35,13 @@ def parse_spreadsheet_id(value: str) -> str:
 parser = argparse.ArgumentParser(description="Export specified sheet ranges to CSV and JSON")
 parser.add_argument(
     "--sheet-ranges",
-    default="AllVideos!A1:Z",
     help="Comma-separated or JSON array of sheet ranges to export",
 )
 args = parser.parse_args()
 
 SPREADSHEET_ID = parse_spreadsheet_id(os.environ["SPREADSHEET_ID"])
-SHEET_RANGES = parse_ranges(args.sheet_ranges)
+sheet_ranges_raw = args.sheet_ranges or os.environ.get("SHEET_RANGE", "AllVideos!A1:Z")
+SHEET_RANGES = parse_ranges(sheet_ranges_raw)
 for sheet_range in SHEET_RANGES:
     if "!" not in sheet_range:
         raise ValueError(
