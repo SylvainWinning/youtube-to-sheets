@@ -41,7 +41,9 @@ jobs:
       YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
       SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
       SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-      PLAYLIST_ID: ${{ secrets.PLAYLIST_ID }}  # <-- nouvelle variable d’environnement
+      
+          PLAYLIST_ID: PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR
+         
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,8 +61,8 @@ jobs:
           test -n "${YOUTUBE_API_KEY}" || (echo "Secret YOUTUBE_API_KEY manquant" && exit 1)
           test -n "${SPREADSHEET_ID}"  || (echo "Secret SPREADSHEET_ID manquant"  && exit 1)
           test -n "${SERVICE_ACCOUNT_JSON}" || (echo "Secret SERVICE_ACCOUNT_JSON manquant" && exit 1)
-          test -n "${PLAYLIST_ID}" || (echo "Secret PLAYLIST_ID manquant" && exit 1)
-      - name: Write Google service account key
+    
+    
         run: |
           python - <<'PY'
           import os, json, sys, base64
