@@ -1,3 +1,4 @@
+import argparse
 import os
 import re
 import json
@@ -10,7 +11,7 @@ from googleapiclient.discovery import build
 
 
 def parse_ranges(raw: str) -> List[str]:
-    """Return a list of sheet ranges from env string.
+    """Return a list of sheet ranges from a string.
 
     Accepts either a comma-separated string ("Tab1!A1:Z,Tab2!A1:Z") or a JSON
     array ("['Tab1!A1:Z', 'Tab2!A1:Z']").
@@ -32,12 +33,20 @@ def parse_spreadsheet_id(value: str) -> str:
 
 
 SPREADSHEET_ID = parse_spreadsheet_id(os.environ["SPREADSHEET_ID"])
-SHEET_RANGES = parse_ranges(os.environ.get("SHEET_RANGE", "AllVideos!A1:Z"))
-for sheet_range in SHEET_RANGES:
-    if "!" not in sheet_range:
-        raise ValueError(
-            f"SHEET_RANGE '{sheet_range}' must include a sheet name (e.g., 'Sheet1!A1:Z1000')"
-        )
+
+parser = argparse.ArgumentParser(
+    description="Exporte des données d'une feuille Google Sheets."
+)
+parser.add_argument(
+    "--sheet-range",
+    default="AllVideos!A1:Z",
+    help=(
+        "Plage(s) de cellules à exporter. Peut être une liste séparée par des virgules "
+        "ou un tableau JSON."
+    ),
+)
+args = parser.parse_args()
+sheet_ranges = parse_ranges(args.sheet_range)
 
 # Read credentials from environment secret
 creds_info = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
@@ -49,7 +58,11 @@ creds = service_account.Credentials.from_service_account_info(
 service = build("sheets", "v4", credentials=creds)
 
 all_values: List[List[str]] = []
-for idx, sheet_range in enumerate(SHEET_RANGES):
+for idx, sheet_range in enumerate(sheet_ranges):
+    if "!" not in sheet_range:
+        raise ValueError(
+            f"SHEET_RANGE '{sheet_range}' must include a sheet name (e.g., 'Sheet1!A1:Z1000')"
+        )
     resp = service.spreadsheets().values().get(
         spreadsheetId=SPREADSHEET_ID, range=sheet_range
     ).execute()
