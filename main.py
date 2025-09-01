@@ -3,7 +3,7 @@ import re
 import time
 import logging
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 import argparse
 
 import requests
@@ -218,29 +218,23 @@ def get_thumbnail_url(video_data: dict) -> str:
 
 def format_published_at(iso_timestamp: str) -> str:
     """
-    Convertit l’horodatage UTC de YouTube en heure locale (CET/CEST) et retourne
-    une chaîne au format 'dd/mm/YYYY HH:MM' préfixée d'une apostrophe.
+    Formate l’horodatage ISO d'une vidéo YouTube en heure locale sans appliquer
+    de conversion de fuseau horaire. La valeur renvoyée est une chaîne au
+    format `dd/mm/YYYY HH:MM` précédée d'une apostrophe. Si l'horodatage n'est
+    pas conforme au format ISO attendu, la fonction renvoie une chaîne vide.
 
-    L’API YouTube renvoie les dates en UTC (ex. '2025-09-01T08:00:00Z'). Ce
-    formatage ajoute l’offset horaire en fonction de la période de l’année :
-    +2 heures de fin mars à fin octobre (heure d’été CEST), +1 heure le reste du temps
-    (heure d’hiver CET).
+    Exemple :
+
+    >>> format_published_at("2025-01-07T13:45:00Z")
+    "'07/01/2025 13:45"
     """
     try:
-        dt_utc = datetime.strptime(iso_timestamp or "", "%Y-%m-%dT%H:%M:%SZ")
+        # La chaîne ISO fournie par l’API YouTube est toujours en UTC (suffixe 'Z').
+        dt = datetime.strptime(iso_timestamp or "", "%Y-%m-%dT%H:%M:%SZ")
     except ValueError:
         return ""
-    month = dt_utc.month
-    day = dt_utc.day
-    # Détermination approximative de l’heure d’été : du 25 mars au 24 octobre inclus
-    in_summer = (
-        (month > 3 and month < 10)
-        or (month == 3 and day >= 25)
-        or (month == 10 and day <= 24)
-    )
-    offset_hours = 2 if in_summer else 1
-    dt_local = dt_utc + timedelta(hours=offset_hours)
-    return f"'{dt_local.strftime('%d/%m/%Y %H:%M') }".strip()
+    # Aucun ajustement de fuseau horaire : on formate simplement la date/heure UTC.
+    return f"'{dt.strftime('%d/%m/%Y %H:%M') }".strip()
 
 
 # Cache d’avatars de chaîne (évite de refaire des requêtes)
