@@ -73,7 +73,7 @@ export function getConfig(): {
   help?: string;
 } {
   // Si l’ID est vide, on renvoie une erreur descriptive (pas de saisie utilisateur).
-  i (!SPREADSHEET_ID) {
+  if (!SPREADSHEET_ID) {
     return {
       SPREADSHEET_ID: '',
      API_KEY,
