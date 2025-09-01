@@ -70,9 +70,10 @@ const { spreadsheetIdParam, apiKeyParam } = deriveConfigFromParams();
 // provoquera une erreur de configuration plus loin.
 const rawSpreadsheetId =
   spreadsheetIdParam ||
-  env.SPREADSHEET_ID ||
-  '';
 
+   env.SPREADSHEET_ID ||
+  env.VITE_SPREADSHEET_ID ||
+      '1ltnNUqmBjkCLmePBJgM5U3yf_CU44vDucDQ9Gq8FNzU';
 export const SPREADSHEET_ID = parseSpreadsheetId(rawSpreadsheetId);
 
 // Derive the API key. A query parameter always overrides the environment
