@@ -57,6 +57,26 @@ code client : aucun préfixe `VITE_` n’est nécessaire.
 Pour des tests rapides, ces valeurs peuvent aussi être fournies via l’URL :
 `?spreadsheetId=` et `?apiKey=`.
 
+## Export des données
+
+Pour générer un instantané local des vidéos présentes dans la feuille Google :
+```bash
+SPREADSHEET_ID="..." YOUTUBE_API_KEY="..." python export_data.py
+```
+Cette commande lit la feuille via l’API publique et crée `data/videos.json`. Le
+script `main.py` met automatiquement ce fichier à jour après chaque
+**synchronisation** d’une playlist.
+
+Pour exporter les données vers des fichiers consommés par l’application web :
+```bash
+SPREADSHEET_ID="..." SERVICE_ACCOUNT_JSON='{"...": ...}' \
+python scripts/export_sheet.py --sheet-range "AllVideos!A1:Z"
+```
+La commande écrit `bolt-app/public/data/videos.csv` et
+`bolt-app/public/data/videos.json`. L’option `--sheet-range` accepte une liste
+de plages séparées par des virgules ou un tableau JSON (`['Tab1!A1:Z',
+'Tab2!A1:Z']`).
+
 ## Dépendances
 
 Voir `requirements.txt`.
