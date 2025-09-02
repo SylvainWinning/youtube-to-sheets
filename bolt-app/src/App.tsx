@@ -2,11 +2,11 @@ import React from 'react';
 import { RefreshCw } from 'lucide-react';
 
 // Import components from the project
-import SearchBar from './components/SearchBar';
-import DurationTabs from './components/DurationTabs';
-import ShuffleButton from './components/ShuffleButton';
-import DataTable from './components/DataTable';
-import CategorySelect from './components/CategorySelect';
+import { SearchBar } from './components/SearchBar';
+import { DurationTabs } from './components/DurationTabs';
+import { ShuffleButton } from './components/ShuffleButton';
+import { DataTable } from './components/DataTable';
+import { CategorySelect } from './components/CategorySelect';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { SoundToggle } from './components/ui/SoundToggle';
 
