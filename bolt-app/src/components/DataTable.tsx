@@ -8,6 +8,7 @@ interface DataTableProps {
 }
 
 export function DataTable({ data, isLoading, error }: DataTableProps) {
+  // Affichage d’un indicateur de chargement lorsque les données arrivent
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -16,7 +17,8 @@ export function DataTable({ data, isLoading, error }: DataTableProps) {
     );
   }
 
-  if (erro) {
+  // En cas d’erreur, on affiche le message d’erreur
+  if (error) {
     return (
       <div className="p-4 rounded-lg">
         <p>{error}</p>
@@ -24,6 +26,7 @@ export function DataTable({ data, isLoading, error }: DataTableProps) {
     );
   }
 
+  // Si aucune donnée n’est disponible, on l’indique simplement
   if (!data || data.length === 0) {
     return (
       <div className="text-gray-500 p-4 bg-gray-50 rounded-lg">
@@ -32,6 +35,7 @@ export function DataTable({ data, isLoading, error }: DataTableProps) {
     );
   }
 
+  // On extrait les en-têtes et les lignes du tableau
   const headers = data[0];
   const rows = data.slice(1);
 
