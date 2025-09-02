@@ -7,8 +7,8 @@ import DurationTabs from './components/DurationTabs';
 import ShuffleButton from './components/ShuffleButton';
 import DataTable from './components/DataTable';
 import CategorySelect from './components/CategorySelect';
-import ThemeToggle from './components/ThemeToggle';
-import SoundToggle from './components/SoundToggle';
+import { ThemeToggle } from './components/ui/ThemeToggle';
+import { SoundToggle } from './components/ui/SoundToggle';
 
 // Types for filters and video data
 import { SearchFilters } from './types/search';
