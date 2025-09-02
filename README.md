@@ -91,10 +91,9 @@ Pour exporter les données vers des fichiers consommés par l’application web�
 SPREADSHEET_ID="..." SERVICE_ACCOUNT_JSON='{"...": ...}' \
 python scripts/export_sheet.py --sheet-range "AllVideos!A1:Z"
 ```
-La commande écrit `bolt-app/public/data/videos.csv` et
-`bolt-app/public/data/videos.json`. L’option `--sheet-range` accepte une liste
-de plages séparées par des virgules ou un tableau JSON (`['Tab1!A1:Z',
-'Tab2!A1:Z']`).
+La commande écrit `bolt-app/public/data/videos.json`. L’option
+`--sheet-range` accepte une liste de plages séparées par des virgules ou un
+tableau JSON (`['Tab1!A1:Z', 'Tab2!A1:Z']`).
 
 ## Dépendances
 

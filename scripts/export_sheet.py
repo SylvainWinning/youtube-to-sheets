@@ -2,7 +2,6 @@ import argparse
 import os
 import re
 import json
-import csv
 import pathlib
 from typing import List
 
@@ -81,14 +80,6 @@ if all_values:
     header, *rows = all_values
     rows = [row for row in rows if len(row) > 1 and row[1] != "Inconnu"]
     all_values = [header] + rows
-
-# Save CSV
-
-
-csv_path = out_dir / "videos.csv"
-with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerows(all_values)
 
 # Save JSON
 json_path = out_dir / "videos.json"
