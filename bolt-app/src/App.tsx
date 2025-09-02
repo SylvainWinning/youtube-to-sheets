@@ -114,7 +114,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-2 pb-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-1 pb-6">
         {configError && <MissingConfig message={configError} />}
         {!isLoading && !appError && (
           <>
