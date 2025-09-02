@@ -3,9 +3,17 @@ name: YouTube to Sheets Sync
 on:
   # Lancement manuel si besoin
   workflow_dispatch: {}
-  # (les blocs schedule sont inchangés et ont été omis ici pour la clarté)
+  #ynchronisation automatique aux horaires (heure de Paris)
+    schedule:
+    # CEST (UTC+2) – avril à septembre, 1-24 octobre, 25-31 mars
+    - cron: '0 22,23,0,10,11,12,18,19,20,21 * 4-9 *'
+    - cron: '0 22,23,0,10,11,12,18,19,20,21 1-24 10 *'
+    - cron: '0 22,23,0,10,11,12,18,19,20,21 25-31 3 *'
+    # CET (UTC+1) – novembre à février, 1-24 mars, 25-31 octobre
+    - cron: '0 23,0,1,11,12,13,19,20,21,22 * 11,12,1,2 *'
+    - cron: '0 23,0,1,11,12,13,19,20,21,22 1-24 3 *'
+    - cron: '0 23,0,1,11,12,13,19,20,21,22 25-31 10 *'
 
-permissions:
   # Donne l'accès en écriture afin de pouvoir mettre à jour le dépôt avec les
   # fichiers générés (par ex. data/videos.json)
   contents: write
