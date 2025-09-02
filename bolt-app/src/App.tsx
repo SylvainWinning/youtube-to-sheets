@@ -71,7 +71,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden">
       <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-1">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <button
@@ -114,7 +114,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-1 pb-6">
         {configError && <MissingConfig message={configError} />}
         {!isLoading && !appError && (
           <>

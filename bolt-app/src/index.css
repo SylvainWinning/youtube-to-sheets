@@ -8,7 +8,7 @@
   }
   
   body {
-    @apply bg-neu-base dark:bg-neutral-900 overflow-x-hidden min-h-screen;
+    @apply m-0 bg-neu-base dark:bg-neutral-900 overflow-x-hidden min-h-screen;
     touch-action: manipulation;
   }
 }
