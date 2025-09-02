@@ -33,41 +33,33 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
   const startListening = async () => {
     try {
       stopListening();
-
       const Recognition = window.webkitSpeechRecognition || window.SpeechRecognition;
       const recognition = new Recognition();
       recognitionRef.current = recognition;
-
       recognition.lang = 'fr-FR';
       recognition.continuous = false;
       recognition.interimResults = false;
-
       const maxListeningDuration = 10000;
       const timeoutId = setTimeout(stopListening, maxListeningDuration);
-
       recognition.onstart = () => {
         setIsListening(true);
       };
-
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         onFiltersChange({ ...filters, query: transcript });
         inputRef.current?.focus();
         clearTimeout(timeoutId);
         stopListening();
       };
-
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: any) => {
         console.error('Erreur de reconnaissance vocale:', event.error);
         clearTimeout(timeoutId);
         stopListening();
       };
-
       recognition.onend = () => {
-        clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
         stopListening();
       };
-
       recognition.start();
     } catch (error) {
       console.error("La reconnaissance vocale n'est pas supportée:", error);
@@ -115,7 +107,6 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
             <Search className="w-5 h-5" />
           </button>
         </form>
-
         {/* Voice search button retains its existing styling */}
         <button
           onClick={isListening ? stopListening : startListening}
