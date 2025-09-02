@@ -20,7 +20,6 @@ import { SortOptions } from './types/sort';
 
 export default function App() {
   const { error: configError } = getConfig();
-
   const { videos, isLoading, error: videosError, loadVideos } = useVideos(configError);
   const { playClick } = useSound();
   const [selectedTab, setSelectedTab] = React.useState(-1);
@@ -71,9 +70,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden">
       <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50">
-        {/* Adjusted vertical padding from py-3 to py-1 to reduce header height */}
+        {/* Réduction de la hauteur d’en-tête */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1">
-          {/* Adjusted gap from gap-4 to gap-2 to reduce space between header rows */}
+          {/* Réduction de l’espacement vertical */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <button
@@ -87,10 +86,11 @@ export default function App() {
                   className="h-8 w-8"
                 />
                 <h1 className="text-xl font-semibold text-youtube-black dark:text-white flex items-center gap-2">
-                  Mes Vidéos YouTube
+                  Mes Vidéos YouTube
+                  {/* Icône de synchronisation placée juste à droite du texte et visible en mode sombre */}
                   <RefreshCw
                     className={
-                      'h-5 w-5 text-youtube-gray-light transition-all ' +
+                      'h-5 w-5 text-youtube-gray-light dark:text-youtube-gray-dark transition-all ' +
                       (isLoading ? 'animate-spin' : 'group-hover:text-youtube-red')
                     }
                   />
