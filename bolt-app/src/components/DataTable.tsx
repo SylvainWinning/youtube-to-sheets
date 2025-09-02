@@ -16,9 +16,9 @@ export function DataTable({ data, isLoading, error }: DataTableProps) {
     );
   }
 
-  if (error) {
+  if (error) {>
     return (
-      <div className="p-4 rounded-lg"
+      <div className="p-4 rounded-lg">
         <p>{error}</p>
       </div>
     );
