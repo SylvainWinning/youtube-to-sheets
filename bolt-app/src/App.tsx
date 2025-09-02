@@ -1,140 +1,141 @@
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
-import { SearchBar } from './components/SearchBar';
-import { DurationTabs } from './components/DurationTabs';
-import { ShuffleButton } from './components/ShuffleButton';
-import { CategorySelect } from './components/CategorySelect';
-import { ThemeToggle } from './components/ui/ThemeToggle';
-import { SoundToggle } from './components/ui/SoundToggle';
-import { useVideos } from './hooks/useVideos';
-import { SearchFilters } from './types/search';
-import { VideoData } from './types/video';
-import { SHEET_TABS, getConfig } from './utils/constants';
-import { getDurationInMinutes } from './utils/durationUtils';
 import { VideoGrid } from './components/VideoGrid';
+import { DurationTabs } from './components/DurationTabs';
+import { SearchBar } from './components/SearchBar';
+import { SortSelect } from './components/SortSelect';
+import { LoadingState } from './components/LoadingState';
+import { ErrorState } from './components/ErrorState';
+import { MissingConfig } from './components/MissingConfig';
+import { SoundToggle } from './components/ui/SoundToggle';
+import { ThemeToggle } from './components/ui/ThemeToggle';
+import { SHEET_TABS, getConfig } from './utils/constants';
+import { filterVideosByDuration } from './utils/videoFilters';
+import { filterVideosBySearch } from './utils/searchUtils';
+import { sortVideos } from './utils/sortUtils';
+import { useVideos } from './hooks/useVideos';
+import { useSound } from './hooks/useSound';
+import { SearchFilters } from './types/search';
+import { SortOptions } from './types/sort';
 
-const App: React.FC = () => {
-  // Récupération de la configuration (Sheet ID/API) et choix des données locales si besoin
-  const config = getConfig();
-
-  // Gestion de la recherche
-  const [filters, setFilters] = React.useState<SearchFilters>({
+export default function App() {
+  const { error: configError } = getConfig();
+  const { videos, isLoading, error: videosError, loadVideos } = useVideos(configError);
+  const { playClick } = useSound();
+  const [selectedTab, setSelectedTab] = React.useState(-1);
+  const [sortOptions, setSortOptions] = React.useState<SortOptions>({
+    field: 'publishedAt',
+    direction: 'desc'
+  });
+  const [searchFilters, setSearchFilters] = React.useState<SearchFilters>({
     query: '',
-    fields: ['title', 'channel', 'category'],
+    fields: ['title', 'channel', 'category']
   });
 
-  // Onglet de durée sélectionné (-1 = toutes durées)
-  const [selectedTab, setSelectedTab] = React.useState<number>(-1);
+  const resetFilters = React.useCallback(async () => {
+    playClick();
+    setSelectedTab(-1);
+    setSearchFilters({
+      query: '',
+      fields: ['title', 'channel', 'category']
+    });
+    await loadVideos();
+  }, [loadVideos, playClick]);
 
-  // Catégorie sélectionnée
-  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
-
-  // Chargement des vidéos via le hook personnalisé
-  const { videos, isLoading, error, loadVideos } = useVideos(config.error ?? config.help);
-
-  // Charge les vidéos au montage du composant
+  // Charge toujours les vidéos, même sans configuration Sheets
   React.useEffect(() => {
     loadVideos();
   }, [loadVideos]);
 
-  /**
-   * Applique successivement :
-   * 1. La recherche textuelle dans les champs spécifiés.
-   * 2. Le filtre de catégorie (genre/playlist).
-   * 3. Le filtre de durée selon l’onglet sélectionné.
-   */
-  const filteredVideos = React.useMemo(() => {
-    let list = videos;
+  const filteredBySearch = React.useMemo(
+    () => filterVideosBySearch(videos, searchFilters),
+    [videos, searchFilters]
+  );
 
-    // Filtre par texte (titre, chaîne, catégorie)
-    const query = filters.query.trim().toLowerCase();
-    if (query.length > 0) {
-      list = list.filter((video) =>
-        filters.fields.some((field) => {
-          const value = (video as any)[field];
-          return typeof value === 'string' && value.toLowerCase().includes(query);
-        }),
-      );
-    }
+  const filteredByDuration = React.useMemo(
+    () =>
+      selectedTab === -1
+        ? filteredBySearch
+        : filterVideosByDuration(filteredBySearch, SHEET_TABS[selectedTab]),
+    [filteredBySearch, selectedTab]
+  );
 
-    // Filtre par catégorie
-    if (selectedCategory) {
-      list = list.filter((video) => video.category === selectedCategory);
-    }
+  const sortedVideos = React.useMemo(
+    () => sortVideos(filteredByDuration, sortOptions),
+    [filteredByDuration, sortOptions]
+  );
 
-    // Filtre par durée selon l’onglet
-    if (selectedTab >= 0) {
-      const { min, max } = SHEET_TABS[selectedTab].durationRange;
-      list = list.filter((video) => {
-        // Cas Inconnue : la durée est littéralement "Inconnue"
-        if (min === null && max === null) {
-          return video.duration === 'Inconnue';
-        }
-        const minutes = getDurationInMinutes(video.duration);
-        if (max === null) {
-          return minutes >= (min as number);
-        }
-        return minutes >= (min as number) && minutes < max;
-      });
-    }
-
-    return list;
-  }, [videos, filters, selectedCategory, selectedTab]);
+  const appError = videosError;
 
   return (
-    <div className="flex flex-col gap-6 p-4 max-w-7xl mx-auto">
-      {/* En-tête avec rafraîchissement, thème et son */}
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Mes Vidéos YouTube</h1>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors"
-            onClick={() => loadVideos()}
-            title="Rafraîchir"
-          >
-            <RefreshCw className="w-5 h-5" />
-          </button>
-          <ThemeToggle />
-          <SoundToggle />
+    <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden">
+      <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50">
+        {/* Réduction de la hauteur d’en-tête */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1">
+          {/* Réduction de l’espacement vertical */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={resetFilters}
+                className="flex items-center gap-3 group"
+                disabled={isLoading}
+              >
+                <img
+                  src={import.meta.env.BASE_URL + 'youtube-logo.svg'}
+                  alt="YouTube logo"
+                  className="h-8 w-8"
+                />
+                <h1 className="text-xl font-semibold text-youtube-black dark:text-white flex items-center gap-2">
+                  Mes Vidéos YouTube
+                  {/* Icône de synchronisation placée juste à droite du texte et visible en mode sombre */}
+                  <RefreshCw
+                    className={
+                      'h-5 w-5 text-youtube-gray-light dark:text-youtube-gray-dark transition-all ' +
+                      (isLoading ? 'animate-spin' : 'group-hover:text-youtube-red')
+                    }
+                  />
+                </h1>
+              </button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <SoundToggle />
+              </div>
+            </div>
+
+            {!isLoading && !appError && (
+              <div className="flex items-center justify-between gap-4">
+                <div className="w-full max-w-[280px]">
+                  <SortSelect
+                    options={sortOptions}
+                    onOptionsChange={setSortOptions}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Barre de recherche */}
-      <SearchBar filters={filters} onFiltersChange={setFilters} />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0">
+        {configError && <MissingConfig message={configError} />}
+        {!isLoading && !appError && (
+          <>
+            <SearchBar
+              filters={searchFilters}
+              onFiltersChange={setSearchFilters}
+            />
+            <DurationTabs
+              selectedTab={selectedTab}
+              onTabChange={setSelectedTab}
+              videos={filteredBySearch}
+            />
+          </>
+        )}
 
-      {/* Sélecteur de catégories */}
-      <CategorySelect
-        videos={videos}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        className="mb-4"
-      />
-
-      {/* Onglets de durée */}
-      <DurationTabs
-        selectedTab={selectedTab}
-        onTabChange={setSelectedTab}
-        videos={videos}
-      />
-
-      {/* Affiche un message d’erreur si besoin */}
-      {error && (
-        <div className="p-4 bg-red-100 text-red-700 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {/* Grille de vidéos ou loader */}
-      {isLoading ? (
-        <div className="flex items-center justify-center p-8">
-          <div className="animate-spin h-8 w-8 border-b-2 border-blue-500 rounded-full"></div>
-        </div>
-      ) : (
-        <VideoGrid videos={filteredVideos as VideoData[]} />
-      )}
+        {isLoading && <LoadingState />}
+        {appError && <ErrorState message={appError} />}
+        {!isLoading && !appError && <VideoGrid videos={sortedVideos} />}
+      </main>
     </div>
   );
-};
-
-export default App;
+}
