@@ -30,13 +30,10 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
       label={getSelectedLabel(options)}
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}
-    >
-   >
-      
-      <div className="px-4 py-2">
+  >      <div className="px-4 py-2">
         <div className="text-xs font-medium text-gray-500 uppercase">Date de publication</div>
       </div>
-      
+
       {[SORT_OPTIONS.PUBLISHED_DESC, SORT_OPTIONS.PUBLISHED_ASC].map((option) => (
         <DropdownItem
           key={getOptionValue(option)}
@@ -49,4 +46,3 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
     </DropdownMenu>
   );
 }
-
