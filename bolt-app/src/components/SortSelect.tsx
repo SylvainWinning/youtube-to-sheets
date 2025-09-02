@@ -31,12 +31,7 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}
     >
-      <DropdownItem
-        onClick={() => handleSelect('')}
-        isSelected={!options}
-      >
-        Sans tri
-      </DropdownItem>
+   >
       
       <div className="px-4 py-2">
         <div className="text-xs font-medium text-gray-500 uppercase">Date de publication</div>
@@ -54,3 +49,4 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
     </DropdownMenu>
   );
 }
+
