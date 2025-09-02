@@ -28,7 +28,7 @@ export function parseDate(dateString: string): Date | null {
     const ddmmyyyyTime = formats[1].exec(cleaned);
     if (ddmmyyyyTime) {
       const [, day, month, year, hour, minute] = ddmmyyyyTime;
-      return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
+     return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute)));
     }
 
     // Test format DD/MM/YYYY
