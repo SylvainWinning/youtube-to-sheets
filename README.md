@@ -57,6 +57,25 @@ code client : aucun préfixe `VITE_` n’est nécessaire.
 Pour des tests rapides, ces valeurs peuvent aussi être fournies via l’URL :
 `?spreadsheetId=` et `?apiKey=`.
 
+### Démarrer l’interface web
+
+Installation :
+```bash
+cd bolt-app && npm install
+```
+
+Mode développement :
+```bash
+npm run dev
+```
+
+Production :
+```bash
+npm run build
+```
+
+Sans variables d’environnement, le front-end lit `public/data/videos.json`.
+
 ## Export des données
 
 Pour générer un instantané local des vidéos présentes dans la feuille Google :
