@@ -1,8 +1,7 @@
-import { SortOptions } from '../../types/sort';
-import { getOptionValue } from './utils';
+import { SortOptions } from '../../../types/sort';
 
 export const SORT_LABELS: Record<string, string> = {
-  [getOptionValue(null)]: 'Sans tri',
-  [getOptionValue({ field: 'publishedAt', direction: 'desc' })]: 'Plus récentes',
-  [getOptionValue({ field: 'publishedAt', direction: 'asc' })]: 'Plus anciennes',
+  '': 'Plus récentes',
+  'publishedAt_desc': 'Plus récentes',
+  'publishedAt_asc': 'Plus anciennes',
 };
