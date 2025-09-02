@@ -70,7 +70,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
 
       recognition.start();
     } catch (error) {
-      console.error('La reconnaissance vocale n\'est pas supportée:', error);
+      console.error("La reconnaissance vocale n'est pas supportée:", error);
       stopListening();
     }
   };
@@ -84,7 +84,11 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
   return (
     <div className="mb-6">
       <div className="relative max-w-[640px] mx-auto flex items-center gap-4">
-        <form onSubmit={handleSubmit} className="flex-1 flex items-center group">
+        {/* Form container with Liquid Glass styling */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 flex items-center group backdrop-blur-md bg-white/30 dark:bg-neutral-600/30 border border-white/40 dark:border-neutral-500/40 rounded-full"
+        >
           <div className="relative flex-1">
             <input
               ref={inputRef}
@@ -92,7 +96,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
               placeholder="Rechercher"
               value={filters.query}
               onChange={(e) => onFiltersChange({ ...filters, query: e.target.value })}
-              className="w-full pl-4 pr-10 h-10 rounded-l-full border-[1.5px] border-youtube-border dark:border-neutral-600 focus:border-youtube-red focus:ring-1 focus:ring-youtube-red focus:ring-opacity-50 focus:outline-none bg-white dark:bg-neutral-700 text-youtube-black dark:text-white placeholder-youtube-gray-light dark:placeholder-gray-400 text-sm transition-all duration-200 shadow-none focus:shadow-[0_0_10px_rgba(255,0,0,0.3)]"
+              className="w-full pl-4 pr-10 h-10 rounded-l-full bg-transparent text-youtube-black dark:text-white placeholder-youtube-gray-light dark:placeholder-gray-400 text-sm focus:outline-none"
             />
             {filters.query && (
               <button
@@ -111,14 +115,15 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
             <Search className="w-5 h-5" />
           </button>
         </form>
-        
-        <button 
+
+        {/* Voice search button retains its existing styling */}
+        <button
           onClick={isListening ? stopListening : startListening}
-          className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center border-[1.5px] border-transparent
-            ${isListening 
-              ? 'bg-youtube-red text-white shadow-[0_0_10px_rgba(255,0,0,0.3)] border-youtube-red' 
+          className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center border-[1.5px] border-transparent ${
+            isListening
+              ? 'bg-youtube-red text-white shadow-[0_0_10px_rgba(255,0,0,0.3)] border-youtube-red'
               : 'bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 hover:border-youtube-red hover:shadow-[0_0_10px_rgba(255,0,0,0.3)] text-youtube-black dark:text-white'
-            }`}
+          }`}
         >
           <Mic className="w-5 h-5" />
         </button>
