@@ -105,3 +105,19 @@ Installation locale :
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+## Tests
+
+### Python
+
+```bash
+python -m pytest
+```
+
+### bolt-app
+
+```bash
+cd bolt-app && npm test
+```
+
+Ces tests n'exigent pas de secrets : les appels réseau sont simulés.
