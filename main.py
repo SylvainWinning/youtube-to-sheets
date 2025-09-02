@@ -425,4 +425,3 @@ if __name__ == "__main__":
     parser.add_argument("--sheet-tab-name", default="AllVideos", help="Nom de l'onglet cible dans Google Sheets")
     args = parser.parse_args()
     sync_videos(args.playlist_id, args.sheet_tab_name)
-    
