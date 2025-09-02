@@ -10,8 +10,12 @@ import { SoundToggle } from './components/ui/SoundToggle';
 import { useVideos } from './hooks/useVideos';
 import { SearchFilters } from './types/search';
 import { VideoData } from './types/video';
+import { getConfig } from './utils/constants';  // <-- import de getConfig
 
 const App: React.FC = () => {
+  // Récupération de la configuration (ID et clé API)
+  const config = getConfig();
+
   // États pour la recherche et les filtres
   const [filters, setFilters] = React.useState<SearchFilters>({
     query: '',
@@ -20,19 +24,22 @@ const App: React.FC = () => {
   const [selectedTab, setSelectedTab] = React.useState<number>(-1);
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
-  // Récupération des vidéos via le hook personnalisé
-  const { videos, isLoading, error, loadVideos } = useVideos();
+  /**
+   * On transmet à useVideos() une chaîne non nulle lorsqu’il faut forcer
+   * l’utilisation du fichier local (config.error ou config.help).
+   * Cela permet de basculer automatiquement vers videos.json si SPREADSHEET_ID ou
+   * YOUTUBE_API_KEY est manquant ou invalide.
+   */
+  const { videos, isLoading, error, loadVideos } = useVideos(config.error ?? config.help);
 
   // Chargement automatique des vidéos lors du montage du composant
   React.useEffect(() => {
     loadVideos();
   }, [loadVideos]);
 
-  // Transformation des vidéos en tableau pour le composant DataTable
+  // Conversion des vidéos en tableau pour DataTable
   const tableData = React.useMemo(() => {
     if (!videos || videos.length === 0) return null;
-
-    // En-têtes du tableau
     const headers = [
       'channelAvatar',
       'title',
@@ -48,8 +55,6 @@ const App: React.FC = () => {
       'category',
       'thumbnail',
     ];
-
-    // Lignes de données
     const rows = videos.map((video: VideoData) => [
       video.channelAvatar ?? '',
       video.title,
@@ -65,7 +70,6 @@ const App: React.FC = () => {
       video.category,
       video.thumbnail,
     ]);
-
     return [headers, ...rows];
   }, [videos]);
 
@@ -78,7 +82,7 @@ const App: React.FC = () => {
           <button
             type="button"
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors"
-            onClick={() => loadVideos()} // Relance le chargement des vidéos
+            onClick={() => loadVideos()}
             title="Rafraîchir"
           >
             <RefreshCw className="w-5 h-5" />
@@ -110,7 +114,7 @@ const App: React.FC = () => {
       <div className="mb-4">
         <ShuffleButton
           onClick={() => {
-            // Vous pouvez ajouter ici l’action de lecture aléatoire si nécessaire
+            // Action pour la lecture aléatoire (optionnelle)
           }}
           disabled={videos.length === 0}
         />
