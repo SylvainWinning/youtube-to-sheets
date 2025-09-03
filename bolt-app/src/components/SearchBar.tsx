@@ -1,3 +1,4 @@
+// Résolution de conflit de merge
 import React from 'react';
 import { XCircle, Mic, Search } from 'lucide-react';
 import { SearchFilters } from '../types/search';
