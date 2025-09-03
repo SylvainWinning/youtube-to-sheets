@@ -3,7 +3,7 @@ import type { SheetTab } from '../types/sheets.ts';
 /**
  * Tabs used to group videos by duration.
  * The first button (“Toutes durées”) is handled outside of this array.
- * Here we only define discrete ranges and an “Inconnue” category.
+ * Here we only define discrete ranges.
  */
 export const SHEET_TABS: SheetTab[] = [
   {
@@ -45,11 +45,6 @@ export const SHEET_TABS: SheetTab[] = [
     name: '60+ min',
     range: 'A:Z',
     durationRange: { min: 60, max: null },
-  },
-  {
-    name: 'Inconnue',
-    range: 'A:Z',
-    durationRange: { min: null, max: null },
   },
 ];
 
