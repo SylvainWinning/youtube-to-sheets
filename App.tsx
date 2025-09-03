@@ -71,7 +71,7 @@ export default function App() {
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden pt-4">
       <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50 mb-12">
         {/* Réduction de la hauteur d’en-tête */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           {/* Réduction de l’espacement vertical */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
