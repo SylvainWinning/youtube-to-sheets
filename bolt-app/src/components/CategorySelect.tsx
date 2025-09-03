@@ -3,6 +3,7 @@ import { ArrowUpDown } from 'lucide-react';
 import { VideoData } from '../types/video';
 import { DropdownMenu } from './ui/DropdownMenu';
 import { DropdownItem } from './ui/DropdownItem';
+import { getUniqueCategories } from '../utils/getUniqueCategories';
 
 interface CategorySelectProps {
   videos: VideoData[];
@@ -15,16 +16,10 @@ export function CategorySelect({ videos, selectedCategory, onCategoryChange, cla
   const [isOpen, setIsOpen] = React.useState(false);
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
 
-  const categories = React.useMemo(() => {
-    const uniqueCategories = new Set(
-      videos
-        .map(video => video.category)
-        .filter(category => category && category.trim() !== '')
-    );
-    return Array.from(uniqueCategories).sort((a, b) =>
-      sortOrder === 'asc' ? a.localeCompare(b) : b.localeCompare(a)
-    );
-  }, [videos, sortOrder]);
+  const categories = React.useMemo(
+    () => getUniqueCategories(videos, sortOrder),
+    [videos, sortOrder]
+  );
 
   if (categories.length === 0) return null;
 
