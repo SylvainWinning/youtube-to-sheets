@@ -8,42 +8,42 @@ import type { SheetTab } from '../types/sheets.ts';
 export const SHEET_TABS: SheetTab[] = [
   {
     name: '0-5 min',
-    range: 'A:Z',
+    range: '0-5min!A:Z',
     durationRange: { min: 0, max: 5 },
   },
   {
     name: '5-10 min',
-    range: 'A:Z',
+    range: '5-10min!A:Z',
     durationRange: { min: 5, max: 10 },
   },
   {
     name: '10-20 min',
-    range: 'A:Z',
+    range: '10-20min!A:Z',
     durationRange: { min: 10, max: 20 },
   },
   {
     name: '20-30 min',
-    range: 'A:Z',
+    range: '20-30min!A:Z',
     durationRange: { min: 20, max: 30 },
   },
   {
     name: '30-40 min',
-    range: 'A:Z',
+    range: '30-40min!A:Z',
     durationRange: { min: 30, max: 40 },
   },
   {
     name: '40-50 min',
-    range: 'A:Z',
+    range: '40-50min!A:Z',
     durationRange: { min: 40, max: 50 },
   },
   {
     name: '50-60 min',
-    range: 'A:Z',
+    range: '50-60min!A:Z',
     durationRange: { min: 50, max: 60 },
   },
   {
     name: '60+ min',
-    range: 'A:Z',
+    range: '60Plusmin!A:Z',
     durationRange: { min: 60, max: null },
   },
 ];
@@ -68,7 +68,8 @@ export function isValidSpreadsheetId(id: string): boolean {
 }
 
 /**
- * Internal helper to read environment variables. It works in both Node (process.env)
+ * Internal helper to read environment variables. It works in both Node 
+ * (process.env)
  * and browser contexts (import.meta.env) as used by Vite.
  */
 function getEnvVar(key: string): string {
@@ -88,7 +89,8 @@ function getEnvVar(key: string): string {
 
 /**
  * Raw values from the environment (may be empty strings). They are exported
- * to keep compatibility with existing imports; prefer using getConfig() for validation.
+ * to keep compatibility with existing imports; prefer using getConfig() for
+ * validation.
  */
 export const SPREADSHEET_ID: string = getEnvVar('SPREADSHEET_ID');
 export const YOUTUBE_API_KEY: string = getEnvVar('YOUTUBE_API_KEY');
@@ -113,8 +115,8 @@ export interface Config {
  * - If the provided spreadsheet ID is malformed, returns an error message.
  * - If the API key is missing, returns an error message.
  *
- * Consumers should inspect the returned object for `error` or `help` keys to determine
- * whether to proceed or display a message to the user.
+ * Consumers should inspect the returned object for `error` or `help` keys 
+ * to determine whether to proceed or display a message to the user.
  */
 export function getConfig(): Config {
   const rawSheetId = getEnvVar('SPREADSHEET_ID') ?? '';
@@ -154,4 +156,3 @@ export function getConfig(): Config {
     YOUTUBE_API_KEY: apiKey,
   };
 }
-
