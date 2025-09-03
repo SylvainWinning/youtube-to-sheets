@@ -74,7 +74,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
   }, []);
 
   return (
-    <div className="mb-6">
+    <div className="mb-8">
       <div className="relative max-w-[640px] mx-auto flex items-center gap-4">
         {/* Form container with Liquid Glass styling */}
         <form
