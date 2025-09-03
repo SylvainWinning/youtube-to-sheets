@@ -1,4 +1,4 @@
-import { SheetTab } from '../types/sheets';
+import type { SheetTab } from '../types/sheets.ts';
 
 /**
  * Tabs used to group videos by duration.
@@ -97,8 +97,6 @@ function getEnvVar(key: string): string {
  */
 export const SPREADSHEET_ID: string = getEnvVar('SPREADSHEET_ID');
 export const YOUTUBE_API_KEY: string = getEnvVar('YOUTUBE_API_KEY');
-/** Backwards-compatible alias used in fetch.ts */
-export const API_KEY: string = YOUTUBE_API_KEY;
 
 /**
  * Structure returned by getConfig() describing the current configuration.
