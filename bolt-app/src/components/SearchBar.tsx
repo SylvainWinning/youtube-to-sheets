@@ -79,7 +79,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
         {/* Form container with Liquid Glass styling */}
         <form
           onSubmit={handleSubmit}
-          className="flex-1 flex items-center group backdrop-blur-md bg-white/30 dark:bg-neutral-600/30 border border-white/40 dark:border-neutral-500/40 rounded-full"
+          className="flex-1 flex items-center group backdrop-blur-md bg-white/30 dark:bg-neutral-600/30 border border-gray-300 dark:border-neutral-500/40 rounded-full"
         >
           <div className="relative flex-1">
             <input
