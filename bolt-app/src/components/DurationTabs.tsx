@@ -30,7 +30,7 @@ export function DurationTabs({ selectedTab, onTabChange, videos }: DurationTabsP
   }, [videos]);
 
   return (
-    <div className="mb-6">
+    <div className="mb-8">
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
         <div className="flex col-span-2 sm:col-span-1">
           <button
