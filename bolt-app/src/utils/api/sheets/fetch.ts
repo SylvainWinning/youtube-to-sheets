@@ -1,5 +1,5 @@
 import type { SheetResponse } from './types.ts';
-import { SPREADSHEET_ID, API_KEY } from '../../constants.ts';
+import { SPREADSHEET_ID, YOUTUBE_API_KEY } from '../../constants.ts';
 
 const RATE_LIMIT = {
   requests: 0,
@@ -79,7 +79,7 @@ export async function fetchSheetData(range: string): Promise<SheetResponse> {
 
     // Properly encode the range parameter
     const encodedRange = encodeURIComponent(range);
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodedRange}?key=${API_KEY}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodedRange}?key=${YOUTUBE_API_KEY}`;
     
     const response = await fetchWithRetry(url);
     const data = await response.json();
