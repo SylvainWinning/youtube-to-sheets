@@ -6,7 +6,7 @@ export function getUniqueCategories(
 ): string[] {
   const uniqueCategories = new Set(
     videos
-      .map(video => video.myCategory)
+      .map(video => video.myCategory ?? video.category)
       .filter(category => category && category.trim() !== '')
   );
   return Array.from(uniqueCategories).sort((a, b) =>
