@@ -6,10 +6,10 @@ export function filterVideosByDuration(videos: VideoData[], tab: SheetTab | null
   if (!tab) return videos;
 
   return videos.filter(video => {
-    const { min, max } = tab.durationRange;
-    if (min === null && max === null) {
-      return video.duration === 'Inconnue';
+    if (video.duration === 'Inconnue') {
+      return false;
     }
+    const { min, max } = tab.durationRange;
     const duration = getDurationInMinutes(video.duration);
     return max === null
       ? duration >= (min as number)

@@ -31,9 +31,6 @@ export function formatDuration(duration: string): string {
 }
 
 export function formatDurationRange(min: number | null, max: number | null): string {
-  if (min === null && max === null) {
-    return 'Inconnue';
-  }
   if (max === null) {
     return `${min}+ min`;
   }
