@@ -1,39 +1,64 @@
 import React from 'react';
-import { ArrowUpDown } from 'lucide-react';
-import { VideoData } from '../types/video';
+import { List } from 'lucide-react';
+import type { VideoData } from '../types/video';
+import { getUniqueCategories } from '../utils/getUniqueCategories';
 import { DropdownMenu } from './ui/DropdownMenu';
 import { DropdownItem } from './ui/DropdownItem';
-import { getUniqueCategories } from '../utils/getUniqueCategories';
 
+/**
+ * CategorySelect provides a dropdown button that lists all unique
+ * categories found in the provided video dataset. Selecting a category
+ * will invoke the `onCategoryChange` callback with the chosen value.
+ * A reset option is included to clear any filter and show all videos.
+ */
 interface CategorySelectProps {
+  /** Array of video objects from which to derive categories */
   videos: VideoData[];
+  /** Currently selected category; `null` means no filter */
   selectedCategory: string | null;
+  /** Called when the selected category changes */
   onCategoryChange: (category: string | null) => void;
+  /** Optional additional class names applied to the button */
   className?: string;
 }
 
-export function CategorySelect({ videos, selectedCategory, onCategoryChange, className = '' }: CategorySelectProps) {
+export function CategorySelect({
+  videos,
+  selectedCategory,
+  onCategoryChange,
+  className = '',
+}: CategorySelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
 
-  const categories = React.useMemo(
-    () => getUniqueCategories(videos, sortOrder),
-    [videos, sortOrder]
-  );
+  // Compute unique categories alphabetically once per `videos` change
+  const categories = React.useMemo(() => getUniqueCategories(videos), [videos]);
 
+  // Don't render a button if there are no categories to choose from
   if (categories.length === 0) return null;
+
+  // Determine the button label: show selected category or generic label
+  const label = selectedCategory ?? 'Catégories';
 
   return (
     <DropdownMenu
-      icon={<ArrowUpDown className="w-5 h-5 text-gray-500 group-hover:text-youtube-red transition-colors shrink-0" />}
-      label={sortOrder === 'asc' ? 'Plus anciennes' : 'Plus récentes'}
+      icon={<List className="w-5 h-5" />}
+      label={label}
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}
       className={className}
     >
-      <DropdownItem onClick={() => setSortOrder('desc')}>Plus récentes</DropdownItem>
-      <DropdownItem onClick={() => setSortOrder('asc')}>Plus anciennes</DropdownItem>
-      {categories.map(category => (
+      {/* Option to clear the category filter */}
+      <DropdownItem
+        onClick={() => {
+          onCategoryChange(null);
+          setIsOpen(false);
+        }}
+        isSelected={selectedCategory === null}
+      >
+        Toutes les catégories
+      </DropdownItem>
+      {/* Render each category as its own item */}
+      {categories.map((category) => (
         <DropdownItem
           key={category}
           onClick={() => {
