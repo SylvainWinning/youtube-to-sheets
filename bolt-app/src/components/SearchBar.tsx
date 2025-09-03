@@ -103,7 +103,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
           </div>
           <button
             type="submit"
-            className="h-10 px-6 bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 text-youtube-black dark:text-white rounded-r-full border-[1.5px] border-youtube-border dark:border-neutral-600 border-l-0 transition-all duration-200 focus:outline-none group-focus-within:border-youtube-red group-focus-within:ring-1 group-focus-within:ring-youtube-red group-focus-within:ring-opacity-50 group-focus-within:shadow-[0_0_10px_rgba(255,0,0,0.3)]"
+            className="h-10 px-6 bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 text-youtube-black dark:text-white rounded-r-full border-l-[1.5px] border-youtube-border dark:border-neutral-600 transition-all duration-200 focus:outline-none group-focus-within:border-youtube-red"
           >
             <Search className="w-5 h-5" />
           </button>
