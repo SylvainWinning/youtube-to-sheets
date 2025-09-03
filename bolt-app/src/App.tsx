@@ -4,6 +4,7 @@ import { VideoGrid } from './components/VideoGrid';
 import { DurationTabs } from './components/DurationTabs';
 import { SearchBar } from './components/SearchBar';
 import { SortSelect } from './components/SortSelect';
+import { CategorySelect } from './components/CategorySelect';
 import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
 import { MissingConfig } from './components/MissingConfig';
@@ -31,6 +32,7 @@ export default function App() {
     query: '',
     fields: ['title', 'channel', 'category']
   });
+  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
   const resetFilters = React.useCallback(async () => {
     playClick();
@@ -39,6 +41,7 @@ export default function App() {
       query: '',
       fields: ['title', 'channel', 'category']
     });
+    setSelectedCategory(null);
     await loadVideos();
   }, [loadVideos, playClick]);
 
@@ -63,6 +66,14 @@ export default function App() {
   const sortedVideos = React.useMemo(
     () => sortVideos(filteredByDuration, sortOptions),
     [filteredByDuration, sortOptions]
+  );
+
+  const filteredByCategory = React.useMemo(
+    () =>
+      selectedCategory
+        ? sortedVideos.filter(v => v.myCategory === selectedCategory)
+        : sortedVideos,
+    [sortedVideos, selectedCategory]
   );
 
   const appError = videosError;
@@ -106,6 +117,12 @@ export default function App() {
                     onOptionsChange={setSortOptions}
                   />
                 </div>
+                <CategorySelect
+                  videos={videos}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
+                  className="w-full max-w-[280px]"
+                />
               </div>
             )}
           </div>
@@ -129,7 +146,7 @@ export default function App() {
         )}
         {isLoading && <LoadingState />}
         {appError && <ErrorState message={appError} />}
-        {!isLoading && !appError && <VideoGrid videos={sortedVideos} />}
+        {!isLoading && !appError && <VideoGrid videos={filteredByCategory} />}
       </main>
     </div>
   );
