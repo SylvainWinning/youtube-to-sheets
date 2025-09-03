@@ -65,16 +65,15 @@ export default function App() {
     [filteredByDuration, sortOptions]
   );
 
-const appError = videosError;
+  const appError = videosError;
+
   return (
-    <className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden pt-4">t-4">
+    <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden pt-4">
       <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50 mb-6">
-        {/* Réduction de la hauteur d’en-tête */}
-       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1">
-          {/* Réduction de l’espacement vertical */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-div               <button
+              <button
                 onClick={resetFilters}
                 className="flex items-center gap-3 group"
                 disabled={isLoading}
@@ -86,7 +85,6 @@ div               <button
                 />
                 <h1 className="text-xl font-semibold text-youtube-black dark:text-white flex items-center gap-2">
                   Mes Vidéos YouTube
-                  {/* Icône de synchronisation placée juste à droite du texte et visible en mode sombre */}
                   <RefreshCw
                     className={
                       'h-5 w-5 text-youtube-gray-light dark:text-youtube-gray-dark transition-all ' +
@@ -100,7 +98,6 @@ div               <button
                 <SoundToggle />
               </div>
             </div>
-
             {!isLoading && !appError && (
               <div className="flex items-center justify-between gap-4">
                 <div className="w-full max-w-[280px]">
@@ -130,7 +127,6 @@ div               <button
             />
           </>
         )}
-
         {isLoading && <LoadingState />}
         {appError && <ErrorState message={appError} />}
         {!isLoading && !appError && <VideoGrid videos={sortedVideos} />}
