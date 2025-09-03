@@ -88,7 +88,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
               placeholder="Rechercher"
               value={filters.query}
               onChange={(e) => onFiltersChange({ ...filters, query: e.target.value })}
-              className="w-full pl-4 pr-10 h-10 rounded-l-full bg-transparent text-youtube-black dark:text-white placeholder-youtube-gray-light dark:placeholder-gray-400 text-sm focus:outline-none"
+              className="w-full pl-4 pr-10 h-10 rounded-l-full bg-transparent text-youtube-black dark:text-white placeholder-youtube-gray-dark dark:placeholder-gray-400 text-sm focus:outline-none"
             />
             {filters.query && (
               <button
