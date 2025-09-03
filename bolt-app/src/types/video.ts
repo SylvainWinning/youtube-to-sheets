@@ -1,17 +1,18 @@
 export interface VideoData {
-  channelAvatar?: string;  // Colonne A
-  title: string;          // Colonne B
-  link: string;           // Colonne C
-  channel: string;        // Colonne D
-  publishedAt: string;    // Colonne E
-  duration: string;       // Colonne F
-  views: string;          // Colonne G
-  likes: string;          // Colonne H
-  comments: string;       // Colonne I
+  channelAvatar?: string; // Colonne A
+  title: string; // Colonne B
+  link: string; // Colonne C
+  channel: string; // Colonne D
+  publishedAt: string; // Colonne E
+  duration: string; // Colonne F
+  views: string; // Colonne G
+  likes: string; // Colonne H
+  comments: string; // Colonne I
   shortDescription: string; // Colonne J
-  tags: string;           // Colonne K
-  category: string;       // Colonne L
-  thumbnail: string;      // Colonne M
+  tags: string; // Colonne K
+  category?: string; // Colonne L (YouTube numeric category)
+  thumbnail: string; // Colonne M
+  myCategory?: string; // Colonne N (custom category)
 }
 
 export interface VideoResponse {
