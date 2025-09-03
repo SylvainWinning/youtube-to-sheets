@@ -69,7 +69,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden pt-4">
-      <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50 mb-6">
+      <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50 mb-8">
         {/* Réduction de la hauteur d’en-tête */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1">
           {/* Réduction de l’espacement vertical */}
