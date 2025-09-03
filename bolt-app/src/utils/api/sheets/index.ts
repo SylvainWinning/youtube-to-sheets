@@ -6,18 +6,29 @@ import { getConfig } from '../../constants.ts';
 
 export { fetchLocalVideos };
 
+/**
+ * Récupère toutes les vidéos.
+ *
+ * - Si la configuration est incomplète ou invalide (SPREADSHEET_ID manquant, aide ou erreur),
+ *   on lit les vidéos locales situées dans `data/videos.json`.
+ * - Sinon, on tente de synchroniser avec Google Sheets.
+ */
 export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
   const config = getConfig();
 
-  if (config.error) {
+  // Si une erreur est détectée ou si un message d'aide est présent,
+  // on se rabat sur les données locales au lieu d'interroger les API externes.
+  if (config.error || config.help) {
     const localResponse = await fetchLocalVideos();
     return {
       ...localResponse,
-      error: config.error,
+      // On conserve l'erreur d'origine seulement si elle existe ; sinon, on garde l'erreur locale
+      error: config.error ?? localResponse.error,
       metadata: {
+        // On fusionne les messages d'erreurs existants et, le cas échéant, l'erreur de configuration
         errors: [
           ...(localResponse.metadata?.errors ?? []),
-          config.error,
+          ...(config.error ? [config.error] : []),
           ...(localResponse.error ? [localResponse.error] : [])
         ],
         timestamp: Date.now()
