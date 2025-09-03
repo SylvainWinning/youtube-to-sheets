@@ -48,7 +48,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
     // Process results from each tab
     tabResults.forEach((result, index) => {
       const tab = SHEET_TABS[index];
-      
+
       if (result.status === 'rejected') {
         const error = `Failed to fetch ${tab.name}: ${result.reason}`;
         console.error(error);
@@ -57,7 +57,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
       }
 
       const { values = [], error } = result.value;
-      
+
       if (error) {
         console.error(`Error in ${tab.name}:`, error);
         errors.push(error);
@@ -70,10 +70,10 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
       }
 
       console.log(`Processing ${values.length} rows from ${tab.name}`);
-      
+
       const validRows = values.filter(row => validateRow(row));
       console.log(`${tab.name}: ${validRows.length} valid videos found`);
-      
+
       validRows.forEach(row => {
         const [
           channelAvatar,
@@ -91,8 +91,16 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
           thumbnail
         ] = row.map(cell => String(cell || '').trim());
 
-        if (!link || !link.includes('youtube.com')) {
+        // Skip rows with no link
+        if (!link) {
           console.warn('Invalid YouTube link skipped:', { link, title });
+          return;
+        }
+
+        // Accept both youtube.com and youtu.be links
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i;
+        if (!youtubeRegex.test(link)) {
+          console.warn('Unsupported video link skipped:', { link, title });
           return;
         }
 
@@ -119,7 +127,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
     });
 
     const videos = Object.values(videoMap);
-    
+
     if (videos.length === 0) {
       const errorMessage = errors.length > 0
         ? `Failed to load videos:\n${errors.join('\n')}`
