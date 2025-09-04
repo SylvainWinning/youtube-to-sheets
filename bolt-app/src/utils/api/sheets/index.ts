@@ -47,11 +47,20 @@ export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
     };
   } catch (error) {
     console.error('Error fetching videos:', error);
+    const localResponse = await fetchLocalVideos();
+
+    if (localResponse.error) {
+      throw new Error(localResponse.error);
+    }
+
     return {
-      data: [],
-      error: 'Une erreur est survenue lors de la récupération des données',
+      ...localResponse,
       metadata: {
-        errors: [error instanceof Error ? error.message : 'Erreur inconnue'],
+        ...(localResponse.metadata ?? {}),
+        errors: [
+          ...(localResponse.metadata?.errors ?? []),
+          error instanceof Error ? error.message : 'Erreur inconnue'
+        ],
         timestamp: Date.now()
       }
     };
