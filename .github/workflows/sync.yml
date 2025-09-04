@@ -105,16 +105,10 @@ jobs:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
         run: >-
           python scripts/export_sheet.py --sheet-range "'0-5min'!A1:Z, '5-10min'!A1:Z, '10-20min'!A1:Z, '20-30min'!A1:Z, '30-40min'!A1:Z, '40-50min'!A1:Z, '50-60min'!A1:Z, '60Plusmin'!A1:Z"
-      - name: Commit public data
+      - name: Commit data and push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add bolt-app/public/data/videos.csv bolt-app/public/data/videos.json
-          git commit -m "Update public data" || echo "rien à valider"
-      - name: Commit updated data
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/videos.json || true
-          git commit -m "Update data/videos.json after sync" || true
+          git add bolt-app/public/data/videos.* data/videos.json
+          git commit -m "Update videos data" || echo "rien à valider"
           git push
