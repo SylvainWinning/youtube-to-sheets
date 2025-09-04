@@ -114,6 +114,7 @@ export const channelCategories: Record<string, string> = {
   "Le Shesh": "Divertissement",
   "slash musique": "Musique",
   "Defend Intelligence": "Youtuber pref",
+  "Defend OFF": "Youtuber pref",
   "Gus Johnson": "Divertissement",
   "DrakeVEVO": "Musique",
   "Axolot": "Culture",
