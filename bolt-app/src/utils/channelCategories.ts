@@ -150,4 +150,6 @@ export const channelCategories: Record<string, string> = {
   "MVP - Ma Vie Pro": "Divertissement",
   "Mark Manson": "Pause dej",
   "Underscore_": "Youtuber pref",
+  "Maghla": "Pause dej",
+
 };
