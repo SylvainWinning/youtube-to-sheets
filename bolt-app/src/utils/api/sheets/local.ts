@@ -5,8 +5,9 @@ import { mapRowToVideo } from './transform.ts';
 
 export async function fetchLocalVideos(): Promise<ApiResponse<VideoData[]>> {
   try {
-const baseUrl = (import.meta as any).env?.BASE_URL ?? '';
-    const res = await fetch(`${baseUrl}data/videos.json`);    
+    const baseUrl = (import.meta as any).env?.BASE_URL ?? '';
+    const url = `${baseUrl}data/videos.json?t=${Date.now()}`;
+    const res = await fetch(url, { cache: 'no-store' });
     const json = await res.json();
     const [, ...rows] = json as any[][]; // skip header row
     const videos = rows
