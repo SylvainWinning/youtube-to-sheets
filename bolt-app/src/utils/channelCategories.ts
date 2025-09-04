@@ -1,5 +1,4 @@
 export const channelCategories: Record<string, string> = {
-  "euuhhh": "Divertissement",
   "Caroline Mignaux": "Finance & Business",
   "LEGEND": "Pause dej",
   "Apple": "Tech",
