@@ -1,4 +1,4 @@
-import { channelCategories } from './channelCategories';
+import { channelCategories } from './channelCategories.ts';
 import type { VideoData } from '../types/video.ts';
 
 /**
@@ -11,7 +11,10 @@ import type { VideoData } from '../types/video.ts';
  * @param videos  An array of video objects.
  * @returns      An alphabetically sorted array of unique category names.
  */
-export function getUniqueCategories(videos: VideoData[]): string[] {
+export function getUniqueCategories(
+  videos: VideoData[],
+  order: 'asc' | 'desc' = 'asc',
+): string[] {
   const uniqueCategories = new Set<string>();
   videos.forEach((video) => {
     let cat: string | undefined | null = (video as any).myCategory ?? (video as any).category;
@@ -27,5 +30,7 @@ export function getUniqueCategories(videos: VideoData[]): string[] {
       uniqueCategories.add(cat);
     }
   });
-  return Array.from(uniqueCategories).sort((a, b) => a.localeCompare(b));
+  return Array.from(uniqueCategories).sort((a, b) =>
+    order === 'desc' ? b.localeCompare(a) : a.localeCompare(b),
+  );
 }
