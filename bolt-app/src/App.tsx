@@ -55,25 +55,25 @@ export default function App() {
     [videos, searchFilters]
   );
 
+  const filteredByCategory = React.useMemo(
+    () =>
+      selectedCategory
+        ? filteredBySearch.filter(v => v.myCategory === selectedCategory)
+        : filteredBySearch,
+    [filteredBySearch, selectedCategory]
+  );
+
   const filteredByDuration = React.useMemo(
     () =>
       selectedTab === -1
-        ? filteredBySearch
-        : filterVideosByDuration(filteredBySearch, SHEET_TABS[selectedTab]),
-    [filteredBySearch, selectedTab]
+        ? filteredByCategory
+        : filterVideosByDuration(filteredByCategory, SHEET_TABS[selectedTab]),
+    [filteredByCategory, selectedTab]
   );
 
   const sortedVideos = React.useMemo(
     () => sortVideos(filteredByDuration, sortOptions),
     [filteredByDuration, sortOptions]
-  );
-
-  const filteredByCategory = React.useMemo(
-    () =>
-      selectedCategory
-        ? sortedVideos.filter(v => v.myCategory === selectedCategory)
-        : sortedVideos,
-    [sortedVideos, selectedCategory]
   );
 
   const appError = videosError;
@@ -140,13 +140,13 @@ export default function App() {
             <DurationTabs
               selectedTab={selectedTab}
               onTabChange={setSelectedTab}
-              videos={filteredBySearch}
+              videos={filteredByCategory}
             />
           </>
         )}
         {isLoading && <LoadingState />}
         {appError && <ErrorState message={appError} />}
-        {!isLoading && !appError && <VideoGrid videos={filteredByCategory} />}
+        {!isLoading && !appError && <VideoGrid videos={sortedVideos} />}
       </main>
     </div>
   );
