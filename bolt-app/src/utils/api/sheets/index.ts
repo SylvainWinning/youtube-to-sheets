@@ -14,12 +14,12 @@ export { fetchLocalVideos };
  * - Sinon, on tente de synchroniser avec Google Sheets.
  */
 export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
+  const localResponse = await fetchLocalVideos();
   const config = getConfig();
 
   // Si une erreur est détectée ou si un message d'aide est présent,
   // on se rabat sur les données locales au lieu d'interroger les API externes.
   if (config.error || config.help) {
-    const localResponse = await fetchLocalVideos();
     return {
       ...localResponse,
       // On conserve l'erreur d'origine seulement si elle existe ; sinon, on garde l'erreur locale
@@ -47,7 +47,6 @@ export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
     };
   } catch (error) {
     console.error('Error fetching videos:', error);
-    const localResponse = await fetchLocalVideos();
 
     if (localResponse.error) {
       throw new Error(localResponse.error);
