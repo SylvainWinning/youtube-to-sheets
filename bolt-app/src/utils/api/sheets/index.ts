@@ -20,6 +20,13 @@ export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
   // Si une erreur est détectée ou si un message d'aide est présent,
   // on se rabat sur les données locales au lieu d'interroger les API externes.
   if (config.error || config.help) {
+    if (config.error) {
+      console.error('Configuration error:', config.error);
+    }
+    if (config.help) {
+      console.warn('Configuration help:', config.help);
+    }
+
     return {
       ...localResponse,
       // On conserve l'erreur d'origine seulement si elle existe ; sinon, on garde l'erreur locale
