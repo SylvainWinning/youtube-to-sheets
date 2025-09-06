@@ -58,14 +58,16 @@ jobs:
 
       - name: Commit & push CSV and JSON update
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add bolt-app/public/data/videos.csv bolt-app/public/data/videos.json
-          if git diff --cached --quiet; then
-            echo "Data files have not changed. Nothing to commit."
-            exit 0
-          fi
-          git commit -m "chore: update exported data"
-  git pull --rebase origin main
-          
-          git push origin HEAD:main
+           git config user.name "GitHub Actions"
+      git config user.email "actions@github.com"
+      git add bolt-app/public/data/videos.csv bolt-app/public/data/videos.json
+      if git diff --cached --quiet; then
+        echo "Data files have not changed. Nothing to commit."
+        exit 0
+      fi
+      git commit -m "chore: update exported data"
+        git pull --rebase origin main
+        git push origin HEAD:main
+
+  
+    
