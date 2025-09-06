@@ -1,6 +1,8 @@
 name: Build and deploy to GitHub Pages
 
 on:
+  push:
+    branches: ["main"]
   workflow_run:
     workflows: ["YouTube to Sheets Sync", "Export Google Sheet to public data"]
     types: [completed]
