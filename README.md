@@ -118,6 +118,6 @@ python -m pytest
 
 ```bash
 cd bolt-app && npm test
+cd bolt-app && npm run lint
 ```
-
 Ces tests n'exigent pas de secrets : les appels réseau sont simulés.
