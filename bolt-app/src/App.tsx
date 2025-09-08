@@ -19,6 +19,13 @@ import { useSound } from './hooks/useSound';
 import { SearchFilters } from './types/search';
 import { SortOptions } from './types/sort';
 
+/**
+ * Main React component for the Bolt‑app. This version adds a custom
+ * touch handler for iOS that emulates the native behaviour of
+ * scrolling back to the top of the page when the user taps the top
+ * left corner of the screen. This supplements the Cordova/Ionic
+ * `statusTap` event which is only available in certain contexts【729783637461514†L56-L59】.
+ */
 export default function App() {
   const { error: configError } = getConfig();
   const { videos, isLoading, error: videosError, loadVideos } = useVideos(configError);
@@ -26,11 +33,11 @@ export default function App() {
   const [selectedTab, setSelectedTab] = React.useState(-1);
   const [sortOptions, setSortOptions] = React.useState<SortOptions>({
     field: 'publishedAt',
-    direction: 'desc'
+    direction: 'desc',
   });
   const [searchFilters, setSearchFilters] = React.useState<SearchFilters>({
     query: '',
-    fields: ['title', 'channel', 'category']
+    fields: ['title', 'channel', 'category'],
   });
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
@@ -41,7 +48,7 @@ export default function App() {
     setSelectedTab(-1);
     setSearchFilters({
       query: '',
-      fields: ['title', 'channel', 'category']
+      fields: ['title', 'channel', 'category'],
     });
     setSelectedCategory(null);
     await loadVideos();
@@ -52,7 +59,7 @@ export default function App() {
     loadVideos();
   }, [loadVideos]);
 
-  // Permet de remonter en haut quand on tape la barre d'état iOS
+  // Permet de remonter en haut quand on tape la barre d'état iOS (Cordova/Ionic)
   React.useEffect(() => {
     const handleStatusTap = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -61,9 +68,32 @@ export default function App() {
     return () => window.removeEventListener('statusTap', handleStatusTap);
   }, []);
 
+  // Gestionnaire tactile complémentaire pour iOS : détecte un tapotement
+  // dans le coin supérieur gauche (50 px verticalement et 100 px
+  // horizontalement) et déclenche un scroll vers le haut. Sans cela
+  // l'événement statusTap n'est pas pris en charge dans les PWA
+  // ou les navigateurs mobiles standards.
+  React.useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (!isIOS) return;
+    const thresholdY = 50;
+    const thresholdX = 100;
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length === 0) return;
+      const touch = event.touches[0];
+      if (touch.clientY < thresholdY && touch.clientX < thresholdX) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener('touchstart', handleTouchStart);
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+    };
+  }, []);
+
   const filteredBySearch = React.useMemo(
     () => filterVideosBySearch(videos, searchFilters),
-    [videos, searchFilters]
+    [videos, searchFilters],
   );
 
   const filteredByCategory = React.useMemo(
@@ -71,7 +101,7 @@ export default function App() {
       selectedCategory
         ? filteredBySearch.filter(v => v.myCategory === selectedCategory)
         : filteredBySearch,
-    [filteredBySearch, selectedCategory]
+    [filteredBySearch, selectedCategory],
   );
 
   const filteredByDuration = React.useMemo(
@@ -79,12 +109,12 @@ export default function App() {
       selectedTab === -1
         ? filteredByCategory
         : filterVideosByDuration(filteredByCategory, SHEET_TABS[selectedTab]),
-    [filteredByCategory, selectedTab]
+    [filteredByCategory, selectedTab],
   );
 
   const sortedVideos = React.useMemo(
     () => sortVideos(filteredByDuration, sortOptions),
-    [filteredByDuration, sortOptions]
+    [filteredByDuration, sortOptions],
   );
 
   const appError = videosError;
@@ -123,10 +153,7 @@ export default function App() {
             {!isLoading && !appError && (
               <div className="flex items-center justify-between gap-4">
                 <div className="w-full max-w-[280px]">
-                  <SortSelect
-                    options={sortOptions}
-                    onOptionsChange={setSortOptions}
-                  />
+                  <SortSelect options={sortOptions} onOptionsChange={setSortOptions} />
                 </div>
                 <CategorySelect
                   videos={videos}
