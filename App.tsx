@@ -32,20 +32,37 @@ export default function App() {
     fields: ['title', 'channel', 'category']
   });
 
+  const scrollToTop = React.useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.body?.scrollTo?.({ top: 0, behavior: 'smooth' });
+    document.documentElement?.scrollTo?.({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const resetFilters = React.useCallback(async () => {
     playClick();
+    // Remonte en haut de la page pour retrouver l'entête
+    scrollToTop();
     setSelectedTab(-1);
     setSearchFilters({
       query: '',
       fields: ['title', 'channel', 'category']
     });
     await loadVideos();
-  }, [loadVideos, playClick]);
+  }, [loadVideos, playClick, scrollToTop]);
 
   // Charge toujours les vidéos, même sans configuration Sheets
   React.useEffect(() => {
     loadVideos();
   }, [loadVideos]);
+
+  // Permet de remonter en haut quand on tape la barre d'état iOS
+  React.useEffect(() => {
+    const handleStatusTap = () => {
+      scrollToTop();
+    };
+    window.addEventListener('statusTap', handleStatusTap);
+    return () => window.removeEventListener('statusTap', handleStatusTap);
+  }, [scrollToTop]);
 
   const filteredBySearch = React.useMemo(
     () => filterVideosBySearch(videos, searchFilters),

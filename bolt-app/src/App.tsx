@@ -34,8 +34,16 @@ export default function App() {
   });
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
+  const scrollToTop = React.useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.body?.scrollTo?.({ top: 0, behavior: 'smooth' });
+    document.documentElement?.scrollTo?.({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const resetFilters = React.useCallback(async () => {
     playClick();
+    // Assure un retour en haut de l'écran sur iOS
+    scrollToTop();
     setSelectedTab(-1);
     setSearchFilters({
       query: '',
@@ -43,12 +51,21 @@ export default function App() {
     });
     setSelectedCategory(null);
     await loadVideos();
-  }, [loadVideos, playClick]);
+  }, [loadVideos, playClick, scrollToTop]);
 
   // Charge toujours les vidéos, même sans configuration Sheets
   React.useEffect(() => {
     loadVideos();
   }, [loadVideos]);
+
+  // Permet de remonter en haut quand on tape la barre d'état iOS
+  React.useEffect(() => {
+    const handleStatusTap = () => {
+      scrollToTop();
+    };
+    window.addEventListener('statusTap', handleStatusTap);
+    return () => window.removeEventListener('statusTap', handleStatusTap);
+  }, [scrollToTop]);
 
   const filteredBySearch = React.useMemo(
     () => filterVideosBySearch(videos, searchFilters),
