@@ -34,6 +34,8 @@ export default function App() {
 
   const resetFilters = React.useCallback(async () => {
     playClick();
+    // Remonte en haut de la page pour retrouver l'entête
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setSelectedTab(-1);
     setSearchFilters({
       query: '',
@@ -46,6 +48,15 @@ export default function App() {
   React.useEffect(() => {
     loadVideos();
   }, [loadVideos]);
+
+  // Permet de remonter en haut quand on tape la barre d'état iOS
+  React.useEffect(() => {
+    const handleStatusTap = () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('statusTap', handleStatusTap);
+    return () => window.removeEventListener('statusTap', handleStatusTap);
+  }, []);
 
   const filteredBySearch = React.useMemo(
     () => filterVideosBySearch(videos, searchFilters),
