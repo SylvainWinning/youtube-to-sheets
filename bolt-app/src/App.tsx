@@ -36,6 +36,8 @@ export default function App() {
 
   const resetFilters = React.useCallback(async () => {
     playClick();
+    // Assure un retour en haut de l'écran sur iOS
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setSelectedTab(-1);
     setSearchFilters({
       query: '',

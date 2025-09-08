@@ -34,6 +34,8 @@ export default function App() {
 
   const resetFilters = React.useCallback(async () => {
     playClick();
+    // Remonte en haut de la page pour retrouver l'entête
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setSelectedTab(-1);
     setSearchFilters({
       query: '',
