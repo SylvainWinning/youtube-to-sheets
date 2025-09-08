@@ -34,8 +34,16 @@ export default function App() {
   });
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
+  const scrollToTop = React.useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.body?.scrollTo?.({ top: 0, behavior: 'smooth' });
+    document.documentElement?.scrollTo?.({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const resetFilters = React.useCallback(async () => {
     playClick();
+    // Assure un retour en haut de l'écran sur iOS
+    scrollToTop();
     setSelectedTab(-1);
     setSearchFilters({
       query: '',
@@ -43,12 +51,36 @@ export default function App() {
     });
     setSelectedCategory(null);
     await loadVideos();
-  }, [loadVideos, playClick]);
+  }, [loadVideos, playClick, scrollToTop]);
 
   // Charge toujours les vidéos, même sans configuration Sheets
   React.useEffect(() => {
     loadVideos();
   }, [loadVideos]);
+
+  // Permet de remonter en haut quand on tape la barre d'état iOS ou la zone système en mode standalone
+  React.useEffect(() => {
+    const handleStatusTap = () => {
+      scrollToTop();
+    };
+
+    const handleStandaloneTap = (e: TouchEvent) => {
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        // @ts-ignore - propriété spécifique iOS Safari
+        window.navigator.standalone;
+      if (isStandalone && e.changedTouches[0]?.clientY < 50) {
+        scrollToTop();
+      }
+    };
+
+    window.addEventListener('statusTap', handleStatusTap);
+    window.addEventListener('touchend', handleStandaloneTap);
+    return () => {
+      window.removeEventListener('statusTap', handleStatusTap);
+      window.removeEventListener('touchend', handleStandaloneTap);
+    };
+  }, [scrollToTop]);
 
   const filteredBySearch = React.useMemo(
     () => filterVideosBySearch(videos, searchFilters),
