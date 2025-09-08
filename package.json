@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "lint": "npm --prefix bolt-app run lint",
+    "test": "npm --prefix bolt-app run test"
+  }
+}
