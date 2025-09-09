@@ -46,57 +46,51 @@ export default function App() {
     fields: ['title', 'channel', 'category'],
   });
 
+  const scrollToTop = React.useCallback(
+    () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+    [],
+  );
+
   const resetFilters = React.useCallback(async () => {
     playClick();
     // Remonte en haut de la page pour retrouver l'entête
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
     setSelectedTab(-1);
     setSearchFilters({
       query: '',
       fields: ['title', 'channel', 'category'],
     });
     await loadVideos();
-  }, [loadVideos, playClick]);
+  }, [loadVideos, playClick, scrollToTop]);
 
   // Charge toujours les vidéos, même sans configuration Sheets
   React.useEffect(() => {
     loadVideos();
   }, [loadVideos]);
 
-  // Permet de remonter en haut quand on tape la barre d'état iOS
+  // Permet de remonter en haut lorsque l'utilisateur tape la barre d'état
+  // iOS ou touche le coin supérieur gauche de l'écran.
   React.useEffect(() => {
     const handleStatusTap = () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToTop();
     };
-    window.addEventListener('statusTap', handleStatusTap);
-    return () => window.removeEventListener('statusTap', handleStatusTap);
-  }, []);
 
-  // Ajoute un gestionnaire tactile pour iOS afin de faire défiler vers le haut
-  // lorsque l'utilisateur touche le coin supérieur gauche. Cette logique
-  // complète l'événement `statusTap` qui est spécifique à Cordova/Ionic et
-  // ne se déclenche pas dans tous les environnements. Le seuil X/Y est
-  // configuré de sorte que seuls les tapotements près du coin supérieur
-  // (premiers 50 px en hauteur et 100 px en largeur) déclenchent le retour
-  // en haut. On détecte les appareils iOS via l'userAgent afin de ne pas
-  // interférer avec les autres navigateurs.
-  React.useEffect(() => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (!isIOS) return;
-    const thresholdY = 50; // px from top of viewport
-    const thresholdX = 100; // px from left of viewport
-    const handleTouchStart = (event: TouchEvent) => {
-      if (event.touches.length === 0) return;
-      const touch = event.touches[0];
-      if (touch.clientY < thresholdY && touch.clientX < thresholdX) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    const handleTouchEnd = (event: TouchEvent) => {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (!isIOS || event.changedTouches.length === 0) return;
+      const touch = event.changedTouches[0];
+      if (touch.clientY < 50 && touch.clientX < 100) {
+        scrollToTop();
       }
     };
-    window.addEventListener('touchstart', handleTouchStart);
+
+    window.addEventListener('statusTap', handleStatusTap);
+    window.addEventListener('touchend', handleTouchEnd);
     return () => {
-      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('statusTap', handleStatusTap);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []);
+  }, [scrollToTop]);
 
   const filteredBySearch = React.useMemo(
     () => filterVideosBySearch(videos, searchFilters),

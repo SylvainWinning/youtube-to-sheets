@@ -41,10 +41,15 @@ export default function App() {
   });
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
 
+  const scrollToTop = React.useCallback(
+    () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+    [],
+  );
+
   const resetFilters = React.useCallback(async () => {
     playClick();
     // Assure un retour en haut de l'écran sur iOS
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
     setSelectedTab(-1);
     setSearchFilters({
       query: '',
@@ -52,7 +57,7 @@ export default function App() {
     });
     setSelectedCategory(null);
     await loadVideos();
-  }, [loadVideos, playClick]);
+  }, [loadVideos, playClick, scrollToTop]);
 
   // Charge toujours les vidéos, même sans configuration Sheets
   React.useEffect(() => {
@@ -60,36 +65,28 @@ export default function App() {
   }, [loadVideos]);
 
   // Permet de remonter en haut quand on tape la barre d'état iOS (Cordova/Ionic)
+  // ou lorsqu'on touche le coin supérieur gauche sur un appareil iOS.
   React.useEffect(() => {
     const handleStatusTap = () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToTop();
     };
-    window.addEventListener('statusTap', handleStatusTap);
-    return () => window.removeEventListener('statusTap', handleStatusTap);
-  }, []);
 
-  // Gestionnaire tactile complémentaire pour iOS : détecte un tapotement
-  // dans le coin supérieur gauche (50 px verticalement et 100 px
-  // horizontalement) et déclenche un scroll vers le haut. Sans cela
-  // l'événement statusTap n'est pas pris en charge dans les PWA
-  // ou les navigateurs mobiles standards.
-  React.useEffect(() => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (!isIOS) return;
-    const thresholdY = 50;
-    const thresholdX = 100;
-    const handleTouchStart = (event: TouchEvent) => {
-      if (event.touches.length === 0) return;
-      const touch = event.touches[0];
-      if (touch.clientY < thresholdY && touch.clientX < thresholdX) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    const handleTouchEnd = (event: TouchEvent) => {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (!isIOS || event.changedTouches.length === 0) return;
+      const touch = event.changedTouches[0];
+      if (touch.clientY < 50 && touch.clientX < 100) {
+        scrollToTop();
       }
     };
-    window.addEventListener('touchstart', handleTouchStart);
+
+    window.addEventListener('statusTap', handleStatusTap);
+    window.addEventListener('touchend', handleTouchEnd);
     return () => {
-      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('statusTap', handleStatusTap);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []);
+  }, [scrollToTop]);
 
   const filteredBySearch = React.useMemo(
     () => filterVideosBySearch(videos, searchFilters),
