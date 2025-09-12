@@ -54,14 +54,30 @@ export function playVideo(video: VideoData | null) {
     const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     // Redirige vers l'app YouTube. Si elle n'est pas installée, la redirection
-    // échoue et l'on ouvre l'URL web en repli après un court délai.
+    // échoue et l'on ouvre l'URL web en repli après un court délai. Pour
+    // éviter l'affichage d'un navigateur intégré à l'application (écran blanc
+    // avec un bouton de fermeture), on privilégie l'ouverture dans le
+    // navigateur système lorsque c'est possible.
     window.location.href = appUrl;
     setTimeout(() => {
-      window.open(webUrl, '_blank', 'noopener,noreferrer');
+      // Si l'environnement Cordova est disponible, utilise le navigateur
+      // système pour ouvrir l'URL afin d'éviter l'InAppBrowser.
+      const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
+      if (cordovaBrowser) {
+        cordovaBrowser.open(webUrl, '_system');
+      } else {
+        window.location.href = webUrl;
+      }
     }, 500);
     return;
   }
 
-  // Si l'ID de la vidéo n'est pas détecté, on ouvre simplement le lien.
-  window.open(video.link, '_blank', 'noopener,noreferrer');
+  // Si l'ID de la vidéo n'est pas détecté, on applique la même logique de
+  // fallback pour ouvrir le lien sans passer par un navigateur intégré.
+  const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
+  if (cordovaBrowser) {
+    cordovaBrowser.open(video.link, '_system');
+  } else {
+    window.location.href = video.link;
+  }
 }
