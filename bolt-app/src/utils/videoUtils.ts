@@ -45,5 +45,33 @@ export function getRandomVideo(videos: VideoData[], tab: SheetTab | null): Video
 
 export function playVideo(video: VideoData | null) {
   if (!video) return;
+
+  // Essaye d'ouvrir directement l'application YouTube via son schéma d'URL.
+  const videoId = extractYouTubeId(video.link);
+
+  if (videoId) {
+    const appUrl = `youtube://${videoId}`;
+    const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    // Ouvre l'app YouTube dans une nouvelle fenêtre pour éviter de laisser
+    // un écran blanc dans le navigateur courant. Si l'app n'est pas
+    // installée, redirige vers l'URL web en repli après un court délai.
+    const newWindow = window.open(appUrl, '_blank');
+
+    setTimeout(() => {
+      try {
+        if (newWindow) {
+          newWindow.location.href = webUrl;
+        } else {
+          window.open(webUrl, '_blank', 'noopener,noreferrer');
+        }
+      } catch {
+        window.open(webUrl, '_blank', 'noopener,noreferrer');
+      }
+    }, 500);
+    return;
+  }
+
+  // Si l'ID de la vidéo n'est pas détecté, on ouvre simplement le lien.
   window.open(video.link, '_blank', 'noopener,noreferrer');
 }
