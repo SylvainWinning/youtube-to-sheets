@@ -12,6 +12,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const recognitionRef = React.useRef<any>(null);
   const [isListening, setIsListening] = React.useState(false);
+  const [isIOSDevice, setIsIOSDevice] = React.useState(false);
 
   const handleClear = () => {
     onFiltersChange({ ...filters, query: '' });
@@ -69,6 +70,14 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
   };
 
   React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const { userAgent, platform, maxTouchPoints } = window.navigator;
+      const isIOS =
+        /iPad|iPhone|iPod/.test(userAgent) ||
+        (platform === 'MacIntel' && maxTouchPoints > 1);
+      setIsIOSDevice(isIOS);
+    }
+
     return () => {
       stopListening();
     };
@@ -81,7 +90,11 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
           {/* Calque visuel séparé pour éviter le décalage du curseur iOS quand backdrop-filter est appliqué au formulaire */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-full backdrop-blur-md bg-white/30 dark:bg-neutral-600/30 transition-all duration-200"
+            className={`pointer-events-none absolute inset-0 rounded-full transition-colors duration-200 ${
+              isIOSDevice
+                ? 'bg-white/70 dark:bg-neutral-700/60'
+                : 'backdrop-blur-md bg-white/30 dark:bg-neutral-600/30'
+            }`}
           />
           {/* Form container with Liquid Glass styling */}
           <form
