@@ -116,7 +116,7 @@ test('fetchAllVideos returns synchronized data on success', async () => {
   const { fetchAllVideos } = await import(`./index.ts?success=${Date.now()}`);
   const result = await fetchAllVideos();
 
-  assert.deepEqual(calls, ['local', 'sync']);
+  assert.deepEqual(calls, ['local', 'sync', 'sync']);
   assert.equal(result.data?.[0].title, 'Remote');
 
   mock.restoreAll();
@@ -179,7 +179,7 @@ test('fetchAllVideos keeps local data when synchronization fails', async () => {
   const { fetchAllVideos } = await import(`./index.ts?failure=${Date.now()}`);
   const result = await fetchAllVideos();
 
-  assert.deepEqual(calls, ['local', 'sync']);
+  assert.deepEqual(calls, ['local', 'sync', 'sync']);
   assert.equal(result.data?.[0].title, 'Local');
   assert.ok(result.metadata?.errors?.length);
   assert.ok(consoleError.mock.calls.length >= 1);

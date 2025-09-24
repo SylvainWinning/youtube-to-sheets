@@ -8,6 +8,8 @@ interface VideoMap {
   [link: string]: VideoData;
 }
 
+const MASTER_SHEET_RANGE = "'AllVideos'!A:Z";
+
 function validateAndFormatDate(rawDate: any, videoTitle: string): string {
   if (!rawDate) {
     console.warn('Missing date for video:', videoTitle);
@@ -38,7 +40,27 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
   try {
     console.log('Starting sheet synchronization...');
     const videoMap: VideoMap = {};
+    const insertionOrder: Record<string, number> = {};
+    let nextInsertionIndex = 0;
     const errors: string[] = [];
+
+    const masterOrderMap: Record<string, number> = {};
+    const masterResult = await fetchSheetData(MASTER_SHEET_RANGE);
+    const masterValues = masterResult.values ?? [];
+
+    if (masterResult.error) {
+      console.warn('Unable to load master playlist order:', masterResult.error);
+    }
+
+    if (masterValues.length > 1) {
+      masterValues.slice(1).forEach((row, index) => {
+        const link = String(row[2] ?? '').trim();
+        if (link && !(link in masterOrderMap)) {
+          masterOrderMap[link] = index;
+        }
+      });
+      console.log(`Loaded master playlist order for ${Object.keys(masterOrderMap).length} videos.`);
+    }
 
     // Process all tabs in parallel for better performance
     const tabResults = await Promise.allSettled(
@@ -122,6 +144,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
           };
 
           videoMap[link] = video;
+          insertionOrder[link] = nextInsertionIndex++;
         }
       });
     });
@@ -133,6 +156,26 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
         ? `Failed to load videos:\n${errors.join('\n')}`
         : 'No videos found in any tab';
       throw new Error(errorMessage);
+    }
+
+    const hasMasterOrder = Object.keys(masterOrderMap).length > 0;
+
+    if (hasMasterOrder) {
+      videos.sort((a, b) => {
+        const orderA = masterOrderMap[a.link];
+        const orderB = masterOrderMap[b.link];
+        const hasOrderA = typeof orderA === 'number';
+        const hasOrderB = typeof orderB === 'number';
+
+        if (hasOrderA && hasOrderB) {
+          return orderA - orderB;
+        }
+
+        if (hasOrderA) return -1;
+        if (hasOrderB) return 1;
+
+        return (insertionOrder[a.link] ?? 0) - (insertionOrder[b.link] ?? 0);
+      });
     }
 
     console.log(`Synchronization complete. ${videos.length} unique videos found.`);
