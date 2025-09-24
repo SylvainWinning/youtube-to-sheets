@@ -8,6 +8,13 @@ export function mapRowToVideo(row: any[], index = 0): VideoData {
     return String(value);
   };
 
+  const playlistPositionRaw = row.length > 14 ? row[14] : undefined;
+  const parsedPosition = typeof playlistPositionRaw === 'number'
+    ? playlistPositionRaw
+    : typeof playlistPositionRaw === 'string' && playlistPositionRaw.trim() !== ''
+      ? Number(playlistPositionRaw.trim())
+      : Number.NaN;
+
   const video: VideoData = {
     channelAvatar: safeString(row[0]), // Column A for channel avatar
     title: safeString(row[1]), // Column B
@@ -25,7 +32,9 @@ export function mapRowToVideo(row: any[], index = 0): VideoData {
     myCategory: safeString(row[13], ''), // Column N (custom category)
   };
 
-  if (typeof index === 'number' && Number.isFinite(index)) {
+  if (Number.isFinite(parsedPosition)) {
+    video.playlistPosition = parsedPosition;
+  } else if (typeof index === 'number' && Number.isFinite(index)) {
     video.playlistPosition = index;
   }
 
