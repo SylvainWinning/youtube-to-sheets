@@ -13,6 +13,13 @@ export interface VideoData {
   category?: string; // Colonne L (YouTube numeric category)
   thumbnail: string; // Colonne M
   myCategory?: string; // Colonne N (custom category)
+  /**
+   * Position de la vidéo dans la playlist YouTube d’origine.
+   *
+   * Elle est utilisée pour rétablir l’ordre exact de la playlist quand
+   * l’utilisateur sélectionne « Playlist d’origine » dans le tri.
+   */
+  playlistPosition?: number;
 }
 
 export interface VideoResponse {

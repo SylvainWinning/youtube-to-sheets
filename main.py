@@ -38,6 +38,8 @@ HEADERS = [
     "tags",
     "category",
     "thumbnail",
+    "myCategory",
+    "playlistPosition",
 ]
 
 # Valeurs par défaut pour les miniatures et avatars en cas d’absence de données
@@ -382,6 +384,12 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
             avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
             published_at = format_published_at(snippet.get("publishedAt", ""))
             duration_category = get_duration_category(video_duration)
+            playlist_position = item.get("snippet", {}).get("position")
+            if isinstance(playlist_position, int):
+                resolved_position = playlist_position
+            else:
+                resolved_position = len(all_videos)
+
             entry = [
                 avatar_url,
                 title,
@@ -396,6 +404,8 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
                 ", ".join(snippet.get("tags", []) or []),
                 snippet.get("categoryId", "Inconnu"),
                 thumbnail_url,
+                "",
+                resolved_position,
             ]
             add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
     # Écriture des données dans chaque onglet de catégorie

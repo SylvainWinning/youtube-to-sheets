@@ -1,6 +1,15 @@
 import type { VideoData } from '../../../types/video.ts';
 
-export function mapRowToVideo(row: any[]): VideoData {
+function parsePlaylistPosition(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+export function mapRowToVideo(row: any[], index = 0): VideoData {
   const safeString = (value: any, defaultValue: string = ''): string => {
     if (value === undefined || value === null || value === '') {
       return defaultValue;
@@ -8,7 +17,7 @@ export function mapRowToVideo(row: any[]): VideoData {
     return String(value);
   };
 
-  return {
+  const video: VideoData = {
     channelAvatar: safeString(row[0]), // Column A for channel avatar
     title: safeString(row[1]), // Column B
     link: safeString(row[2]), // Column C
@@ -24,4 +33,14 @@ export function mapRowToVideo(row: any[]): VideoData {
     thumbnail: safeString(row[12]), // Column M
     myCategory: safeString(row[13], ''), // Column N (custom category)
   };
+
+  const playlistPosition = parsePlaylistPosition(row[14]);
+
+  if (typeof playlistPosition === 'number') {
+    video.playlistPosition = playlistPosition;
+  } else if (typeof index === 'number' && Number.isFinite(index)) {
+    video.playlistPosition = index;
+  }
+
+  return video;
 }

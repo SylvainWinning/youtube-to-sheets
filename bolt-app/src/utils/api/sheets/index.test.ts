@@ -28,7 +28,8 @@ test('fetchAllVideos uses local data when config error', async () => {
       '',
       '',
       '',
-      ''
+      '',
+      '0'
     ]
   ];
 
@@ -64,7 +65,7 @@ test('fetchAllVideos returns synchronized data on success', async () => {
   const { SHEET_TABS } = await import('../../constants.ts');
   const originalTabs = SHEET_TABS.map(tab => ({ ...tab }));
   SHEET_TABS.length = 1;
-  SHEET_TABS[0].range = 'tab!A2:M';
+  SHEET_TABS[0].range = 'tab!A2:O';
 
   const calls: string[] = [];
   const localRows = [
@@ -82,7 +83,8 @@ test('fetchAllVideos returns synchronized data on success', async () => {
       '',
       '',
       '',
-      ''
+      '',
+      '0'
     ]
   ];
   const remoteRows = [
@@ -99,7 +101,8 @@ test('fetchAllVideos returns synchronized data on success', async () => {
       '',
       '',
       '',
-      ''
+      '',
+      '0'
     ]
   ];
 
@@ -142,27 +145,28 @@ test('fetchAllVideos keeps local data when synchronization fails', async () => {
   const { SHEET_TABS } = await import('../../constants.ts');
   const originalTabs = SHEET_TABS.map(tab => ({ ...tab }));
   SHEET_TABS.length = 1;
-  SHEET_TABS[0].range = 'tab!A2:M';
+  SHEET_TABS[0].range = 'tab!A2:O';
 
   const calls: string[] = [];
   const localRows = [
     [],
-    [
-      '',
-      'Local',
-      'https://www.youtube.com/watch?v=local',
-      'Channel',
-      '2020-01-01T00:00:00Z',
-      'PT10M',
-      '0',
-      '0',
-      '0',
-      '',
-      '',
-      '',
-      ''
-    ]
-  ];
+      [
+        '',
+        'Local',
+        'https://www.youtube.com/watch?v=local',
+        'Channel',
+        '2020-01-01T00:00:00Z',
+        'PT10M',
+        '0',
+        '0',
+        '0',
+        '',
+        '',
+        '',
+        '',
+        '0'
+      ]
+    ];
 
   const fetchMock = mock.method(globalThis, 'fetch', async (input: any) => {
     const url = typeof input === 'string' ? input : input.url;

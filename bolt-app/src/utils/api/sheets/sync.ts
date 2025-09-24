@@ -10,6 +10,15 @@ interface VideoMap {
 
 const MASTER_SHEET_RANGE = "'AllVideos'!A:Z";
 
+function parsePlaylistPosition(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 function validateAndFormatDate(rawDate: any, videoTitle: string): string {
   if (!rawDate) {
     console.warn('Missing date for video:', videoTitle);
@@ -97,21 +106,21 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
       console.log(`${tab.name}: ${validRows.length} valid videos found`);
 
       validRows.forEach(row => {
-        const [
-          channelAvatar,
-          title,
-          link,
-          channel,
-          publishedAt,
-          duration,
-          views,
-          likes,
-          comments,
-          description,
-          tags,
-          category,
-          thumbnail
-        ] = row.map(cell => String(cell || '').trim());
+        const playlistPositionFromSheet = parsePlaylistPosition(row[14]);
+
+        const channelAvatar = String(row[0] ?? '').trim();
+        const title = String(row[1] ?? '').trim();
+        const link = String(row[2] ?? '').trim();
+        const channel = String(row[3] ?? '').trim();
+        const publishedAt = String(row[4] ?? '').trim();
+        const duration = String(row[5] ?? '').trim();
+        const views = String(row[6] ?? '').trim();
+        const likes = String(row[7] ?? '').trim();
+        const comments = String(row[8] ?? '').trim();
+        const description = String(row[9] ?? '').trim();
+        const tags = String(row[10] ?? '').trim();
+        const category = String(row[11] ?? '').trim();
+        const thumbnail = String(row[12] ?? '').trim();
 
         // Skip rows with no link
         if (!link) {
@@ -127,6 +136,14 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
         }
 
         if (!videoMap[link]) {
+          const masterOrder = masterOrderMap[link];
+          const fallbackOrder = typeof playlistPositionFromSheet === 'number'
+            ? playlistPositionFromSheet
+            : nextInsertionIndex;
+          const resolvedOrder = typeof masterOrder === 'number'
+            ? masterOrder
+            : fallbackOrder;
+
           const video: VideoData = {
             channelAvatar: channelAvatar || '',
             title: title || '',
@@ -140,11 +157,20 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
             shortDescription: description || '',
             tags: tags || '',
             category: category || 'Non catégorisé',
-            thumbnail: thumbnail || ''
+            thumbnail: thumbnail || '',
+            playlistPosition: resolvedOrder
           };
 
           videoMap[link] = video;
-          insertionOrder[link] = nextInsertionIndex++;
+          insertionOrder[link] = fallbackOrder;
+
+          if (typeof playlistPositionFromSheet === 'number') {
+            if (playlistPositionFromSheet >= nextInsertionIndex) {
+              nextInsertionIndex = playlistPositionFromSheet + 1;
+            }
+          } else {
+            nextInsertionIndex++;
+          }
         }
       });
     });
@@ -177,6 +203,19 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
         return (insertionOrder[a.link] ?? 0) - (insertionOrder[b.link] ?? 0);
       });
     }
+
+    videos.forEach(video => {
+      if (typeof video.playlistPosition !== 'number') {
+        const order = masterOrderMap[video.link];
+        if (typeof order === 'number') {
+          video.playlistPosition = order;
+          return;
+        }
+
+        const fallback = insertionOrder[video.link];
+        video.playlistPosition = typeof fallback === 'number' ? fallback : 0;
+      }
+    });
 
     console.log(`Synchronization complete. ${videos.length} unique videos found.`);
     return videos;
