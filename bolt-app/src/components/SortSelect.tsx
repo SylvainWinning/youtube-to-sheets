@@ -13,6 +13,8 @@ interface SortSelectProps {
 
 export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const playlistValue = getOptionValue(null);
+  const selectedValue = getOptionValue(options);
 
   const handleSelect = (value: string) => {
     if (!value) {
@@ -30,15 +32,26 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
       label={getSelectedLabel(options)}
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}
-  >      <div className="px-4 py-2">
+    >
+      <div className="px-4 py-2">
         <div className="text-xs font-medium text-gray-500 uppercase">Date de publication</div>
       </div>
+
+      <DropdownItem
+        key="playlist-order"
+        onClick={() => handleSelect(playlistValue)}
+        isSelected={selectedValue === playlistValue}
+      >
+        {SORT_LABELS[playlistValue]}
+      </DropdownItem>
+
+      <div className="my-1 border-t border-gray-100 dark:border-neutral-700" />
 
       {[SORT_OPTIONS.PUBLISHED_DESC, SORT_OPTIONS.PUBLISHED_ASC].map((option) => (
         <DropdownItem
           key={getOptionValue(option)}
           onClick={() => handleSelect(getOptionValue(option))}
-          isSelected={getOptionValue(options) === getOptionValue(option)}
+          isSelected={selectedValue === getOptionValue(option)}
         >
           {SORT_LABELS[getOptionValue(option)]}
         </DropdownItem>
