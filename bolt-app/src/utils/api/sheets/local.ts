@@ -12,7 +12,7 @@ export async function fetchLocalVideos(): Promise<ApiResponse<VideoData[]>> {
     const [, ...rows] = json as any[][]; // skip header row
     const videos = rows
       .filter(validateRow)
-      .map(mapRowToVideo);
+      .map((row, index) => mapRowToVideo(row, index));
 
     return { data: videos };
   } catch (err) {

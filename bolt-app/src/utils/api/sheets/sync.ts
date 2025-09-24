@@ -127,6 +127,8 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
         }
 
         if (!videoMap[link]) {
+          const fallbackOrder = nextInsertionIndex;
+          const masterOrder = masterOrderMap[link];
           const video: VideoData = {
             channelAvatar: channelAvatar || '',
             title: title || '',
@@ -140,11 +142,13 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
             shortDescription: description || '',
             tags: tags || '',
             category: category || 'Non catégorisé',
-            thumbnail: thumbnail || ''
+            thumbnail: thumbnail || '',
+            playlistPosition: typeof masterOrder === 'number' ? masterOrder : fallbackOrder
           };
 
           videoMap[link] = video;
-          insertionOrder[link] = nextInsertionIndex++;
+          insertionOrder[link] = fallbackOrder;
+          nextInsertionIndex++;
         }
       });
     });
@@ -177,6 +181,18 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
         return (insertionOrder[a.link] ?? 0) - (insertionOrder[b.link] ?? 0);
       });
     }
+
+    videos.forEach(video => {
+      if (typeof video.playlistPosition !== 'number') {
+        const order = masterOrderMap[video.link];
+        if (typeof order === 'number') {
+          video.playlistPosition = order;
+        } else {
+          const fallback = insertionOrder[video.link];
+          video.playlistPosition = typeof fallback === 'number' ? fallback : 0;
+        }
+      }
+    });
 
     console.log(`Synchronization complete. ${videos.length} unique videos found.`);
     return videos;

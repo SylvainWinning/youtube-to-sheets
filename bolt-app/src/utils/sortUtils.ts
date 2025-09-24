@@ -2,8 +2,30 @@ import type { VideoData } from '../types/video.ts';
 import type { SortOptions } from '../types/sort.ts';
 import { parseDate } from './timeUtils.ts';
 
+function sortByPlaylistPosition(videos: VideoData[]): VideoData[] {
+  return videos
+    .map((video, index) => ({ video, index }))
+    .sort((a, b) => {
+      const orderA = typeof a.video.playlistPosition === 'number'
+        ? a.video.playlistPosition
+        : Number.POSITIVE_INFINITY;
+      const orderB = typeof b.video.playlistPosition === 'number'
+        ? b.video.playlistPosition
+        : Number.POSITIVE_INFINITY;
+
+      if (orderA === orderB) {
+        return a.index - b.index;
+      }
+
+      return orderA - orderB;
+    })
+    .map(item => item.video);
+}
+
 export function sortVideos(videos: VideoData[], options: SortOptions | null): VideoData[] {
-  if (!options) return videos;
+  if (!options) {
+    return sortByPlaylistPosition(videos);
+  }
 
   console.log('Sorting videos:', {
     totalVideos: videos.length,
