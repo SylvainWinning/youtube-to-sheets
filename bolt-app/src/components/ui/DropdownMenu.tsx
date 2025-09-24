@@ -21,11 +21,49 @@ export function DropdownMenu({
 }: DropdownMenuProps) {
   const menuRef = useClickOutside<HTMLDivElement>(() => isOpen && onToggle());
   const triggerRef = React.useRef<HTMLButtonElement>(null);
-  const [menuPosition, setMenuPosition] = React.useState({
-    top: 0,
-    left: 0,
-    width: 0,
+  const rafRef = React.useRef<number>();
+  const listenerOptions = React.useRef<{ capture: boolean; passive: boolean }>({
+    capture: true,
+    passive: true,
   });
+  const menuContentRef = React.useRef<HTMLDivElement>(null);
+  const lastPositionRef = React.useRef({
+    top: Number.NaN,
+    left: Number.NaN,
+    width: Number.NaN,
+  });
+
+  const applyMenuPosition = React.useCallback(
+    (nextPosition: { top: number; left: number; width: number }) => {
+      const menuElement = menuContentRef.current;
+      if (!menuElement) return;
+
+      const { top, left, width } = nextPosition;
+      const lastPosition = lastPositionRef.current;
+
+      const hasTop = Number.isFinite(lastPosition.top);
+      if (!hasTop || Math.abs(lastPosition.top - top) >= 0.5) {
+        menuElement.style.top = `${top}px`;
+      }
+
+      const hasLeft = Number.isFinite(lastPosition.left);
+      if (!hasLeft || Math.abs(lastPosition.left - left) >= 0.5) {
+        menuElement.style.left = `${left}px`;
+      }
+
+      const hasWidth = Number.isFinite(lastPosition.width);
+      if (!hasWidth || Math.abs(lastPosition.width - width) >= 0.5) {
+        if (width > 0) {
+          menuElement.style.width = `${width}px`;
+        } else {
+          menuElement.style.removeProperty('width');
+        }
+      }
+
+      lastPositionRef.current = { top, left, width };
+    },
+    [],
+  );
 
   const updateMenuPosition = React.useCallback(() => {
     if (!isOpen || !triggerRef.current) return;
@@ -54,34 +92,54 @@ export function DropdownMenu({
 
     const top = triggerRect.bottom + spacing;
 
-    setMenuPosition((prev) => {
-      if (
-        Math.abs(prev.top - top) < 0.5 &&
-        Math.abs(prev.left - left) < 0.5 &&
-        Math.abs(prev.width - width) < 0.5
-      ) {
-        return prev;
-      }
-
-      return { top, left, width };
-    });
-  }, [isOpen]);
+    applyMenuPosition({ top, left, width });
+  }, [applyMenuPosition, isOpen]);
 
   React.useLayoutEffect(() => {
     updateMenuPosition();
   }, [isOpen, updateMenuPosition]);
 
+  const scheduleUpdate = React.useCallback(() => {
+    if (!isOpen) return;
+    if (typeof window === 'undefined') return;
+
+    if (rafRef.current !== undefined) {
+      return;
+    }
+
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = undefined;
+      updateMenuPosition();
+    });
+  }, [isOpen, updateMenuPosition]);
+
   React.useEffect(() => {
     if (!isOpen) return;
 
-    window.addEventListener('resize', updateMenuPosition);
-    window.addEventListener('scroll', updateMenuPosition, true);
+    scheduleUpdate();
+
+    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener('scroll', scheduleUpdate, listenerOptions.current);
 
     return () => {
-      window.removeEventListener('resize', updateMenuPosition);
-      window.removeEventListener('scroll', updateMenuPosition, true);
+      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('scroll', scheduleUpdate, listenerOptions.current);
+      if (rafRef.current !== undefined && typeof window !== 'undefined') {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = undefined;
+      }
     };
-  }, [isOpen, updateMenuPosition]);
+  }, [isOpen, scheduleUpdate]);
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      lastPositionRef.current = {
+        top: Number.NaN,
+        left: Number.NaN,
+        width: Number.NaN,
+      };
+    }
+  }, [isOpen]);
 
   return (
     <div className="relative" ref={menuRef}>
@@ -104,14 +162,7 @@ export function DropdownMenu({
       </button>
 
       {isOpen && (
-        <div
-          className="fixed z-50"
-          style={{
-            top: menuPosition.top,
-            left: menuPosition.left,
-            width: menuPosition.width || undefined,
-          }}
-        >
+        <div ref={menuContentRef} className="fixed z-50">
           <div className="overflow-hidden rounded-xl neu-card bg-white dark:bg-neutral-800">
             <div className="py-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
               {children}
