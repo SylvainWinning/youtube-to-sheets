@@ -1,8 +1,8 @@
-import { VideoData } from '../types/video';
-import { SheetTab } from '../types/sheets';
-import { filterVideosByDuration } from './videoFilters';
+import type { VideoData } from '../types/video.ts';
+import type { SheetTab } from '../types/sheets.ts';
+import { filterVideosByDuration } from './videoFilters.ts';
 
-function extractYouTubeId(url: string): string | null {
+export function extractYouTubeId(url: string): string | null {
   try {
     // Gère les formats d'URL courants de YouTube
     const patterns = [

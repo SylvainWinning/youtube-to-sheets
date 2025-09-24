@@ -3,9 +3,26 @@ import { SHEET_TABS } from '../../constants.ts';
 import type { VideoData } from '../../../types/video.ts';
 import { validateRow } from './validation.ts';
 import { parseDate } from '../../timeUtils.ts';
+import { extractYouTubeId } from '../../videoUtils.ts';
 
 interface VideoMap {
   [link: string]: VideoData;
+}
+
+const MASTER_SHEET_RANGE = "'AllVideos'!A:Z";
+
+function getVideoKey(link: string): string | null {
+  const trimmedLink = String(link || '').trim();
+  if (!trimmedLink) {
+    return null;
+  }
+
+  const videoId = extractYouTubeId(trimmedLink);
+  if (videoId) {
+    return videoId;
+  }
+
+  return trimmedLink.replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase();
 }
 
 function validateAndFormatDate(rawDate: any, videoTitle: string): string {
@@ -38,7 +55,27 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
   try {
     console.log('Starting sheet synchronization...');
     const videoMap: VideoMap = {};
+    const insertionOrder: Record<string, number> = {};
+    let nextInsertionIndex = 0;
     const errors: string[] = [];
+
+    const masterOrderMap: Record<string, number> = {};
+    const masterResult = await fetchSheetData(MASTER_SHEET_RANGE);
+    const masterValues = masterResult.values ?? [];
+
+    if (masterResult.error) {
+      console.warn('Unable to load master playlist order:', masterResult.error);
+    }
+
+    if (masterValues.length > 1) {
+      masterValues.slice(1).forEach((row, index) => {
+        const videoKey = getVideoKey(row[2]);
+        if (videoKey && !(videoKey in masterOrderMap)) {
+          masterOrderMap[videoKey] = index;
+        }
+      });
+      console.log(`Loaded master playlist order for ${Object.keys(masterOrderMap).length} videos.`);
+    }
 
     // Process all tabs in parallel for better performance
     const tabResults = await Promise.allSettled(
@@ -104,7 +141,13 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
           return;
         }
 
-        if (!videoMap[link]) {
+        const videoKey = getVideoKey(link);
+        if (!videoKey) {
+          console.warn('Unable to normalize video link:', { link, title });
+          return;
+        }
+
+        if (!videoMap[videoKey]) {
           const video: VideoData = {
             channelAvatar: channelAvatar || '',
             title: title || '',
@@ -121,7 +164,8 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
             thumbnail: thumbnail || ''
           };
 
-          videoMap[link] = video;
+          videoMap[videoKey] = video;
+          insertionOrder[videoKey] = nextInsertionIndex++;
         }
       });
     });
@@ -133,6 +177,31 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
         ? `Failed to load videos:\n${errors.join('\n')}`
         : 'No videos found in any tab';
       throw new Error(errorMessage);
+    }
+
+    const hasMasterOrder = Object.keys(masterOrderMap).length > 0;
+
+    if (hasMasterOrder) {
+      videos.sort((a, b) => {
+        const keyA = getVideoKey(a.link);
+        const keyB = getVideoKey(b.link);
+        const orderA = keyA ? masterOrderMap[keyA] : undefined;
+        const orderB = keyB ? masterOrderMap[keyB] : undefined;
+        const hasOrderA = typeof orderA === 'number';
+        const hasOrderB = typeof orderB === 'number';
+
+        if (hasOrderA && hasOrderB) {
+          return orderA - orderB;
+        }
+
+        if (hasOrderA) return -1;
+        if (hasOrderB) return 1;
+
+        const insertionA = keyA ? insertionOrder[keyA] : undefined;
+        const insertionB = keyB ? insertionOrder[keyB] : undefined;
+
+        return (insertionA ?? 0) - (insertionB ?? 0);
+      });
     }
 
     console.log(`Synchronization complete. ${videos.length} unique videos found.`);

@@ -73,3 +73,92 @@ test('synchronizeSheets handles large sheet ranges', async () => {
     }
   }
 });
+
+test('synchronizeSheets aligne les variantes d’URL sur l’ordre maître', async () => {
+  const originalSpreadsheetId = process.env.SPREADSHEET_ID;
+  const originalApiKey = process.env.YOUTUBE_API_KEY;
+  process.env.SPREADSHEET_ID = 'a'.repeat(44);
+  process.env.YOUTUBE_API_KEY = 'test-key';
+
+  const { synchronizeSheets } = await import('./sync.ts');
+  const { SHEET_TABS } = await import('../../constants.ts');
+  const originalTabs = SHEET_TABS.map(tab => ({ ...tab }));
+
+  const masterValues = [
+    ['Avatar', 'Titre', 'Lien'],
+    ['Avatar 1', 'Titre 1', 'https://youtu.be/ID_ONE?si=test'],
+    ['Avatar 2', 'Titre 2', 'https://www.youtube.com/watch?v=ID_TWO&list=abc'],
+  ];
+
+  const tabRows = [
+    [
+      'https://example.com/avatar1.jpg',
+      'Tab 1',
+      'https://www.youtube.com/watch?v=ID_ONE&list=xyz',
+      'Chaine 1',
+      '2024-01-01T00:00:00Z',
+      'PT5M',
+      '100',
+      '10',
+      '1',
+      'Description 1',
+      'tag',
+      'Catégorie',
+      'https://example.com/thumb1.jpg',
+    ],
+    [
+      'https://example.com/avatar2.jpg',
+      'Tab 2',
+      'https://youtu.be/ID_TWO',
+      'Chaine 2',
+      '2024-01-02T00:00:00Z',
+      'PT10M',
+      '200',
+      '20',
+      '2',
+      'Description 2',
+      'tag',
+      'Catégorie',
+      'https://example.com/thumb2.jpg',
+    ],
+  ];
+
+  try {
+    SHEET_TABS.length = 1;
+    SHEET_TABS[0].range = "'tab'!A2:M";
+
+    mock.method(globalThis, 'fetch', async (input: any) => {
+      const url = typeof input === 'string' ? input : input.url;
+      if (
+        url.includes("values/%27AllVideos%27!A%3AZ") ||
+        url.includes("values/'AllVideos'!A%3AZ")
+      ) {
+        return new Response(JSON.stringify({ values: masterValues }), { status: 200 });
+      }
+      if (
+        url.includes('values/%27tab%27!A2%3AM') ||
+        url.includes("values/'tab'!A2%3AM")
+      ) {
+        return new Response(JSON.stringify({ values: tabRows }), { status: 200 });
+      }
+      throw new Error(`URL inattendue: ${url}`);
+    });
+
+    const videos = await synchronizeSheets();
+    const titles = videos.map(video => video.title);
+    assert.deepEqual(titles, ['Tab 1', 'Tab 2']);
+  } finally {
+    mock.restoreAll();
+    SHEET_TABS.splice(0, SHEET_TABS.length, ...originalTabs);
+    if (originalSpreadsheetId === undefined) {
+      delete process.env.SPREADSHEET_ID;
+    } else {
+      process.env.SPREADSHEET_ID = originalSpreadsheetId;
+    }
+    if (originalApiKey === undefined) {
+      delete process.env.YOUTUBE_API_KEY;
+    } else {
+      process.env.YOUTUBE_API_KEY = originalApiKey;
+    }
+  }
+});
