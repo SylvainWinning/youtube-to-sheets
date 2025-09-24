@@ -31,10 +31,7 @@ export default function App() {
   const { videos, isLoading, error: videosError, loadVideos } = useVideos(configError);
   const { playClick } = useSound();
   const [selectedTab, setSelectedTab] = React.useState(-1);
-  const [sortOptions, setSortOptions] = React.useState<SortOptions>({
-    field: 'publishedAt',
-    direction: 'desc',
-  });
+  const [sortOptions, setSortOptions] = React.useState<SortOptions | null>(null);
   const [searchFilters, setSearchFilters] = React.useState<SearchFilters>({
     query: '',
     fields: ['title', 'channel', 'category'],
@@ -55,6 +52,7 @@ export default function App() {
       query: '',
       fields: ['title', 'channel', 'category'],
     });
+    setSortOptions(null);
     setSelectedCategory(null);
     await loadVideos();
   }, [loadVideos, playClick, scrollToTop]);
