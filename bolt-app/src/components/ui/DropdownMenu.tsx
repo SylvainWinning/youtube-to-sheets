@@ -21,6 +21,11 @@ export function DropdownMenu({
 }: DropdownMenuProps) {
   const menuRef = useClickOutside<HTMLDivElement>(() => isOpen && onToggle());
   const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const rafRef = React.useRef<number>();
+  const listenerOptions = React.useRef<{ capture: boolean; passive: boolean }>({
+    capture: true,
+    passive: true,
+  });
   const [menuPosition, setMenuPosition] = React.useState({
     top: 0,
     left: 0,
@@ -71,17 +76,37 @@ export function DropdownMenu({
     updateMenuPosition();
   }, [isOpen, updateMenuPosition]);
 
+  const scheduleUpdate = React.useCallback(() => {
+    if (!isOpen) return;
+    if (typeof window === 'undefined') return;
+
+    if (rafRef.current !== undefined) {
+      return;
+    }
+
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = undefined;
+      updateMenuPosition();
+    });
+  }, [isOpen, updateMenuPosition]);
+
   React.useEffect(() => {
     if (!isOpen) return;
 
-    window.addEventListener('resize', updateMenuPosition);
-    window.addEventListener('scroll', updateMenuPosition, true);
+    scheduleUpdate();
+
+    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener('scroll', scheduleUpdate, listenerOptions.current);
 
     return () => {
-      window.removeEventListener('resize', updateMenuPosition);
-      window.removeEventListener('scroll', updateMenuPosition, true);
+      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener('scroll', scheduleUpdate, listenerOptions.current);
+      if (rafRef.current !== undefined && typeof window !== 'undefined') {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = undefined;
+      }
     };
-  }, [isOpen, updateMenuPosition]);
+  }, [isOpen, scheduleUpdate]);
 
   return (
     <div className="relative" ref={menuRef}>
