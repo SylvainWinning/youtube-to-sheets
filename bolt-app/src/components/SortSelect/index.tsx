@@ -14,6 +14,7 @@ interface SortSelectProps {
 export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const menuRef = useClickOutside<HTMLDivElement>(() => setIsOpen(false));
+  const playlistValue = getOptionValue(null);
 
   // Log pour vérifier les props reçues
   React.useEffect(() => {
@@ -37,6 +38,7 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
 
   const selectedValue = getOptionValue(options);
   console.log('SortSelect - Selected value:', selectedValue);
+  const playlistLabel = SORT_LABELS[playlistValue];
 
   return (
     <div className="relative" ref={menuRef}>
@@ -61,6 +63,19 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
         <div className="fixed sm:absolute z-50 mt-2 w-[calc(100vw-2rem)] sm:w-[280px] left-0 right-0 sm:left-0 sm:right-auto mx-4 sm:mx-0">
           <div className="overflow-hidden rounded-xl neu-card bg-white dark:bg-neutral-800">
             <div className="py-2">
+              <button
+                onClick={() => handleSelect(playlistValue)}
+                className={`w-full px-4 py-2.5 text-sm text-left transition-all duration-200 ${
+                  selectedValue === playlistValue
+                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium'
+                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                }`}
+              >
+                {playlistLabel}
+              </button>
+
+              <div className="my-1 border-t border-gray-100 dark:border-neutral-700" />
+
               {[SORT_OPTIONS.PUBLISHED_DESC, SORT_OPTIONS.PUBLISHED_ASC].map((option) => (
                 <SortOption
                   key={getOptionValue(option)}
