@@ -84,7 +84,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
   }, []);
 
   return (
-    <div className="mb-8">
+    <div className="mb-6">
       <div className="relative max-w-[640px] mx-auto flex items-center gap-4">
         <div className="relative flex-1 group">
           {/* Calque visuel séparé pour éviter le décalage du curseur iOS quand backdrop-filter est appliqué au formulaire */}
