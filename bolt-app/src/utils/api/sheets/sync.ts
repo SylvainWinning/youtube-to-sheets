@@ -10,6 +10,53 @@ interface VideoMap {
 
 const MASTER_SHEET_RANGE = "'AllVideos'!A:Z";
 
+export function parsePlaylistPosition(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+export interface MasterOrderInfo {
+  orderMap: Record<string, number>;
+  explicitCount: number;
+}
+
+export function buildMasterOrderMap(masterValues: any[][]): MasterOrderInfo {
+  const orderMap: Record<string, number> = {};
+  let explicitCount = 0;
+
+  masterValues.slice(1).forEach((row, index) => {
+    const link = String(row[2] ?? '').trim();
+    if (!link || orderMap[link] !== undefined) {
+      return;
+    }
+
+    const rawPosition = row.length > 14 ? row[14] : undefined;
+    const parsedPosition = parsePlaylistPosition(rawPosition);
+
+    if (parsedPosition !== null) {
+      orderMap[link] = parsedPosition;
+      explicitCount++;
+    } else {
+      orderMap[link] = index;
+    }
+  });
+
+  return { orderMap, explicitCount };
+}
+
 function validateAndFormatDate(rawDate: any, videoTitle: string): string {
   if (!rawDate) {
     console.warn('Missing date for video:', videoTitle);
@@ -44,7 +91,8 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
     let nextInsertionIndex = 0;
     const errors: string[] = [];
 
-    const masterOrderMap: Record<string, number> = {};
+    let masterOrderMap: Record<string, number> = {};
+    let explicitMasterPositions = 0;
     const masterResult = await fetchSheetData(MASTER_SHEET_RANGE);
     const masterValues = masterResult.values ?? [];
 
@@ -53,13 +101,21 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
     }
 
     if (masterValues.length > 1) {
-      masterValues.slice(1).forEach((row, index) => {
-        const link = String(row[2] ?? '').trim();
-        if (link && !(link in masterOrderMap)) {
-          masterOrderMap[link] = index;
+      const masterOrderInfo = buildMasterOrderMap(masterValues);
+      masterOrderMap = masterOrderInfo.orderMap;
+      explicitMasterPositions = masterOrderInfo.explicitCount;
+      const loadedCount = Object.keys(masterOrderMap).length;
+      if (loadedCount > 0) {
+        if (explicitMasterPositions > 0) {
+          console.log(
+            `Loaded master playlist order for ${loadedCount} videos (with ${explicitMasterPositions} explicit positions).`
+          );
+        } else {
+          console.log(
+            `Loaded master playlist order for ${loadedCount} videos using sheet row order as fallback.`
+          );
         }
-      });
-      console.log(`Loaded master playlist order for ${Object.keys(masterOrderMap).length} videos.`);
+      }
     }
 
     // Process all tabs in parallel for better performance

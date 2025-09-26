@@ -1,5 +1,6 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
+import { parsePlaylistPosition, buildMasterOrderMap } from './sync.ts';
 
 test("getConfig propose une aide si l'ID est absent", async () => {
   const originalSpreadsheetId = process.env.SPREADSHEET_ID;
@@ -72,4 +73,54 @@ test('synchronizeSheets handles large sheet ranges', async () => {
       process.env.YOUTUBE_API_KEY = originalApiKey;
     }
   }
+});
+
+const HEADER_ROW = [
+  'channelAvatar',
+  'title',
+  'link',
+  'channel',
+  'publishedAt',
+  'duration',
+  'views',
+  'likes',
+  'comments',
+  'shortDescription',
+  'tags',
+  'category',
+  'thumbnail',
+  'myCategory',
+  'playlistPosition'
+];
+
+test('parsePlaylistPosition gère les nombres et les chaînes valides', () => {
+  assert.equal(parsePlaylistPosition(5), 5);
+  assert.equal(parsePlaylistPosition('7'), 7);
+  assert.equal(parsePlaylistPosition(' 12 '), 12);
+  assert.equal(parsePlaylistPosition('7.0'), 7);
+});
+
+test('parsePlaylistPosition renvoie null pour les valeurs invalides', () => {
+  assert.equal(parsePlaylistPosition(''), null);
+  assert.equal(parsePlaylistPosition('abc'), null);
+  assert.equal(parsePlaylistPosition(null), null);
+  assert.equal(parsePlaylistPosition(undefined), null);
+  assert.equal(parsePlaylistPosition(Number.NaN), null);
+});
+
+test('buildMasterOrderMap privilégie la colonne playlistPosition lorsque disponible', () => {
+  const values = [
+    HEADER_ROW,
+    ['', '', 'https://youtu.be/a1', '', '', '', '', '', '', '', '', '', '', '', '3'],
+    ['', '', 'https://youtu.be/b2', '', '', '', '', '', '', '', '', '', '', '', '1'],
+    ['', '', 'https://youtu.be/c3', '', '', '', '', '', '', '', '', '', '', '', ''],
+    ['', '', 'https://youtu.be/b2', '', '', '', '', '', '', '', '', '', '', '', '42'],
+  ];
+
+  const { orderMap, explicitCount } = buildMasterOrderMap(values);
+
+  assert.equal(orderMap['https://youtu.be/a1'], 3);
+  assert.equal(orderMap['https://youtu.be/b2'], 1);
+  assert.equal(orderMap['https://youtu.be/c3'], 2);
+  assert.equal(explicitCount, 2);
 });
