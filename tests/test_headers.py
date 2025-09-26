@@ -19,6 +19,8 @@ EXPECTED_HEADERS = [
     "tags",
     "category",
     "thumbnail",
+    "myCategory",
+    "playlistPosition",
 ]
 
 

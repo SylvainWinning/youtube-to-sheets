@@ -8,6 +8,11 @@ interface VideoMap {
   [link: string]: VideoData;
 }
 
+interface MasterOrderInfo {
+  order: number;
+  playlistPosition?: number;
+}
+
 const MASTER_SHEET_RANGE = "'AllVideos'!A:Z";
 
 function validateAndFormatDate(rawDate: any, videoTitle: string): string {
@@ -44,7 +49,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
     let nextInsertionIndex = 0;
     const errors: string[] = [];
 
-    const masterOrderMap: Record<string, number> = {};
+    const masterOrderMap: Record<string, MasterOrderInfo> = {};
     const masterResult = await fetchSheetData(MASTER_SHEET_RANGE);
     const masterValues = masterResult.values ?? [];
 
@@ -53,13 +58,62 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
     }
 
     if (masterValues.length > 1) {
-      masterValues.slice(1).forEach((row, index) => {
-        const link = String(row[2] ?? '').trim();
-        if (link && !(link in masterOrderMap)) {
-          masterOrderMap[link] = index;
-        }
+      const seenLinks = new Set<string>();
+      const masterEntries = masterValues
+        .slice(1)
+        .map((row, index) => {
+          const link = String(row[2] ?? '').trim();
+          if (!link || seenLinks.has(link)) {
+            return null;
+          }
+          seenLinks.add(link);
+
+          const rawPosition = row[14];
+          let playlistPosition: number | undefined;
+          if (typeof rawPosition === 'number' && Number.isFinite(rawPosition)) {
+            playlistPosition = rawPosition;
+          } else if (typeof rawPosition === 'string') {
+            const trimmed = rawPosition.trim();
+            if (trimmed !== '') {
+              const parsed = Number(trimmed);
+              if (Number.isFinite(parsed)) {
+                playlistPosition = parsed;
+              }
+            }
+          }
+
+          return {
+            link,
+            playlistPosition,
+            rowIndex: index
+          };
+        })
+        .filter((entry): entry is { link: string; playlistPosition?: number; rowIndex: number } => entry !== null)
+        .sort((a, b) => {
+          const hasPositionA = typeof a.playlistPosition === 'number';
+          const hasPositionB = typeof b.playlistPosition === 'number';
+
+          if (hasPositionA && hasPositionB) {
+            if (a.playlistPosition !== b.playlistPosition) {
+              return (a.playlistPosition! - b.playlistPosition!);
+            }
+            return a.rowIndex - b.rowIndex;
+          }
+
+          if (hasPositionA) return -1;
+          if (hasPositionB) return 1;
+
+          return a.rowIndex - b.rowIndex;
+        });
+
+      masterEntries.forEach((entry, order) => {
+        masterOrderMap[entry.link] = {
+          order,
+          playlistPosition: entry.playlistPosition
+        };
       });
-      console.log(`Loaded master playlist order for ${Object.keys(masterOrderMap).length} videos.`);
+
+      console.log(`Loaded master playlist order for ${masterEntries.length} videos.`);
     }
 
     // Process all tabs in parallel for better performance
@@ -128,7 +182,12 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
 
         if (!videoMap[link]) {
           const fallbackOrder = nextInsertionIndex;
-          const masterOrder = masterOrderMap[link];
+          const masterInfo = masterOrderMap[link];
+          const playlistPosition = typeof masterInfo?.playlistPosition === 'number'
+            ? masterInfo.playlistPosition
+            : typeof masterInfo?.order === 'number'
+              ? masterInfo.order
+              : fallbackOrder;
           const video: VideoData = {
             channelAvatar: channelAvatar || '',
             title: title || '',
@@ -143,7 +202,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
             tags: tags || '',
             category: category || 'Non catégorisé',
             thumbnail: thumbnail || '',
-            playlistPosition: typeof masterOrder === 'number' ? masterOrder : fallbackOrder
+            playlistPosition
           };
 
           videoMap[link] = video;
@@ -168,11 +227,11 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
       videos.sort((a, b) => {
         const orderA = masterOrderMap[a.link];
         const orderB = masterOrderMap[b.link];
-        const hasOrderA = typeof orderA === 'number';
-        const hasOrderB = typeof orderB === 'number';
+        const hasOrderA = typeof orderA?.order === 'number';
+        const hasOrderB = typeof orderB?.order === 'number';
 
         if (hasOrderA && hasOrderB) {
-          return orderA - orderB;
+          return (orderA!.order) - (orderB!.order);
         }
 
         if (hasOrderA) return -1;
@@ -184,9 +243,11 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
 
     videos.forEach(video => {
       if (typeof video.playlistPosition !== 'number') {
-        const order = masterOrderMap[video.link];
-        if (typeof order === 'number') {
-          video.playlistPosition = order;
+        const info = masterOrderMap[video.link];
+        if (typeof info?.playlistPosition === 'number') {
+          video.playlistPosition = info.playlistPosition;
+        } else if (typeof info?.order === 'number') {
+          video.playlistPosition = info.order;
         } else {
           const fallback = insertionOrder[video.link];
           video.playlistPosition = typeof fallback === 'number' ? fallback : 0;

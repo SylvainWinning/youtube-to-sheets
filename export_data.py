@@ -47,6 +47,8 @@ HEADERS = [
     "tags",
     "category",
     "thumbnail",
+    "myCategory",
+    "playlistPosition",
 ]
 
 def parse_spreadsheet_id(value: str) -> str | None:
@@ -100,7 +102,7 @@ def main() -> int:
         logging.error("SPREADSHEET_ID invalide: %s", raw_spreadsheet_id)
         return 1
     # Récupère toutes les données de l'onglet AllVideos (en-têtes + lignes)
-    range_all = "AllVideos!A1:M"
+    range_all = "AllVideos!A1:O"
     values = fetch_sheet_values(spreadsheet_id, api_key, range_all)
     if not values:
         logging.warning("Aucune donnée récupérée depuis la feuille.\n")

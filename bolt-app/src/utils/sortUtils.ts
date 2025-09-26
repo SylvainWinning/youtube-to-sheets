@@ -2,29 +2,46 @@ import type { VideoData } from '../types/video.ts';
 import type { SortOptions } from '../types/sort.ts';
 import { parseDate } from './timeUtils.ts';
 
-function sortByPlaylistPosition(videos: VideoData[]): VideoData[] {
-  return videos
-    .map((video, index) => ({ video, index }))
-    .sort((a, b) => {
-      const orderA = typeof a.video.playlistPosition === 'number'
-        ? a.video.playlistPosition
-        : Number.POSITIVE_INFINITY;
-      const orderB = typeof b.video.playlistPosition === 'number'
-        ? b.video.playlistPosition
-        : Number.POSITIVE_INFINITY;
+function parsePlaylistPosition(value: VideoData['playlistPosition']): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
 
-      if (orderA === orderB) {
-        return a.index - b.index;
-      }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      return null;
+    }
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
 
-      return orderA - orderB;
-    })
-    .map(item => item.video);
+  return null;
+}
+
+function getComparablePlaylistPosition(video: VideoData): number {
+  const parsed = parsePlaylistPosition(video.playlistPosition);
+  if (parsed !== null) {
+    return parsed;
+  }
+  return Number.POSITIVE_INFINITY;
 }
 
 export function sortVideos(videos: VideoData[], options: SortOptions | null): VideoData[] {
   if (!options) {
-    return sortByPlaylistPosition(videos);
+    return videos
+      .map((video, index) => ({ video, index }))
+      .sort((a, b) => {
+        const positionA = getComparablePlaylistPosition(a.video);
+        const positionB = getComparablePlaylistPosition(b.video);
+
+        if (positionA === positionB) {
+          return a.index - b.index;
+        }
+
+        return positionA - positionB;
+      })
+      .map(item => item.video);
   }
 
   console.log('Sorting videos:', {
