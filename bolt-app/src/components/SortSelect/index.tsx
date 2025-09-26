@@ -14,6 +14,10 @@ interface SortSelectProps {
 export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const menuRef = useClickOutside<HTMLDivElement>(() => setIsOpen(false));
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = React.useRef<HTMLDivElement | null>(null);
+  const [placement, setPlacement] = React.useState<'top' | 'bottom'>('top');
+  const [dropdownStyle, setDropdownStyle] = React.useState<React.CSSProperties>({});
   const playlistValue = getOptionValue(null);
 
   // Log pour vérifier les props reçues
@@ -40,9 +44,62 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
   console.log('SortSelect - Selected value:', selectedValue);
   const playlistLabel = SORT_LABELS[playlistValue];
 
+  const updatePlacement = React.useCallback(() => {
+    if (!triggerRef.current || !dropdownRef.current) {
+      return;
+    }
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const menuHeight = dropdownRef.current.offsetHeight;
+    const gap = 16;
+    const spaceBelow = window.innerHeight - triggerRect.bottom;
+    const spaceAbove = triggerRect.top;
+
+    const shouldOpenUp = spaceAbove >= menuHeight + gap || spaceAbove >= spaceBelow;
+    const nextPlacement = shouldOpenUp ? 'top' : 'bottom';
+
+    setPlacement(nextPlacement);
+
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      const horizontalMargin = 16;
+      const style: React.CSSProperties = {
+        left: horizontalMargin,
+        right: horizontalMargin,
+      };
+
+      if (nextPlacement === 'top') {
+        style.bottom = window.innerHeight - triggerRect.top + gap;
+        style.top = 'auto';
+      } else {
+        style.top = triggerRect.bottom + gap;
+        style.bottom = 'auto';
+      }
+
+      setDropdownStyle(style);
+    } else {
+      setDropdownStyle({});
+    }
+  }, []);
+
+  React.useLayoutEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    updatePlacement();
+    window.addEventListener('resize', updatePlacement);
+    window.addEventListener('scroll', updatePlacement, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePlacement);
+      window.removeEventListener('scroll', updatePlacement, true);
+    };
+  }, [isOpen, updatePlacement]);
+
   return (
     <div className="relative" ref={menuRef}>
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className="neu-button px-3 sm:px-4 py-2 rounded-xl flex items-center gap-2 w-full group"
       >
@@ -60,7 +117,13 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
       </button>
 
       {isOpen && (
-        <div className="fixed sm:absolute z-50 mt-2 w-[calc(100vw-2rem)] sm:w-[280px] left-0 right-0 sm:left-0 sm:right-auto mx-4 sm:mx-0">
+        <div
+          className={`fixed sm:absolute z-50 w-[calc(100vw-2rem)] sm:w-[280px] left-0 right-0 sm:left-0 sm:right-auto mx-4 sm:mx-0 ${
+            placement === 'top' ? 'sm:bottom-full sm:mb-4' : 'sm:top-full sm:mt-4'
+          }`}
+          style={dropdownStyle}
+          ref={dropdownRef}
+        >
           <div className="overflow-hidden rounded-xl neu-card bg-white dark:bg-neutral-800">
             <div className="py-2">
               <button

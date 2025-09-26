@@ -24,10 +24,72 @@ export function DropdownMenu({
       onToggle();
     }
   });
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = React.useRef<HTMLDivElement | null>(null);
+  const [placement, setPlacement] = React.useState<'top' | 'bottom'>('top');
+  const [dropdownStyle, setDropdownStyle] = React.useState<React.CSSProperties>({});
+
+  const updatePlacement = React.useCallback(() => {
+    if (!triggerRef.current || !dropdownRef.current) {
+      return;
+    }
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const menuHeight = dropdownRef.current.offsetHeight;
+    const gap = 16; // garder une marge avec le bouton et le bas de l'écran
+    const spaceBelow = window.innerHeight - triggerRect.bottom;
+    const spaceAbove = triggerRect.top;
+
+    const shouldOpenUp = spaceAbove >= menuHeight + gap || spaceAbove >= spaceBelow;
+    const nextPlacement = shouldOpenUp ? 'top' : 'bottom';
+
+    setPlacement(nextPlacement);
+
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      const horizontalMargin = 16;
+      const style: React.CSSProperties = {
+        left: horizontalMargin,
+        right: horizontalMargin,
+      };
+
+      if (nextPlacement === 'top') {
+        style.bottom = window.innerHeight - triggerRect.top + gap;
+        style.top = 'auto';
+      } else {
+        style.top = triggerRect.bottom + gap;
+        style.bottom = 'auto';
+      }
+
+      setDropdownStyle(style);
+    } else {
+      setDropdownStyle({});
+    }
+  }, []);
+
+  React.useLayoutEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    updatePlacement();
+    window.addEventListener('resize', updatePlacement);
+    window.addEventListener('scroll', updatePlacement, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePlacement);
+      window.removeEventListener('scroll', updatePlacement, true);
+    };
+  }, [isOpen, updatePlacement]);
+
+  const positionClasses =
+    placement === 'top'
+      ? 'sm:bottom-full sm:mb-4'
+      : 'sm:top-full sm:mt-4';
 
   return (
     <div className="relative" ref={menuRef}>
       <button
+        ref={triggerRef}
         onClick={onToggle}
         className={`neu-button px-3 sm:px-4 py-2 rounded-xl flex items-center gap-2 w-full group ${className}`}
       >
@@ -45,7 +107,11 @@ export function DropdownMenu({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 z-50">
+        <div
+          className={`fixed sm:absolute left-0 right-0 sm:left-0 sm:right-auto z-50 w-[calc(100vw-2rem)] sm:w-auto mx-4 sm:mx-0 ${positionClasses}`}
+          style={dropdownStyle}
+          ref={dropdownRef}
+        >
           <div className="overflow-hidden rounded-xl neu-card bg-white dark:bg-neutral-800">
             <div className="py-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
               {children}
