@@ -26,7 +26,7 @@ export function MobileFilterBar({
   );
 
   const containerStyle = React.useMemo(
-    () => ({ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }),
+    () => ({ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }),
     [],
   );
 
