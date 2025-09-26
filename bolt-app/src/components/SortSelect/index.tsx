@@ -60,7 +60,7 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
       </button>
 
       {isOpen && (
-        <div className="fixed sm:absolute z-50 mt-2 w-[calc(100vw-2rem)] sm:w-[280px] left-0 right-0 sm:left-0 sm:right-auto mx-4 sm:mx-0">
+        <div className="absolute z-50 bottom-full mb-2 w-full sm:w-[280px] left-0 right-0 sm:right-auto">
           <div className="overflow-hidden rounded-xl neu-card bg-white dark:bg-neutral-800">
             <div className="py-2">
               <button
