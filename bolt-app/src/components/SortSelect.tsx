@@ -9,9 +9,16 @@ import { DropdownItem } from './ui/DropdownItem';
 interface SortSelectProps {
   options: SortOptions | null;
   onOptionsChange: (options: SortOptions | null) => void;
+  className?: string;
+  menuPlacement?: 'top' | 'bottom';
 }
 
-export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
+export function SortSelect({
+  options,
+  onOptionsChange,
+  className = '',
+  menuPlacement = 'bottom',
+}: SortSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const playlistValue = getOptionValue(null);
   const selectedValue = getOptionValue(options);
@@ -32,6 +39,8 @@ export function SortSelect({ options, onOptionsChange }: SortSelectProps) {
       label={getSelectedLabel(options)}
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}
+      className={className}
+      placement={menuPlacement}
     >
       <div className="px-4 py-2">
         <div className="text-xs font-medium text-gray-500 uppercase">Date de publication</div>

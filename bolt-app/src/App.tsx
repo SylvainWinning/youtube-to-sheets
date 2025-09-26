@@ -10,6 +10,7 @@ import { ErrorState } from './components/ErrorState';
 import { MissingConfig } from './components/MissingConfig';
 import { SoundToggle } from './components/ui/SoundToggle';
 import { ThemeToggle } from './components/ui/ThemeToggle';
+import { MobileFilterBar } from './components/MobileFilterBar';
 import { SHEET_TABS, getConfig } from './utils/constants';
 import { filterVideosByDuration } from './utils/videoFilters';
 import { filterVideosBySearch } from './utils/searchUtils';
@@ -146,7 +147,7 @@ export default function App() {
               </div>
             </div>
             {!isLoading && !appError && (
-              <div className="flex items-center justify-between gap-4">
+              <div className="hidden w-full sm:flex items-center justify-between gap-4">
                 <div className="w-full max-w-[280px]">
                   <SortSelect options={sortOptions} onOptionsChange={setSortOptions} />
                 </div>
@@ -162,7 +163,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0 pb-32 sm:pb-0">
         {configError && <MissingConfig message={configError} />}
         {!isLoading && !appError && (
           <>
@@ -181,6 +182,16 @@ export default function App() {
         {appError && <ErrorState message={appError} />}
         {!isLoading && !appError && <VideoGrid videos={sortedVideos} />}
       </main>
+
+      {!isLoading && !appError && (
+        <MobileFilterBar
+          videos={videos}
+          sortOptions={sortOptions}
+          onSortOptionsChange={setSortOptions}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ interface DropdownMenuProps {
   onToggle: () => void;
   children: React.ReactNode;
   className?: string;
+  placement?: 'top' | 'bottom';
 }
 
 export function DropdownMenu({
@@ -18,12 +19,18 @@ export function DropdownMenu({
   onToggle,
   children,
   className = '',
+  placement = 'bottom',
 }: DropdownMenuProps) {
   const menuRef = useClickOutside<HTMLDivElement>(() => {
     if (isOpen) {
       onToggle();
     }
   });
+
+  const menuPositionClass =
+    placement === 'top'
+      ? 'bottom-full mb-2'
+      : 'top-full mt-2';
 
   return (
     <div className="relative" ref={menuRef}>
@@ -45,7 +52,9 @@ export function DropdownMenu({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 z-50">
+        <div
+          className={`absolute left-0 right-0 z-50 ${menuPositionClass}`}
+        >
           <div className="overflow-hidden rounded-xl neu-card bg-white dark:bg-neutral-800">
             <div className="py-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
               {children}

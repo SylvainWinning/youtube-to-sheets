@@ -20,6 +20,8 @@ interface CategorySelectProps {
   onCategoryChange: (category: string | null) => void;
   /** Optional additional class names applied to the button */
   className?: string;
+  /** Controls whether the menu opens above or below the trigger */
+  menuPlacement?: 'top' | 'bottom';
 }
 
 export function CategorySelect({
@@ -27,6 +29,7 @@ export function CategorySelect({
   selectedCategory,
   onCategoryChange,
   className = '',
+  menuPlacement = 'bottom',
 }: CategorySelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -46,6 +49,7 @@ export function CategorySelect({
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}
       className={className}
+      placement={menuPlacement}
     >
       {/* Option to clear the category filter */}
       <DropdownItem
