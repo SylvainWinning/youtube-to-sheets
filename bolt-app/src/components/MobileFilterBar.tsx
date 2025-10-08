@@ -25,13 +25,54 @@ export function MobileFilterBar({
     [videos],
   );
 
+  const [keyboardOffset, setKeyboardOffset] = React.useState(0);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) {
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    let raf = 0;
+
+    const updateOffset = () => {
+      if (raf) {
+        cancelAnimationFrame(raf);
+      }
+
+      raf = window.requestAnimationFrame(() => {
+        const windowHeight = window.innerHeight;
+        const { height, offsetTop } = viewport;
+        const keyboardHeight = windowHeight - height - offsetTop;
+        const nextOffset = keyboardHeight > 0 ? keyboardHeight : 0;
+
+        setKeyboardOffset(prev => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
+      });
+    };
+
+    updateOffset();
+    viewport.addEventListener('resize', updateOffset);
+    viewport.addEventListener('scroll', updateOffset);
+
+    return () => {
+      if (raf) {
+        cancelAnimationFrame(raf);
+      }
+      viewport.removeEventListener('resize', updateOffset);
+      viewport.removeEventListener('scroll', updateOffset);
+    };
+  }, []);
+
   const containerStyle = React.useMemo(
     () => ({ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }),
     [],
   );
 
   return (
-    <div className="sm:hidden fixed inset-x-0 bottom-0 z-50">
+    <div
+      className="sm:hidden fixed inset-x-0 bottom-0 z-50"
+      style={{ transform: `translateY(-${keyboardOffset}px)`, willChange: 'transform' }}
+    >
       <div
         className="border-t border-gray-200/80 dark:border-neutral-700/80 bg-white/95 dark:bg-neutral-900/95 backdrop-blur shadow-[0_-12px_30px_rgba(15,15,15,0.18)] px-4 pt-3"
         style={containerStyle}
