@@ -26,6 +26,7 @@ export function MobileFilterBar({
   );
 
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
+  const baseViewportOffsetRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) {
@@ -35,21 +36,34 @@ export function MobileFilterBar({
     const viewport = window.visualViewport;
     let raf = 0;
 
+    const computeViewportOffset = () => {
+      const windowHeight = window.innerHeight;
+      const { height, offsetTop } = viewport;
+      return Math.max(windowHeight - height - offsetTop, 0);
+    };
+
     const updateOffset = () => {
       if (raf) {
         cancelAnimationFrame(raf);
       }
 
       raf = window.requestAnimationFrame(() => {
-        const windowHeight = window.innerHeight;
-        const { height, offsetTop } = viewport;
-        const keyboardHeight = windowHeight - height - offsetTop;
-        const nextOffset = keyboardHeight > 0 ? keyboardHeight : 0;
+        const rawOffset = computeViewportOffset();
+        const baseOffset = baseViewportOffsetRef.current;
+
+        if (baseOffset === null || rawOffset < baseOffset - 1) {
+          baseViewportOffsetRef.current = rawOffset;
+        }
+
+        const resolvedBaseOffset = baseViewportOffsetRef.current ?? 0;
+        const keyboardHeight = rawOffset - resolvedBaseOffset;
+        const nextOffset = keyboardHeight > 1 ? keyboardHeight : 0;
 
         setKeyboardOffset(prev => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
       });
     };
 
+    baseViewportOffsetRef.current = computeViewportOffset();
     updateOffset();
     viewport.addEventListener('resize', updateOffset);
     viewport.addEventListener('scroll', updateOffset);
