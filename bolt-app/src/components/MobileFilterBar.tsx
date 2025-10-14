@@ -56,8 +56,10 @@ export function MobileFilterBar({
         }
 
         const resolvedBaseOffset = baseViewportOffsetRef.current ?? 0;
-        const keyboardHeight = rawOffset - resolvedBaseOffset;
-        const nextOffset = keyboardHeight > 1 ? keyboardHeight : 0;
+        const keyboardHeight = Math.max(rawOffset - resolvedBaseOffset, 0);
+        const keyboardLikelyOpen =
+          keyboardHeight > 12 && viewport.height < window.innerHeight - 80;
+        const nextOffset = keyboardLikelyOpen ? keyboardHeight : 0;
 
         setKeyboardOffset(prev => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
       });
