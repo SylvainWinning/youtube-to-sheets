@@ -5,6 +5,16 @@ import { SortSelect } from './SortSelect';
 import { CategorySelect } from './CategorySelect';
 import { getUniqueCategories } from '../utils/getUniqueCategories';
 
+const TEXT_INPUT_TYPES = new Set([
+  'text',
+  'search',
+  'email',
+  'url',
+  'password',
+  'tel',
+  'number',
+]);
+
 interface MobileFilterBarProps {
   videos: VideoData[];
   sortOptions: SortOptions | null;
@@ -42,6 +52,33 @@ export function MobileFilterBar({
       return Math.max(windowHeight - height - offsetTop, 0);
     };
 
+    const isTextInputFocused = () => {
+      if (typeof document === 'undefined') {
+        return false;
+      }
+
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (!activeElement) {
+        return false;
+      }
+
+      if (activeElement.isContentEditable) {
+        return true;
+      }
+
+      if (activeElement.tagName === 'TEXTAREA') {
+        return true;
+      }
+
+      if (activeElement.tagName !== 'INPUT') {
+        return false;
+      }
+
+      const input = activeElement as HTMLInputElement;
+      const type = input.type?.toLowerCase?.() ?? '';
+      return TEXT_INPUT_TYPES.has(type);
+    };
+
     const updateOffset = () => {
       if (raf) {
         cancelAnimationFrame(raf);
@@ -56,8 +93,11 @@ export function MobileFilterBar({
         }
 
         const resolvedBaseOffset = baseViewportOffsetRef.current ?? 0;
-        const keyboardHeight = rawOffset - resolvedBaseOffset;
-        const nextOffset = keyboardHeight > 1 ? keyboardHeight : 0;
+        const keyboardHeight = Math.max(rawOffset - resolvedBaseOffset, 0);
+        const keyboardLikelyOpen =
+          keyboardHeight > 12 && viewport.height < window.innerHeight - 80;
+        const keyboardShouldShift = keyboardLikelyOpen && isTextInputFocused();
+        const nextOffset = keyboardShouldShift ? keyboardHeight : 0;
 
         setKeyboardOffset(prev => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
       });
@@ -68,12 +108,25 @@ export function MobileFilterBar({
     viewport.addEventListener('resize', updateOffset);
     viewport.addEventListener('scroll', updateOffset);
 
+    const handleFocusChange = () => {
+      updateOffset();
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('focusin', handleFocusChange);
+      document.addEventListener('focusout', handleFocusChange);
+    }
+
     return () => {
       if (raf) {
         cancelAnimationFrame(raf);
       }
       viewport.removeEventListener('resize', updateOffset);
       viewport.removeEventListener('scroll', updateOffset);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('focusin', handleFocusChange);
+        document.removeEventListener('focusout', handleFocusChange);
+      }
     };
   }, []);
 
