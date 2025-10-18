@@ -27,7 +27,10 @@ export function MobileFilterBar({
 
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
   const [isTextInputFocused, setIsTextInputFocused] = React.useState(false);
-  const baseViewportOffsetRef = React.useRef<number | null>(null);
+  const baseViewportMetricsRef = React.useRef<{
+    offset: number;
+    height: number;
+  } | null>(null);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -89,6 +92,13 @@ export function MobileFilterBar({
       return Math.max(windowHeight - height - offsetTop, 0);
     };
 
+    const setBaseViewportMetrics = (offset: number) => {
+      baseViewportMetricsRef.current = {
+        offset,
+        height: viewport.height,
+      };
+    };
+
     const updateOffset = () => {
       if (raf) {
         cancelAnimationFrame(raf);
@@ -97,17 +107,21 @@ export function MobileFilterBar({
       raf = window.requestAnimationFrame(() => {
         const rawOffset = computeViewportOffset();
         if (!isTextInputFocused) {
-          baseViewportOffsetRef.current = rawOffset;
+          setBaseViewportMetrics(rawOffset);
           setKeyboardOffset(prev => (prev === 0 ? prev : 0));
           return;
         }
-        const baseOffset = baseViewportOffsetRef.current;
+        const baseMetrics = baseViewportMetricsRef.current;
 
-        if (baseOffset === null || rawOffset < baseOffset - 1) {
-          baseViewportOffsetRef.current = rawOffset;
+        if (
+          baseMetrics === null ||
+          rawOffset < baseMetrics.offset - 1 ||
+          viewport.height >= baseMetrics.height - 1
+        ) {
+          setBaseViewportMetrics(rawOffset);
         }
 
-        const resolvedBaseOffset = baseViewportOffsetRef.current ?? 0;
+        const resolvedBaseOffset = baseViewportMetricsRef.current?.offset ?? 0;
         const keyboardHeight = Math.max(rawOffset - resolvedBaseOffset, 0);
         const keyboardLikelyOpen =
           keyboardHeight > 12 && viewport.height < window.innerHeight - 80;
@@ -117,7 +131,7 @@ export function MobileFilterBar({
       });
     };
 
-    baseViewportOffsetRef.current = computeViewportOffset();
+    setBaseViewportMetrics(computeViewportOffset());
     updateOffset();
     viewport.addEventListener('resize', updateOffset);
     viewport.addEventListener('scroll', updateOffset);
