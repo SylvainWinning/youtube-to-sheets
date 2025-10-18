@@ -108,7 +108,7 @@ export function MobileFilterBar({
         const rawOffset = computeViewportOffset();
         if (!isTextInputFocused) {
           setBaseViewportMetrics(rawOffset);
-          setKeyboardOffset(prev => (prev === 0 ? prev : 0));
+          setKeyboardOffset(0);
           return;
         }
         const baseMetrics = baseViewportMetricsRef.current;
@@ -121,11 +121,19 @@ export function MobileFilterBar({
           setBaseViewportMetrics(rawOffset);
         }
 
-        const resolvedBaseOffset = baseViewportMetricsRef.current?.offset ?? 0;
+        const resolvedBaseMetrics = baseViewportMetricsRef.current;
+        const resolvedBaseOffset = resolvedBaseMetrics?.offset ?? 0;
+        const baseHeight = resolvedBaseMetrics?.height ?? viewport.height;
         const keyboardHeight = Math.max(rawOffset - resolvedBaseOffset, 0);
-        const keyboardLikelyOpen =
-          keyboardHeight > 12 && viewport.height < window.innerHeight - 80;
-        const nextOffset = keyboardLikelyOpen ? keyboardHeight : 0;
+        const heightDifference = Math.max(baseHeight - viewport.height, 0);
+        const keyboardLikelyOpen = heightDifference > 12;
+
+        if (!keyboardLikelyOpen) {
+          setKeyboardOffset(0);
+          return;
+        }
+
+        const nextOffset = keyboardHeight;
 
         setKeyboardOffset(prev => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
       });
