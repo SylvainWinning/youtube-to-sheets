@@ -26,7 +26,54 @@ export function MobileFilterBar({
   );
 
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
+  const [isTextInputFocused, setIsTextInputFocused] = React.useState(false);
   const baseViewportOffsetRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+
+    const isTextInputElement = (element: EventTarget | null): element is HTMLElement => {
+      if (!(element instanceof HTMLElement)) {
+        return false;
+      }
+
+      const tagName = element.tagName;
+      return (
+        tagName === 'INPUT' ||
+        tagName === 'TEXTAREA' ||
+        element.isContentEditable === true
+      );
+    };
+
+    const handleFocusIn = (event: FocusEvent) => {
+      if (isTextInputElement(event.target)) {
+        setIsTextInputFocused(true);
+      }
+    };
+
+    const handleFocusOut = (event: FocusEvent) => {
+      if (!isTextInputElement(event.target)) {
+        return;
+      }
+
+      window.requestAnimationFrame(() => {
+        const activeElement = document.activeElement;
+        if (!isTextInputElement(activeElement)) {
+          setIsTextInputFocused(false);
+        }
+      });
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+    };
+  }, []);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) {
@@ -49,6 +96,11 @@ export function MobileFilterBar({
 
       raf = window.requestAnimationFrame(() => {
         const rawOffset = computeViewportOffset();
+        if (!isTextInputFocused) {
+          baseViewportOffsetRef.current = rawOffset;
+          setKeyboardOffset(prev => (prev === 0 ? prev : 0));
+          return;
+        }
         const baseOffset = baseViewportOffsetRef.current;
 
         if (baseOffset === null || rawOffset < baseOffset - 1) {
@@ -77,7 +129,7 @@ export function MobileFilterBar({
       viewport.removeEventListener('resize', updateOffset);
       viewport.removeEventListener('scroll', updateOffset);
     };
-  }, []);
+  }, [isTextInputFocused]);
 
   const containerStyle = React.useMemo(
     () => ({ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }),
