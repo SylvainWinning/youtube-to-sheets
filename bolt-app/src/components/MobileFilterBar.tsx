@@ -86,7 +86,7 @@ export function MobileFilterBar({
     const viewport = window.visualViewport;
     let raf = 0;
 
-    const computeViewportOffset = () => {
+    const computeViewportOffset = (): number => {
       const windowHeight = window.innerHeight;
       const { height, offsetTop } = viewport;
       return Math.max(windowHeight - height + Math.min(offsetTop, 0), 0);
