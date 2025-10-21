@@ -160,10 +160,18 @@ export function MobileFilterBar({
     [],
   );
 
+  const fixedContainerStyle = React.useMemo<React.CSSProperties | undefined>(
+    () =>
+      keyboardOffset > 0
+        ? { transform: `translateY(-${keyboardOffset}px)`, willChange: 'transform' }
+        : undefined,
+    [keyboardOffset],
+  );
+
   return (
     <div
       className="sm:hidden fixed inset-x-0 bottom-0 z-50"
-      style={{ transform: `translateY(-${keyboardOffset}px)`, willChange: 'transform' }}
+      style={fixedContainerStyle}
     >
       <div
         className="border-t border-gray-200/80 dark:border-neutral-700/80 bg-white/95 dark:bg-neutral-900/95 backdrop-blur shadow-[0_-12px_30px_rgba(15,15,15,0.18)] px-4 pt-3"
