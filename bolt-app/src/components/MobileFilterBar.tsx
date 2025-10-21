@@ -64,7 +64,7 @@ export function MobileFilterBar({
       window.requestAnimationFrame(() => {
         const activeElement = document.activeElement;
         if (!isTextInputElement(activeElement)) {
-          setIsTextInputFocused(false);
+          setIsTextInputFocused(false); setKeyboardOffset(0);
         }
       });
     };
