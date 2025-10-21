@@ -126,9 +126,9 @@ export function MobileFilterBar({
         const baseHeight = resolvedBaseMetrics?.height ?? viewport.height;
         const keyboardHeight = Math.max(rawOffset - resolvedBaseOffset, 0);
         const heightDifference = Math.max(baseHeight - viewport.height, 0);
-        // Ce seuil filtre les mouvements dus aux barres de navigation mobiles (ex. Safari).
+        // Ce seuil filtre les mouvements dus aux barr120s de navigation mobiles (ex. Safari).
         const keyboardLikelyOpen =
-          Math.max(keyboardHeight, heightDifference) > 80;
+          Math.max(keyboardHeight, heightDifference) > 120;
 
         if (!keyboardLikelyOpen) {
           setKeyboardOffset(0);
