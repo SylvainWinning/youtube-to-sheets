@@ -29,7 +29,7 @@ export function MobileFilterBar({
   const [isTextInputFocused, setIsTextInputFocused] = React.useState(false);
   const keyboardVisibleRef = React.useRef(false);
   const previousRawOffsetRef = React.useRef<number | null>(null);
-  const previousKeyboardHeightRef = React.useRef<number | null>(null);
+  const keyboardCloseFrameCountRef = React.useRef(0);
   const baseViewportMetricsRef = React.useRef<{
     offset: number;
     height: number;
@@ -72,7 +72,6 @@ export function MobileFilterBar({
           keyboardVisibleRef.current = false;
           baseViewportMetricsRef.current = null;
           previousRawOffsetRef.current = null;
-          previousKeyboardHeightRef.current = null;
         }
       });
     };
@@ -122,7 +121,7 @@ export function MobileFilterBar({
         if (!shouldTrackKeyboard) {
           setBaseViewportMetrics(rawOffset);
           setKeyboardOffset(0);
-          previousKeyboardHeightRef.current = 0;
+          keyboardCloseFrameCountRef.current = 0;
           return;
         }
         const baseMetrics = baseViewportMetricsRef.current;
@@ -139,18 +138,21 @@ export function MobileFilterBar({
         const resolvedBaseOffset = resolvedBaseMetrics?.offset ?? 0;
         const baseHeight = resolvedBaseMetrics?.height ?? viewport.height;
         const keyboardHeight = Math.max(rawOffset - resolvedBaseOffset, 0);
-        const previousKeyboardHeight = previousKeyboardHeightRef.current;
-        previousKeyboardHeightRef.current = keyboardHeight;
         const heightDifference = Math.max(baseHeight - viewport.height, 0);
         const viewportShift = Math.max(keyboardHeight, heightDifference);
         const keyboardOpenThreshold = 140;
         const keyboardCloseThreshold = 80;
-        const keyboardHeightDecrease =
-          (previousKeyboardHeight ?? keyboardHeight) - keyboardHeight;
+        const keyboardCloseFramesRequired = 3;
+        if (keyboardHeight < keyboardCloseThreshold) {
+          keyboardCloseFrameCountRef.current += 1;
+        } else {
+          keyboardCloseFrameCountRef.current = 0;
+        }
         const rawOffsetDecrease =
           previousRawOffset !== null ? previousRawOffset - rawOffset : 0;
         const keyboardHeightClosing =
-          keyboardHeight < keyboardCloseThreshold && keyboardHeightDecrease > 4;
+          keyboardHeight < keyboardCloseThreshold &&
+          keyboardCloseFrameCountRef.current >= keyboardCloseFramesRequired;
         const rawOffsetClosing =
           rawOffsetDecrease > 4 &&
           rawOffset <= resolvedBaseOffset + keyboardCloseThreshold;
@@ -160,6 +162,7 @@ export function MobileFilterBar({
             keyboardVisibleRef.current = true;
           }
 
+          keyboardCloseFrameCountRef.current = 0;
           const nextOffset = keyboardHeight;
 
           setKeyboardOffset(prev =>
@@ -175,7 +178,7 @@ export function MobileFilterBar({
           keyboardVisibleRef.current = false;
           setKeyboardOffset(0);
           setBaseViewportMetrics(rawOffset);
-          previousKeyboardHeightRef.current = 0;
+          keyboardCloseFrameCountRef.current = 0;
           return;
         }
 
