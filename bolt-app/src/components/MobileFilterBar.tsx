@@ -27,6 +27,7 @@ export function MobileFilterBar({
 
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
   const [isTextInputFocused, setIsTextInputFocused] = React.useState(false);
+  const keyboardVisibleRef = React.useRef(false);
   const baseViewportMetricsRef = React.useRef<{
     offset: number;
     height: number;
@@ -64,7 +65,10 @@ export function MobileFilterBar({
       window.requestAnimationFrame(() => {
         const activeElement = document.activeElement;
         if (!isTextInputElement(activeElement)) {
-          setIsTextInputFocused(false); setKeyboardOffset(0);
+          setIsTextInputFocused(false);
+          setKeyboardOffset(0);
+          keyboardVisibleRef.current = false;
+          baseViewportMetricsRef.current = null;
         }
       });
     };
@@ -106,7 +110,10 @@ export function MobileFilterBar({
 
       raf = window.requestAnimationFrame(() => {
         const rawOffset = computeViewportOffset();
-        if (!isTextInputFocused) {
+        const shouldTrackKeyboard =
+          isTextInputFocused || keyboardVisibleRef.current;
+
+        if (!shouldTrackKeyboard) {
           setBaseViewportMetrics(rawOffset);
           setKeyboardOffset(0);
           return;
@@ -126,18 +133,34 @@ export function MobileFilterBar({
         const baseHeight = resolvedBaseMetrics?.height ?? viewport.height;
         const keyboardHeight = Math.max(rawOffset - resolvedBaseOffset, 0);
         const heightDifference = Math.max(baseHeight - viewport.height, 0);
-        // Ce seuil filtre les mouvements dus aux barr120s de navigation mobiles (ex. Safari).
-        const keyboardLikelyOpen =
-          Math.max(keyboardHeight, heightDifference) > 120;
+        const viewportShift = Math.max(keyboardHeight, heightDifference);
+        const keyboardOpenThreshold = 140;
+        const keyboardCloseThreshold = 80;
 
-        if (!keyboardLikelyOpen) {
-          setKeyboardOffset(0);
+        if (viewportShift > keyboardOpenThreshold) {
+          if (!keyboardVisibleRef.current) {
+            keyboardVisibleRef.current = true;
+          }
+
+          const nextOffset = keyboardHeight;
+
+          setKeyboardOffset(prev =>
+            Math.abs(prev - nextOffset) < 1 ? prev : nextOffset,
+          );
           return;
         }
 
-        const nextOffset = keyboardHeight;
+        if (viewportShift < keyboardCloseThreshold && keyboardVisibleRef.current) {
+          keyboardVisibleRef.current = false;
+          setKeyboardOffset(0);
+          setBaseViewportMetrics(rawOffset);
+          return;
+        }
 
-        setKeyboardOffset(prev => (Math.abs(prev - nextOffset) < 1 ? prev : nextOffset));
+        if (!keyboardVisibleRef.current) {
+          setBaseViewportMetrics(rawOffset);
+          setKeyboardOffset(0);
+        }
       });
     };
 
@@ -162,8 +185,9 @@ export function MobileFilterBar({
 
   const fixedContainerStyle = React.useMemo<React.CSSProperties>(
     () => ({
-      bottom: keyboardOffset,
-      willChange: keyboardOffset > 0 ? 'bottom' : undefined,
+      bottom: keyboardVisibleRef.current ? keyboardOffset : 0,
+      willChange:
+        keyboardVisibleRef.current && keyboardOffset > 0 ? 'bottom' : undefined,
     }),
     [keyboardOffset],
   );
