@@ -160,11 +160,11 @@ export function MobileFilterBar({
     [],
   );
 
-  const fixedContainerStyle = React.useMemo<React.CSSProperties | undefined>(
-    () =>
-      keyboardOffset > 0
-        ? { transform: `translateY(-${keyboardOffset}px)`, willChange: 'transform' }
-        : undefined,
+  const fixedContainerStyle = React.useMemo<React.CSSProperties>(
+    () => ({
+      bottom: keyboardOffset,
+      willChange: keyboardOffset > 0 ? 'bottom' : undefined,
+    }),
     [keyboardOffset],
   );
 
