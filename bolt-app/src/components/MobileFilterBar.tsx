@@ -143,7 +143,7 @@ export function MobileFilterBar({
         const keyboardOpenThreshold = 140;
         const keyboardCloseThreshold = 80;
         const keyboardCloseFramesRequired = 3;
-        if (keyboardHeight < keyboardCloseThreshold) {
+        if (viewportShift < keyboardCloseThreshold) {
           keyboardCloseFrameCountRef.current += 1;
         } else {
           keyboardCloseFrameCountRef.current = 0;
@@ -151,7 +151,7 @@ export function MobileFilterBar({
         const rawOffsetDecrease =
           previousRawOffset !== null ? previousRawOffset - rawOffset : 0;
         const keyboardHeightClosing =
-          keyboardHeight < keyboardCloseThreshold &&
+          viewportShift < keyboardCloseThreshold &&
           keyboardCloseFrameCountRef.current >= keyboardCloseFramesRequired;
         const rawOffsetClosing =
           rawOffsetDecrease > 4 &&
