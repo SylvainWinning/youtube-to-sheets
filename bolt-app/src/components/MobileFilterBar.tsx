@@ -28,12 +28,23 @@ export function MobileFilterBar({
   const [keyboardOffset, setKeyboardOffset] = React.useState(0);
   const [isTextInputFocused, setIsTextInputFocused] = React.useState(false);
   const keyboardVisibleRef = React.useRef(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
   const previousRawOffsetRef = React.useRef<number | null>(null);
   const keyboardCloseFrameCountRef = React.useRef(0);
   const baseViewportMetricsRef = React.useRef<{
     offset: number;
     height: number;
   } | null>(null);
+
+  const setKeyboardVisibility = React.useCallback((visible: boolean) => {
+    if (keyboardVisibleRef.current !== visible) {
+      keyboardVisibleRef.current = visible;
+      setIsKeyboardVisible(visible);
+      return;
+    }
+
+    keyboardVisibleRef.current = visible;
+  }, []);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -69,7 +80,7 @@ export function MobileFilterBar({
         if (!isTextInputElement(activeElement)) {
           setIsTextInputFocused(false);
           setKeyboardOffset(0);
-          keyboardVisibleRef.current = false;
+          setKeyboardVisibility(false);
           baseViewportMetricsRef.current = null;
           previousRawOffsetRef.current = null;
         }
@@ -83,7 +94,7 @@ export function MobileFilterBar({
       document.removeEventListener('focusin', handleFocusIn);
       document.removeEventListener('focusout', handleFocusOut);
     };
-  }, []);
+  }, [setKeyboardVisibility]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) {
@@ -159,7 +170,7 @@ export function MobileFilterBar({
 
         if (viewportShift > keyboardOpenThreshold) {
           if (!keyboardVisibleRef.current) {
-            keyboardVisibleRef.current = true;
+            setKeyboardVisibility(true);
           }
 
           keyboardCloseFrameCountRef.current = 0;
@@ -175,7 +186,7 @@ export function MobileFilterBar({
           keyboardVisibleRef.current &&
           (keyboardHeightClosing || rawOffsetClosing)
         ) {
-          keyboardVisibleRef.current = false;
+          setKeyboardVisibility(false);
           setKeyboardOffset(0);
           setBaseViewportMetrics(rawOffset);
           keyboardCloseFrameCountRef.current = 0;
@@ -201,7 +212,7 @@ export function MobileFilterBar({
       viewport.removeEventListener('resize', updateOffset);
       viewport.removeEventListener('scroll', updateOffset);
     };
-  }, [isTextInputFocused]);
+  }, [isTextInputFocused, setKeyboardVisibility]);
 
   const containerStyle = React.useMemo(
     () => ({ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }),
@@ -210,11 +221,11 @@ export function MobileFilterBar({
 
   const fixedContainerStyle = React.useMemo<React.CSSProperties>(
     () => ({
-      bottom: keyboardVisibleRef.current ? keyboardOffset : 0,
+      bottom: isKeyboardVisible ? keyboardOffset : 0,
       willChange:
-        keyboardVisibleRef.current && keyboardOffset > 0 ? 'bottom' : undefined,
+        isKeyboardVisible && keyboardOffset > 0 ? 'bottom' : undefined,
     }),
-    [keyboardOffset],
+    [isKeyboardVisible, keyboardOffset],
   );
 
   return (
