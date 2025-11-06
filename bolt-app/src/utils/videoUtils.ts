@@ -43,6 +43,16 @@ export function getRandomVideo(videos: VideoData[], tab: SheetTab | null): Video
   return filteredVideos[randomIndex];
 }
 
+function isVisionOSPinnedSafari(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isVisionOS = /VisionOS/i.test(userAgent);
+  const isStandalone = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches;
+
+  return isVisionOS && isStandalone;
+}
+
 export function playVideo(video: VideoData | null) {
   if (!video) return;
 
@@ -52,6 +62,14 @@ export function playVideo(video: VideoData | null) {
   if (videoId) {
     const appUrl = `youtube://${videoId}`;
     const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    if (isVisionOSPinnedSafari()) {
+      const popup = window.open(webUrl, '_blank', 'noopener');
+      if (!popup) {
+        window.location.href = webUrl;
+      }
+      return;
+    }
 
     // Redirige vers l'app YouTube. Si elle n'est pas installée, la redirection
     // échoue et l'on ouvre l'URL web en repli après un court délai. Pour
