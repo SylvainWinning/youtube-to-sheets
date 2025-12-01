@@ -76,17 +76,51 @@ export function playVideo(video: VideoData | null) {
     // éviter l'affichage d'un navigateur intégré à l'application (écran blanc
     // avec un bouton de fermeture), on privilégie l'ouverture dans le
     // navigateur système lorsque c'est possible.
-    window.location.href = appUrl;
-    setTimeout(() => {
-      // Si l'environnement Cordova est disponible, utilise le navigateur
-      // système pour ouvrir l'URL afin d'éviter l'InAppBrowser.
+    let fallbackTimer: ReturnType<typeof window.setTimeout> | undefined;
+
+    const cleanupFallbackGuards = () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHideOrBlur);
+      window.removeEventListener('blur', handlePageHideOrBlur);
+    };
+
+    const clearFallbackTimer = () => {
+      if (fallbackTimer !== undefined) {
+        window.clearTimeout(fallbackTimer);
+        fallbackTimer = undefined;
+      }
+    };
+
+    const fallbackToWeb = () => {
+      cleanupFallbackGuards();
+      clearFallbackTimer();
+
       const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
       if (cordovaBrowser) {
         cordovaBrowser.open(webUrl, '_system');
       } else {
         window.location.href = webUrl;
       }
-    }, 500);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        clearFallbackTimer();
+        cleanupFallbackGuards();
+      }
+    };
+
+    const handlePageHideOrBlur = () => {
+      clearFallbackTimer();
+      cleanupFallbackGuards();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHideOrBlur);
+    window.addEventListener('blur', handlePageHideOrBlur);
+
+    window.location.href = appUrl;
+    fallbackTimer = window.setTimeout(fallbackToWeb, 500);
     return;
   }
 
