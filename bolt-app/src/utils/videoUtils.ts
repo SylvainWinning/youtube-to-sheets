@@ -64,10 +64,7 @@ export function playVideo(video: VideoData | null) {
     const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     if (isVisionOSPinnedSafari()) {
-      const popup = window.open(webUrl, '_blank', 'noopener');
-      if (!popup) {
-        window.location.href = webUrl;
-      }
+      window.location.href = webUrl;
       return;
     }
 
