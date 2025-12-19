@@ -1,6 +1,6 @@
-import { VideoData } from '../types/video';
-import { SheetTab } from '../types/sheets';
-import { filterVideosByDuration } from './videoFilters';
+import type { VideoData } from '../types/video.ts';
+import type { SheetTab } from '../types/sheets.ts';
+import { filterVideosByDuration } from './videoFilters.ts';
 
 function extractYouTubeId(url: string): string | null {
   try {
@@ -43,14 +43,14 @@ export function getRandomVideo(videos: VideoData[], tab: SheetTab | null): Video
   return filteredVideos[randomIndex];
 }
 
-function isVisionOSPinnedSafari(): boolean {
+function isVisionOSSafariSession(): boolean {
   if (typeof window === 'undefined') return false;
 
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const isVisionOS = /VisionOS/i.test(userAgent);
-  const isStandalone = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches;
+  const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
 
-  return isVisionOS && isStandalone;
+  return isVisionOS && isSafari;
 }
 
 export function playVideo(video: VideoData | null) {
@@ -63,8 +63,19 @@ export function playVideo(video: VideoData | null) {
     const appUrl = `youtube://${videoId}`;
     const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
-    if (isVisionOSPinnedSafari()) {
-      window.location.href = webUrl;
+    const isVisionOS = isVisionOSSafariSession();
+
+    const openWebUrl = () => {
+      const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
+      if (cordovaBrowser) {
+        cordovaBrowser.open(webUrl, '_system');
+      } else {
+        window.location.href = webUrl;
+      }
+    };
+
+    if (isVisionOS) {
+      openWebUrl();
       return;
     }
 
@@ -91,13 +102,7 @@ export function playVideo(video: VideoData | null) {
     const fallbackToWeb = () => {
       cleanupFallbackGuards();
       clearFallbackTimer();
-
-      const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
-      if (cordovaBrowser) {
-        cordovaBrowser.open(webUrl, '_system');
-      } else {
-        window.location.href = webUrl;
-      }
+      openWebUrl();
     };
 
     const handleVisibilityChange = () => {

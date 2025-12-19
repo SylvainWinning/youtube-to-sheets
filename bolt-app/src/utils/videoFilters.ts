@@ -1,6 +1,6 @@
-import { VideoData } from '../types/video';
-import { SheetTab } from '../types/sheets';
-import { getDurationInMinutes } from './durationUtils';
+import type { VideoData } from '../types/video.ts';
+import type { SheetTab } from '../types/sheets.ts';
+import { getDurationInMinutes } from './durationUtils.ts';
 
 export function filterVideosByDuration(videos: VideoData[], tab: SheetTab | null): VideoData[] {
   if (!tab) return videos;
