@@ -47,10 +47,30 @@ function isVisionOSSafariSession(): boolean {
   if (typeof window === 'undefined') return false;
 
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  const isVisionOS = /VisionOS/i.test(userAgent);
+  const platform = typeof navigator !== 'undefined' ? (navigator as any).platform ?? '' : '';
+  const uaPlatform = typeof navigator !== 'undefined' ? (navigator as any).userAgentData?.platform ?? '' : '';
+  const isVisionOS = /VisionOS/i.test(userAgent) || /VisionOS/i.test(platform) || /VisionOS/i.test(uaPlatform);
   const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
 
   return isVisionOS && isSafari;
+}
+
+function openUrlInSystem(webUrl: string) {
+  const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
+  if (cordovaBrowser) {
+    cordovaBrowser.open(webUrl, '_system');
+    return;
+  }
+
+  const openedWindow = typeof window.open === 'function'
+    ? window.open(webUrl, '_blank', 'noopener,noreferrer')
+    : null;
+  if (openedWindow) {
+    openedWindow.opener = null;
+    return;
+  }
+
+  window.location.href = webUrl;
 }
 
 export function playVideo(video: VideoData | null) {
@@ -65,17 +85,8 @@ export function playVideo(video: VideoData | null) {
 
     const isVisionOS = isVisionOSSafariSession();
 
-    const openWebUrl = () => {
-      const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
-      if (cordovaBrowser) {
-        cordovaBrowser.open(webUrl, '_system');
-      } else {
-        window.location.href = webUrl;
-      }
-    };
-
     if (isVisionOS) {
-      openWebUrl();
+      openUrlInSystem(webUrl);
       return;
     }
 
@@ -102,7 +113,7 @@ export function playVideo(video: VideoData | null) {
     const fallbackToWeb = () => {
       cleanupFallbackGuards();
       clearFallbackTimer();
-      openWebUrl();
+      openUrlInSystem(webUrl);
     };
 
     const handleVisibilityChange = () => {
@@ -128,10 +139,5 @@ export function playVideo(video: VideoData | null) {
 
   // Si l'ID de la vidéo n'est pas détecté, on applique la même logique de
   // fallback pour ouvrir le lien sans passer par un navigateur intégré.
-  const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
-  if (cordovaBrowser) {
-    cordovaBrowser.open(video.link, '_system');
-  } else {
-    window.location.href = video.link;
-  }
+  openUrlInSystem(video.link);
 }
