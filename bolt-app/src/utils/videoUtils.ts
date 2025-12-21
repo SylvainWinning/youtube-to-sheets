@@ -49,10 +49,23 @@ function isVisionOSSafariSession(): boolean {
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const platform = typeof navigator !== 'undefined' ? (navigator as any).platform ?? '' : '';
   const uaPlatform = typeof navigator !== 'undefined' ? (navigator as any).userAgentData?.platform ?? '' : '';
-  const isVisionOS = /VisionOS/i.test(userAgent) || /VisionOS/i.test(platform) || /VisionOS/i.test(uaPlatform);
-  const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
+  const maxTouchPoints = typeof navigator !== 'undefined' ? (navigator as any).maxTouchPoints ?? 0 : 0;
+  const hints = `${userAgent} ${platform} ${uaPlatform}`;
 
-  return isVisionOS && isSafari;
+  const mentionsVision = /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision/i.test(hints);
+  const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
+  const isIOSMobile = /iPad|iPhone|iPod/i.test(userAgent);
+
+  // Sur visionOS, Safari peut exposer un UA proche de macOS avec support tactile
+  // (maxTouchPoints > 0). Dans ce cas, la redirection vers le schéma "youtube://"
+  // affiche une erreur système : on force donc l'ouverture web directe.
+  const safariWithTouchOnMac =
+    isSafari &&
+    !isIOSMobile &&
+    /Macintosh|Mac OS X/i.test(hints) &&
+    maxTouchPoints > 0;
+
+  return (mentionsVision && isSafari) || safariWithTouchOnMac;
 }
 
 function openUrlInSystem(webUrl: string) {
