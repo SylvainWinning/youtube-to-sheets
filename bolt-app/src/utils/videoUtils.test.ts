@@ -5,6 +5,9 @@ import { playVideo } from './videoUtils.ts';
 type MockEnvOptions = {
   userAgent: string;
   matchMediaMatches?: boolean;
+  platform?: string;
+  uaPlatform?: string;
+  maxTouchPoints?: number;
 };
 
 type MockEnv = {
@@ -27,6 +30,18 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
 
   const location = { href: '' };
   const navigatorMock = { userAgent: options.userAgent } as Navigator;
+
+  if (options.platform) {
+    (navigatorMock as any).platform = options.platform;
+  }
+
+  if (options.uaPlatform) {
+    (navigatorMock as any).userAgentData = { platform: options.uaPlatform };
+  }
+
+  if (typeof options.maxTouchPoints === 'number') {
+    (navigatorMock as any).maxTouchPoints = options.maxTouchPoints;
+  }
 
   let scheduledCallback: (() => void) | undefined;
   let hasScheduledTimeout = false;
@@ -138,6 +153,22 @@ test('playVideo redirige directement vers le web sur visionOS sans fallback diff
   playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
 
   assert.equal(env.location.href, 'https://www.youtube.com/watch?v=vision123');
+  assert.equal(env.timeoutScheduled(), false);
+
+  env.restore();
+});
+
+test('playVideo privilégie l’URL web sur Safari macOS tactile (cas visionOS)', () => {
+  const env = createMockEnvironment({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+    platform: 'MacIntel',
+    uaPlatform: 'macOS',
+    maxTouchPoints: 5
+  });
+
+  playVideo({ link: 'https://www.youtube.com/watch?v=visionMac' } as any);
+
+  assert.equal(env.location.href, 'https://www.youtube.com/watch?v=visionMac');
   assert.equal(env.timeoutScheduled(), false);
 
   env.restore();
