@@ -49,12 +49,20 @@ function isVisionOSSafariSession(): boolean {
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const platform = typeof navigator !== 'undefined' ? (navigator as any).platform ?? '' : '';
   const uaPlatform = typeof navigator !== 'undefined' ? (navigator as any).userAgentData?.platform ?? '' : '';
+  const uaBrands = Array.isArray((navigator as any).userAgentData?.brands)
+    ? (navigator as any).userAgentData.brands.map((brand: { brand: string }) => brand.brand).join(' ')
+    : '';
   const maxTouchPoints = typeof navigator !== 'undefined' ? (navigator as any).maxTouchPoints ?? 0 : 0;
-  const hints = `${userAgent} ${platform} ${uaPlatform}`;
+  const hints = `${userAgent} ${platform} ${uaPlatform} ${uaBrands}`;
 
-  const mentionsVision = /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision/i.test(hints);
+  const mentionsVision = /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision|AppleVisionPro/i.test(hints);
   const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
   const isIOSMobile = /iPad|iPhone|iPod/i.test(userAgent);
+
+  // Safari sur visionOS peut exposer un user‑agent proche de macOS, mais il se distingue
+  // par la présence d’un support tactile. Sur macOS classique, maxTouchPoints vaut 0.
+  const macLikeWithTouch =
+    (/(Macintosh|MacIntel|Mac OS X|macOS)/i.test(hints) || uaPlatform === 'MacIntel') && maxTouchPoints > 0;
 
   // Sur visionOS, Safari peut exposer un UA proche de macOS avec support tactile
   // (maxTouchPoints > 0). Dans ce cas, la redirection vers le schéma "youtube://"
@@ -65,7 +73,8 @@ function isVisionOSSafariSession(): boolean {
     /Macintosh|Mac OS X/i.test(hints) &&
     maxTouchPoints > 0;
 
-  return (mentionsVision && isSafari) || safariWithTouchOnMac;
+  const explicitVision = mentionsVision && isSafari && !isIOSMobile;
+  return explicitVision || safariWithTouchOnMac || (isSafari && macLikeWithTouch && !isIOSMobile);
 }
 
 function openUrlInSystem(webUrl: string) {
