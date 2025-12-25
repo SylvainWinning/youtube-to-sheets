@@ -118,6 +118,7 @@ export function playVideo(video: VideoData | null) {
     // avec un bouton de fermeture), on privilégie l'ouverture dans le
     // navigateur système lorsque c'est possible.
     let fallbackTimer: ReturnType<typeof window.setTimeout> | undefined;
+    let didLeavePage = false;
 
     const cleanupFallbackGuards = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -133,6 +134,15 @@ export function playVideo(video: VideoData | null) {
     };
 
     const fallbackToWeb = () => {
+      // Si l'utilisateur a quitté l'application pour ouvrir YouTube, on ne déclenche
+      // pas le repli vers le navigateur afin d'éviter d'afficher une vue Safari vide
+      // en revenant dans l'app.
+      if (didLeavePage || document.visibilityState === 'hidden') {
+        clearFallbackTimer();
+        cleanupFallbackGuards();
+        return;
+      }
+
       cleanupFallbackGuards();
       clearFallbackTimer();
       openUrlInSystem(webUrl);
@@ -140,12 +150,14 @@ export function playVideo(video: VideoData | null) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
+        didLeavePage = true;
         clearFallbackTimer();
         cleanupFallbackGuards();
       }
     };
 
     const handlePageHideOrBlur = () => {
+      didLeavePage = true;
       clearFallbackTimer();
       cleanupFallbackGuards();
     };
@@ -155,7 +167,7 @@ export function playVideo(video: VideoData | null) {
     window.addEventListener('blur', handlePageHideOrBlur);
 
     window.location.href = appUrl;
-    fallbackTimer = window.setTimeout(fallbackToWeb, 500);
+    fallbackTimer = window.setTimeout(fallbackToWeb, 1200);
     return;
   }
 
