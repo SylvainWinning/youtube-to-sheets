@@ -77,6 +77,20 @@ function isVisionOSSafariSession(): boolean {
   return explicitVision || safariWithTouchOnMac || (isSafari && macLikeWithTouch && !isIOSMobile);
 }
 
+function shouldOpenWebInSafari(): boolean {
+  if (typeof navigator === 'undefined') return false;
+
+  const userAgent = navigator.userAgent ?? '';
+  const vendor = (navigator as any).vendor ?? '';
+  const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
+  const isIOS = /iPad|iPhone|iPod/i.test(userAgent);
+  const isAppleVendor = /Apple Computer,? Inc\./i.test(vendor);
+
+  // Sur Safari desktop (macOS, visionOS), le schéma youtube:// affiche un message
+  // d'erreur "adresse invalide". On privilégie donc directement l'URL web.
+  return isSafari && isAppleVendor && !isIOS;
+}
+
 function openUrlInSystem(webUrl: string) {
   const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
   if (cordovaBrowser) {
@@ -106,8 +120,9 @@ export function playVideo(video: VideoData | null) {
     const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     const isVisionOS = isVisionOSSafariSession();
+    const isSafariNeedingWebFallback = shouldOpenWebInSafari();
 
-    if (isVisionOS) {
+    if (isVisionOS || isSafariNeedingWebFallback) {
       openUrlInSystem(webUrl);
       return;
     }
