@@ -56,6 +56,7 @@ function isVisionOSSafariSession(): boolean {
   const hints = `${userAgent} ${platform} ${uaPlatform} ${uaBrands}`;
 
   const mentionsVision = /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision|AppleVisionPro/i.test(hints);
+  const mentionsVisionPlatform = /visionos/i.test(uaPlatform);
   const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
   const isIOSMobile = /iPad|iPhone|iPod/i.test(userAgent);
 
@@ -73,7 +74,10 @@ function isVisionOSSafariSession(): boolean {
     /Macintosh|Mac OS X/i.test(hints) &&
     maxTouchPoints > 0;
 
-  const explicitVision = mentionsVision && isSafari && !isIOSMobile;
+  const explicitVision =
+    (mentionsVision || mentionsVisionPlatform) &&
+    isSafari &&
+    !isIOSMobile;
   return explicitVision || safariWithTouchOnMac || (isSafari && macLikeWithTouch && !isIOSMobile);
 }
 
