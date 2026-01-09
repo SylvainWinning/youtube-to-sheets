@@ -95,19 +95,22 @@ function shouldOpenWebInSafari(): boolean {
   return isSafari && isAppleVendor && !isIOS;
 }
 
-function openUrlInSystem(webUrl: string) {
+function openUrlInSystem(webUrl: string, options?: { sameTab?: boolean }) {
+  const preferSameTab = options?.sameTab ?? false;
   const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
   if (cordovaBrowser) {
     cordovaBrowser.open(webUrl, '_system');
     return;
   }
 
-  const openedWindow = typeof window.open === 'function'
-    ? window.open(webUrl, '_blank', 'noopener,noreferrer')
-    : null;
-  if (openedWindow) {
-    openedWindow.opener = null;
-    return;
+  if (!preferSameTab) {
+    const openedWindow = typeof window.open === 'function'
+      ? window.open(webUrl, '_blank', 'noopener,noreferrer')
+      : null;
+    if (openedWindow) {
+      openedWindow.opener = null;
+      return;
+    }
   }
 
   window.location.href = webUrl;
@@ -127,7 +130,7 @@ export function playVideo(video: VideoData | null) {
     const isSafariNeedingWebFallback = shouldOpenWebInSafari();
 
     if (isVisionOS || isSafariNeedingWebFallback) {
-      openUrlInSystem(webUrl);
+      openUrlInSystem(webUrl, { sameTab: true });
       return;
     }
 
