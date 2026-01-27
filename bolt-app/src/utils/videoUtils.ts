@@ -74,10 +74,7 @@ function isVisionOSSafariSession(): boolean {
     /Macintosh|Mac OS X/i.test(hints) &&
     maxTouchPoints > 0;
 
-  const explicitVision =
-    (mentionsVision || mentionsVisionPlatform) &&
-    isSafari &&
-    !isIOSMobile;
+  const explicitVision = (mentionsVision || mentionsVisionPlatform) && isSafari;
   return explicitVision || safariWithTouchOnMac || (isSafari && macLikeWithTouch && !isIOSMobile);
 }
 
