@@ -14,6 +14,7 @@ type MockEnv = {
   location: { href: string };
   timeoutScheduled: () => boolean;
   triggerFallback: () => void;
+  setNow: (value: number) => void;
   restore: () => void;
 };
 
@@ -21,6 +22,7 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
   const originalWindow = globalThis.window;
   const originalDocument = globalThis.document;
   const originalNavigator = globalThis.navigator;
+  const originalDateNow = Date.now;
 
   const listeners: Record<string, Array<() => void>> = {
     visibilitychange: [],
@@ -45,6 +47,9 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
 
   let scheduledCallback: (() => void) | undefined;
   let hasScheduledTimeout = false;
+  let nowValue = 0;
+
+  Date.now = () => nowValue;
 
   const windowMock: any = {
     location,
@@ -111,7 +116,12 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
     triggerFallback: () => {
       scheduledCallback?.();
     },
+    setNow: (value: number) => {
+      nowValue = value;
+    },
     restore: () => {
+      Date.now = originalDateNow;
+
       if (hadWindow) {
         Object.defineProperty(globalThis, 'window', {
           value: originalWindow,
@@ -187,6 +197,24 @@ test('playVideo conserve le fallback web hors visionOS', () => {
 
   env.triggerFallback();
   assert.equal(env.location.href, 'https://www.youtube.com/watch?v=mobile456');
+
+  env.restore();
+});
+
+test('playVideo ignore un second clic rapproché vers la même vidéo', () => {
+  const env = createMockEnvironment({
+    userAgent: 'Mozilla/5.0 (VisionOS) AppleWebKit/000.0 Safari/000.0'
+  });
+
+  env.setNow(1000);
+  playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
+  assert.equal(env.location.href, 'https://www.youtube.com/watch?v=vision123');
+
+  env.location.href = '';
+  env.setNow(1500);
+  playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
+
+  assert.equal(env.location.href, '');
 
   env.restore();
 });
