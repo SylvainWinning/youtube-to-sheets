@@ -113,6 +113,22 @@ function openUrlInSystem(webUrl: string, options?: { sameTab?: boolean }) {
   window.location.href = webUrl;
 }
 
+let lastOpenedTarget = '';
+let lastOpenedAt = 0;
+const DUPLICATE_OPEN_GUARD_MS = 1000;
+
+function isDuplicateOpen(target: string): boolean {
+  const now = Date.now();
+  const duplicated = target === lastOpenedTarget && now - lastOpenedAt < DUPLICATE_OPEN_GUARD_MS;
+
+  if (!duplicated) {
+    lastOpenedTarget = target;
+    lastOpenedAt = now;
+  }
+
+  return duplicated;
+}
+
 export function playVideo(video: VideoData | null) {
   if (!video) return;
 
@@ -122,6 +138,10 @@ export function playVideo(video: VideoData | null) {
   if (videoId) {
     const appUrl = `youtube://${videoId}`;
     const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+    if (isDuplicateOpen(webUrl)) {
+      return;
+    }
 
     const isVisionOS = isVisionOSSafariSession();
     const isSafariNeedingWebFallback = shouldOpenWebInSafari();
@@ -192,5 +212,9 @@ export function playVideo(video: VideoData | null) {
 
   // Si l'ID de la vidéo n'est pas détecté, on applique la même logique de
   // fallback pour ouvrir le lien sans passer par un navigateur intégré.
+  if (isDuplicateOpen(video.link)) {
+    return;
+  }
+
   openUrlInSystem(video.link);
 }
