@@ -64,6 +64,34 @@ function shouldOpenWebInSafari(): boolean {
   return isSafari && isAppleVendor && !isIOS && !isLikelyVisionOS;
 }
 
+function isLikelyVisionOSDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+
+  const userAgent = navigator.userAgent ?? '';
+  const uaPlatform = (navigator as any).userAgentData?.platform ?? '';
+  const maxTouchPoints = (navigator as any).maxTouchPoints ?? 0;
+  const hints = `${userAgent} ${uaPlatform}`;
+
+  return (
+    /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision|AppleVisionPro|visionos/i.test(hints) ||
+    maxTouchPoints > 0
+  );
+}
+
+function buildYouTubeAppUrls(videoId: string): string[] {
+  if (isLikelyVisionOSDevice()) {
+    // L'app native "YouTube for VisionOS" n'utilise pas toujours le même schéma
+    // que l'application iOS classique. On essaie d'abord son schéma dédié,
+    // puis on garde le schéma historique en fallback.
+    return [
+      `youtubeforvisionos://watch?v=${videoId}`,
+      `youtube://${videoId}`
+    ];
+  }
+
+  return [`youtube://${videoId}`];
+}
+
 function openUrlInSystem(webUrl: string, options?: { sameTab?: boolean }) {
   const preferSameTab = options?.sameTab ?? false;
   const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
@@ -108,7 +136,7 @@ export function playVideo(video: VideoData | null) {
   const videoId = extractYouTubeId(video.link);
 
   if (videoId) {
-    const appUrl = `youtube://${videoId}`;
+    const appUrls = buildYouTubeAppUrls(videoId);
     const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     if (isDuplicateOpen(webUrl)) {
@@ -127,6 +155,7 @@ export function playVideo(video: VideoData | null) {
     // éviter l'affichage d'un navigateur intégré à l'application (écran blanc
     // avec un bouton de fermeture), on privilégie l'ouverture dans le
     // navigateur système lorsque c'est possible.
+    let schemeRetryTimer: ReturnType<typeof window.setTimeout> | undefined;
     let fallbackTimer: ReturnType<typeof window.setTimeout> | undefined;
     let didLeavePage = false;
 
@@ -137,6 +166,11 @@ export function playVideo(video: VideoData | null) {
     };
 
     const clearFallbackTimer = () => {
+      if (schemeRetryTimer !== undefined) {
+        window.clearTimeout(schemeRetryTimer);
+        schemeRetryTimer = undefined;
+      }
+
       if (fallbackTimer !== undefined) {
         window.clearTimeout(fallbackTimer);
         fallbackTimer = undefined;
@@ -176,7 +210,20 @@ export function playVideo(video: VideoData | null) {
     window.addEventListener('pagehide', handlePageHideOrBlur);
     window.addEventListener('blur', handlePageHideOrBlur);
 
-    window.location.href = appUrl;
+    window.location.href = appUrls[0];
+
+    if (appUrls.length > 1) {
+      schemeRetryTimer = window.setTimeout(() => {
+        if (didLeavePage || document.visibilityState === 'hidden') {
+          clearFallbackTimer();
+          cleanupFallbackGuards();
+          return;
+        }
+
+        window.location.href = appUrls[1];
+      }, 350);
+    }
+
     fallbackTimer = window.setTimeout(fallbackToWeb, 1200);
     return;
   }
