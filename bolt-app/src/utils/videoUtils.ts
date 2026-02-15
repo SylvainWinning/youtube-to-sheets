@@ -64,32 +64,30 @@ function shouldOpenWebInSafari(): boolean {
   return isSafari && isAppleVendor && !isIOS && !isLikelyVisionOS;
 }
 
-function isLikelyVisionOSDevice(): boolean {
-  if (typeof navigator === 'undefined') return false;
+function buildYouTubeAppUrls(link: string, videoId: string): string[] {
+  const appUrls = new Set<string>();
 
-  const userAgent = navigator.userAgent ?? '';
-  const uaPlatform = (navigator as any).userAgentData?.platform ?? '';
-  const maxTouchPoints = (navigator as any).maxTouchPoints ?? 0;
-  const hints = `${userAgent} ${uaPlatform}`;
+  // Conversion recommandée pour YouTube: remplacer https:// par youtube://
+  // (Universal Link en fallback web si le schéma n'est pas géré par l'OS/app).
+  try {
+    const parsedUrl = new URL(link);
+    const isYouTubeHost = /(^|\.)youtube\.com$/i.test(parsedUrl.hostname);
 
-  return (
-    /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision|AppleVisionPro|visionos/i.test(hints) ||
-    maxTouchPoints > 0
-  );
-}
-
-function buildYouTubeAppUrls(videoId: string): string[] {
-  if (isLikelyVisionOSDevice()) {
-    // L'app native "YouTube for VisionOS" n'utilise pas toujours le même schéma
-    // que l'application iOS classique. On essaie d'abord son schéma dédié,
-    // puis on garde le schéma historique en fallback.
-    return [
-      `youtubeforvisionos://watch?v=${videoId}`,
-      `youtube://${videoId}`
-    ];
+    if (isYouTubeHost) {
+      const normalized = `${parsedUrl.hostname}${parsedUrl.pathname}${parsedUrl.search}`;
+      appUrls.add(`youtube://${normalized}`);
+      appUrls.add(`vnd.youtube://${normalized}`);
+    }
+  } catch {
+    // Pas bloquant: on garde les fallbacks basés sur l'identifiant vidéo.
   }
 
-  return [`youtube://${videoId}`];
+  // Fallback très compatible pour les liens vidéo standards.
+  // Gardé en dernier: certains contextes Apple acceptent mieux la forme
+  // youtube://www.youtube.com/... que youtube://<videoId>.
+  appUrls.add(`youtube://${videoId}`);
+
+  return Array.from(appUrls);
 }
 
 function openUrlInSystem(webUrl: string, options?: { sameTab?: boolean }) {
@@ -136,7 +134,7 @@ export function playVideo(video: VideoData | null) {
   const videoId = extractYouTubeId(video.link);
 
   if (videoId) {
-    const appUrls = buildYouTubeAppUrls(videoId);
+    const appUrls = buildYouTubeAppUrls(video.link, videoId);
     const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     if (isDuplicateOpen(webUrl)) {
