@@ -155,20 +155,24 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
   };
 }
 
-test('playVideo redirige directement vers le web sur visionOS sans fallback différé', () => {
+test('playVideo tente d’ouvrir l’app sur visionOS avec fallback différé', () => {
   const env = createMockEnvironment({
-    userAgent: 'Mozilla/5.0 (VisionOS) AppleWebKit/000.0 Safari/000.0'
+    userAgent: 'Mozilla/5.0 (VisionOS) AppleWebKit/000.0 Safari/000.0',
+    maxTouchPoints: 5
   });
 
   playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
 
+  assert.equal(env.location.href, 'youtube://vision123');
+  assert.equal(env.timeoutScheduled(), true);
+
+  env.triggerFallback();
   assert.equal(env.location.href, 'https://www.youtube.com/watch?v=vision123');
-  assert.equal(env.timeoutScheduled(), false);
 
   env.restore();
 });
 
-test('playVideo privilégie l’URL web sur Safari macOS tactile (cas visionOS)', () => {
+test('playVideo tente d’ouvrir l’app sur Safari macOS tactile (cas visionOS)', () => {
   const env = createMockEnvironment({
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
     platform: 'MacIntel',
@@ -178,8 +182,11 @@ test('playVideo privilégie l’URL web sur Safari macOS tactile (cas visionOS)'
 
   playVideo({ link: 'https://www.youtube.com/watch?v=visionMac' } as any);
 
+  assert.equal(env.location.href, 'youtube://visionMac');
+  assert.equal(env.timeoutScheduled(), true);
+
+  env.triggerFallback();
   assert.equal(env.location.href, 'https://www.youtube.com/watch?v=visionMac');
-  assert.equal(env.timeoutScheduled(), false);
 
   env.restore();
 });
@@ -203,12 +210,13 @@ test('playVideo conserve le fallback web hors visionOS', () => {
 
 test('playVideo ignore un second clic rapproché vers la même vidéo', () => {
   const env = createMockEnvironment({
-    userAgent: 'Mozilla/5.0 (VisionOS) AppleWebKit/000.0 Safari/000.0'
+    userAgent: 'Mozilla/5.0 (VisionOS) AppleWebKit/000.0 Safari/000.0',
+    maxTouchPoints: 5
   });
 
   env.setNow(1000);
   playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
-  assert.equal(env.location.href, 'https://www.youtube.com/watch?v=vision123');
+  assert.equal(env.location.href, 'youtube://vision123');
 
   env.location.href = '';
   env.setNow(1500);
