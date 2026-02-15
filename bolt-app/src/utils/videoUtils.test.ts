@@ -163,7 +163,7 @@ test('playVideo tente d’ouvrir l’app sur visionOS avec fallback différé', 
 
   playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
 
-  assert.equal(env.location.href, 'youtube://vision123');
+  assert.equal(env.location.href, 'youtubeforvisionos://watch?v=vision123');
   assert.equal(env.timeoutScheduled(), true);
 
   env.triggerFallback();
@@ -182,7 +182,7 @@ test('playVideo tente d’ouvrir l’app sur Safari macOS tactile (cas visionOS)
 
   playVideo({ link: 'https://www.youtube.com/watch?v=visionMac' } as any);
 
-  assert.equal(env.location.href, 'youtube://visionMac');
+  assert.equal(env.location.href, 'youtubeforvisionos://watch?v=visionMac');
   assert.equal(env.timeoutScheduled(), true);
 
   env.triggerFallback();
@@ -216,7 +216,7 @@ test('playVideo ignore un second clic rapproché vers la même vidéo', () => {
 
   env.setNow(1000);
   playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
-  assert.equal(env.location.href, 'youtube://vision123');
+  assert.equal(env.location.href, 'youtubeforvisionos://watch?v=vision123');
 
   env.location.href = '';
   env.setNow(1500);
