@@ -43,53 +43,25 @@ export function getRandomVideo(videos: VideoData[], tab: SheetTab | null): Video
   return filteredVideos[randomIndex];
 }
 
-function isVisionOSSafariSession(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  const platform = typeof navigator !== 'undefined' ? (navigator as any).platform ?? '' : '';
-  const uaPlatform = typeof navigator !== 'undefined' ? (navigator as any).userAgentData?.platform ?? '' : '';
-  const uaBrands = Array.isArray((navigator as any).userAgentData?.brands)
-    ? (navigator as any).userAgentData.brands.map((brand: { brand: string }) => brand.brand).join(' ')
-    : '';
-  const maxTouchPoints = typeof navigator !== 'undefined' ? (navigator as any).maxTouchPoints ?? 0 : 0;
-  const hints = `${userAgent} ${platform} ${uaPlatform} ${uaBrands}`;
-
-  const mentionsVision = /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision|AppleVisionPro/i.test(hints);
-  const mentionsVisionPlatform = /visionos/i.test(uaPlatform);
-  const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
-  const isIOSMobile = /iPad|iPhone|iPod/i.test(userAgent);
-
-  // Safari sur visionOS peut exposer un user‑agent proche de macOS, mais il se distingue
-  // par la présence d’un support tactile. Sur macOS classique, maxTouchPoints vaut 0.
-  const macLikeWithTouch =
-    (/(Macintosh|MacIntel|Mac OS X|macOS)/i.test(hints) || uaPlatform === 'MacIntel') && maxTouchPoints > 0;
-
-  // Sur visionOS, Safari peut exposer un UA proche de macOS avec support tactile
-  // (maxTouchPoints > 0). Dans ce cas, la redirection vers le schéma "youtube://"
-  // affiche une erreur système : on force donc l'ouverture web directe.
-  const safariWithTouchOnMac =
-    isSafari &&
-    !isIOSMobile &&
-    /Macintosh|Mac OS X/i.test(hints) &&
-    maxTouchPoints > 0;
-
-  const explicitVision = (mentionsVision || mentionsVisionPlatform) && isSafari;
-  return explicitVision || safariWithTouchOnMac || (isSafari && macLikeWithTouch && !isIOSMobile);
-}
-
 function shouldOpenWebInSafari(): boolean {
   if (typeof navigator === 'undefined') return false;
 
   const userAgent = navigator.userAgent ?? '';
   const vendor = (navigator as any).vendor ?? '';
+  const uaPlatform = (navigator as any).userAgentData?.platform ?? '';
+  const maxTouchPoints = (navigator as any).maxTouchPoints ?? 0;
   const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
   const isIOS = /iPad|iPhone|iPod/i.test(userAgent);
   const isAppleVendor = /Apple Computer,? Inc\./i.test(vendor);
+  const hints = `${userAgent} ${uaPlatform}`;
+  const isLikelyVisionOS =
+    /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision|AppleVisionPro|visionos/i.test(hints) ||
+    maxTouchPoints > 0;
 
   // Sur Safari desktop (macOS, visionOS), le schéma youtube:// affiche un message
-  // d'erreur "adresse invalide". On privilégie donc directement l'URL web.
-  return isSafari && isAppleVendor && !isIOS;
+  // d'erreur "adresse invalide" sur macOS. On garde l'URL web sur macOS,
+  // mais on laisse visionOS tenter l'ouverture directe de l'app YouTube.
+  return isSafari && isAppleVendor && !isIOS && !isLikelyVisionOS;
 }
 
 function openUrlInSystem(webUrl: string, options?: { sameTab?: boolean }) {
@@ -143,10 +115,9 @@ export function playVideo(video: VideoData | null) {
       return;
     }
 
-    const isVisionOS = isVisionOSSafariSession();
     const isSafariNeedingWebFallback = shouldOpenWebInSafari();
 
-    if (isVisionOS || isSafariNeedingWebFallback) {
+    if (isSafariNeedingWebFallback) {
       openUrlInSystem(webUrl, { sameTab: true });
       return;
     }
