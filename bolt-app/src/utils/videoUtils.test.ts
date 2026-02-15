@@ -13,7 +13,8 @@ type MockEnvOptions = {
 type MockEnv = {
   location: { href: string };
   timeoutScheduled: () => boolean;
-  triggerFallback: () => void;
+  triggerNextTimeout: () => void;
+  triggerAllTimeouts: () => void;
   setNow: (value: number) => void;
   restore: () => void;
 };
@@ -45,7 +46,7 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
     (navigatorMock as any).maxTouchPoints = options.maxTouchPoints;
   }
 
-  let scheduledCallback: (() => void) | undefined;
+  const scheduledCallbacks: Array<() => void> = [];
   let hasScheduledTimeout = false;
   let nowValue = 0;
 
@@ -67,11 +68,14 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
     },
     setTimeout: (fn: () => void) => {
       hasScheduledTimeout = true;
-      scheduledCallback = fn;
-      return 1;
+      scheduledCallbacks.push(fn);
+      return scheduledCallbacks.length;
     },
-    clearTimeout: () => {
-      scheduledCallback = undefined;
+    clearTimeout: (timeoutId: number) => {
+      const callbackIndex = timeoutId - 1;
+      if (callbackIndex >= 0 && callbackIndex < scheduledCallbacks.length) {
+        scheduledCallbacks[callbackIndex] = () => {};
+      }
     }
   };
 
@@ -113,8 +117,15 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
   return {
     location,
     timeoutScheduled: () => hasScheduledTimeout,
-    triggerFallback: () => {
-      scheduledCallback?.();
+    triggerNextTimeout: () => {
+      const callback = scheduledCallbacks.shift();
+      callback?.();
+    },
+    triggerAllTimeouts: () => {
+      while (scheduledCallbacks.length > 0) {
+        const callback = scheduledCallbacks.shift();
+        callback?.();
+      }
     },
     setNow: (value: number) => {
       nowValue = value;
@@ -163,10 +174,10 @@ test('playVideo tente d’ouvrir l’app sur visionOS avec fallback différé', 
 
   playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
 
-  assert.equal(env.location.href, 'youtubeforvisionos://watch?v=vision123');
+  assert.equal(env.location.href, 'youtube://vision123');
   assert.equal(env.timeoutScheduled(), true);
 
-  env.triggerFallback();
+  env.triggerAllTimeouts();
   assert.equal(env.location.href, 'https://www.youtube.com/watch?v=vision123');
 
   env.restore();
@@ -182,10 +193,10 @@ test('playVideo tente d’ouvrir l’app sur Safari macOS tactile (cas visionOS)
 
   playVideo({ link: 'https://www.youtube.com/watch?v=visionMac' } as any);
 
-  assert.equal(env.location.href, 'youtubeforvisionos://watch?v=visionMac');
+  assert.equal(env.location.href, 'youtube://visionMac');
   assert.equal(env.timeoutScheduled(), true);
 
-  env.triggerFallback();
+  env.triggerAllTimeouts();
   assert.equal(env.location.href, 'https://www.youtube.com/watch?v=visionMac');
 
   env.restore();
@@ -199,10 +210,10 @@ test('playVideo conserve le fallback web hors visionOS', () => {
 
   playVideo({ link: 'https://www.youtube.com/watch?v=mobile456' } as any);
 
-  assert.equal(env.location.href, 'youtube://mobile456');
+  assert.equal(env.location.href, 'youtube://www.youtube.com/watch?v=mobile456');
   assert.equal(env.timeoutScheduled(), true);
 
-  env.triggerFallback();
+  env.triggerAllTimeouts();
   assert.equal(env.location.href, 'https://www.youtube.com/watch?v=mobile456');
 
   env.restore();
@@ -216,7 +227,7 @@ test('playVideo ignore un second clic rapproché vers la même vidéo', () => {
 
   env.setNow(1000);
   playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
-  assert.equal(env.location.href, 'youtubeforvisionos://watch?v=vision123');
+  assert.equal(env.location.href, 'youtube://vision123');
 
   env.location.href = '';
   env.setNow(1500);
