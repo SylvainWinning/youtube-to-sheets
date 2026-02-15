@@ -81,6 +81,9 @@ function isLikelyVisionOSDevice(): boolean {
 
 function buildYouTubeAppUrls(link: string, videoId: string): string[] {
   const appUrls = new Set<string>();
+  const webDerivedYoutubeUrl = `youtube://www.youtube.com/watch?v=${videoId}`;
+  const webDerivedVndYoutubeUrl = `vnd.youtube://www.youtube.com/watch?v=${videoId}`;
+  const idBasedYoutubeUrl = `youtube://${videoId}`;
 
   // Conversion recommandée pour YouTube: remplacer https:// par youtube://
   // (Universal Link en fallback web si le schéma n'est pas géré par l'OS/app).
@@ -98,17 +101,26 @@ function buildYouTubeAppUrls(link: string, videoId: string): string[] {
   }
 
   // Fallback très compatible pour les liens vidéo standards.
-  appUrls.add(`youtube://${videoId}`);
+  appUrls.add(idBasedYoutubeUrl);
 
   // Sur visionOS, on privilégie explicitement le schéma classique YouTube
   // avant tout fallback web, sans supposer de schéma propriétaire dédié.
-  if (isLikelyVisionOSDevice() && appUrls.has(`youtube://${videoId}`)) {
-    const prioritized = [`youtube://${videoId}`];
-    for (const url of appUrls) {
-      if (url !== `youtube://${videoId}`) {
+  if (isLikelyVisionOSDevice() && appUrls.has(idBasedYoutubeUrl)) {
+    const prioritized: string[] = [];
+    const pushIfAvailable = (url: string) => {
+      if (appUrls.has(url) && !prioritized.includes(url)) {
         prioritized.push(url);
       }
+    };
+
+    pushIfAvailable(webDerivedYoutubeUrl);
+    pushIfAvailable(webDerivedVndYoutubeUrl);
+    pushIfAvailable(idBasedYoutubeUrl);
+
+    for (const url of appUrls) {
+      pushIfAvailable(url);
     }
+
     return prioritized;
   }
 
