@@ -1,6 +1,13 @@
 name: YouTube to Sheets Sync
 
 on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/sync.yml"
+      - "main.py"
+      - "export_data.py"
+      - "scripts/export_sheet.py"
   # Lancement manuel si besoin
   workflow_dispatch:
   # synchronisation automatique aux horaires (heure de Paris)
