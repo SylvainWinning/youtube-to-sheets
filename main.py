@@ -72,6 +72,19 @@ def parse_playlist_id(value: str) -> str | None:
     return None
 
 
+def parse_playlist_ids(value: str) -> list[str]:
+    """Extrait une liste d'identifiants de playlists (séparés par virgule ou saut de ligne)."""
+    candidates = re.split(r"[\n,]+", value or "")
+    parsed_ids: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        playlist_id = parse_playlist_id(candidate.strip())
+        if playlist_id and playlist_id not in seen:
+            seen.add(playlist_id)
+            parsed_ids.append(playlist_id)
+    return parsed_ids
+
+
 def parse_duration(iso_duration: str) -> str:
     """Convertit une durée ISO 8601 (ex. 'PT5M20S') en format 'HH:MM:SS'."""
     pattern = re.compile(r"^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$")
@@ -315,10 +328,10 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
     # Variables d’environnement requises
     YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
     raw_spreadsheet_id = os.environ.get("SPREADSHEET_ID")
-    playlist_source_id = parse_playlist_id(playlist_id)
+    playlist_source_ids = parse_playlist_ids(playlist_id)
     SHEET_TAB_NAME = sheet_tab_name
-    if not playlist_source_id:
-        logging.error("PLAYLIST_ID invalide")
+    if not playlist_source_ids:
+        logging.error("PLAYLIST_ID invalide (aucune playlist valide détectée)")
         return
     if not raw_spreadsheet_id:
         logging.error("Variable d'environnement SPREADSHEET_ID manquante")
@@ -342,19 +355,23 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
         return
     creds = service_account.Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     service = build("sheets", "v4", credentials=creds)
-    # Récupération des vidéos de la playlist
-    try:
-        items = fetch_all_playlist_items(playlist_source_id, YOUTUBE_API_KEY)
-    except RuntimeError:
-        logging.error("Impossible de récupérer les vidéos de la playlist")
-        return
-    if not items:
-        logging.warning(
-            "Aucun élément récupéré pour la playlist %s. Vérifiez l'identifiant ou la visibilité.",
-            playlist_source_id,
-        )
-    video_ids = [it["contentDetails"]["videoId"] for it in items]
-    videos_data = fetch_videos_details(video_ids, YOUTUBE_API_KEY)
+    all_items_by_playlist: list[tuple[str, list[dict]]] = []
+    all_video_ids: list[str] = []
+    for playlist_source_id in playlist_source_ids:
+        try:
+            items = fetch_all_playlist_items(playlist_source_id, YOUTUBE_API_KEY)
+        except RuntimeError:
+            logging.error("Impossible de récupérer les vidéos de la playlist %s", playlist_source_id)
+            return
+        if not items:
+            logging.warning(
+                "Aucun élément récupéré pour la playlist %s. Vérifiez l'identifiant ou la visibilité.",
+                playlist_source_id,
+            )
+        all_items_by_playlist.append((playlist_source_id, items))
+        all_video_ids.extend(it["contentDetails"]["videoId"] for it in items)
+
+    videos_data = fetch_videos_details(list(dict.fromkeys(all_video_ids)), YOUTUBE_API_KEY)
     # Catégories de durée pré‑définies
     videos_by_category: dict[str, list] = {
         "0-5min": [],
@@ -369,42 +386,43 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
     }
     # Liste globale de toutes les vidéos
     all_videos: list[list] = []
-    for item in items:
-        video_id = item["contentDetails"]["videoId"]
-        video_link = f"https://www.youtube.com/watch?v={video_id}"
-        info = videos_data.get(video_id, {})
-        if info:
-            snippet = info.get("snippet", {})
-            stats = info.get("statistics", {})
-            title = snippet.get("title", "Inconnu")
-            channel = snippet.get("channelTitle", "Inconnu")
-            channel_id = snippet.get("channelId", "")
-            duration_iso = info.get("contentDetails", {}).get("duration", "PT0S")
-            video_duration = parse_duration(duration_iso)
-            thumbnail_url = get_thumbnail_url(info)
-            avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
-            published_at = format_published_at(snippet.get("publishedAt", ""))
-            duration_category = get_duration_category(video_duration)
-            playlist_position = item.get("snippet", {}).get("position")
-            entry = [
-                avatar_url,
-                title,
-                video_link,
-                channel,
-                published_at,
-                video_duration,
-                stats.get("viewCount", "0"),
-                stats.get("likeCount", "0"),
-                stats.get("commentCount", "0"),
-                snippet.get("description", "")[:50],
-                ", ".join(snippet.get("tags", []) or []),
-                snippet.get("categoryId", "Inconnu"),
-                thumbnail_url,
-                "",  # myCategory (colonne personnalisée optionnelle)
-                str(playlist_position) if playlist_position is not None else "",
-                playlist_source_id,
-            ]
-            add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
+    for playlist_source_id, items in all_items_by_playlist:
+        for item in items:
+            video_id = item["contentDetails"]["videoId"]
+            video_link = f"https://www.youtube.com/watch?v={video_id}"
+            info = videos_data.get(video_id, {})
+            if info:
+                snippet = info.get("snippet", {})
+                stats = info.get("statistics", {})
+                title = snippet.get("title", "Inconnu")
+                channel = snippet.get("channelTitle", "Inconnu")
+                channel_id = snippet.get("channelId", "")
+                duration_iso = info.get("contentDetails", {}).get("duration", "PT0S")
+                video_duration = parse_duration(duration_iso)
+                thumbnail_url = get_thumbnail_url(info)
+                avatar_url = get_channel_avatar(channel_id, YOUTUBE_API_KEY)
+                published_at = format_published_at(snippet.get("publishedAt", ""))
+                duration_category = get_duration_category(video_duration)
+                playlist_position = item.get("snippet", {}).get("position")
+                entry = [
+                    avatar_url,
+                    title,
+                    video_link,
+                    channel,
+                    published_at,
+                    video_duration,
+                    stats.get("viewCount", "0"),
+                    stats.get("likeCount", "0"),
+                    stats.get("commentCount", "0"),
+                    snippet.get("description", "")[:50],
+                    ", ".join(snippet.get("tags", []) or []),
+                    snippet.get("categoryId", "Inconnu"),
+                    thumbnail_url,
+                    "",  # myCategory (colonne personnalisée optionnelle)
+                    str(playlist_position) if playlist_position is not None else "",
+                    playlist_source_id,
+                ]
+                add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
     # Écriture des données dans chaque onglet de catégorie
     for category_name, rows in videos_by_category.items():
         write_category(service, SPREADSHEET_ID, category_name, rows)
@@ -427,8 +445,11 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Synchronise une playlist YouTube vers Google Sheets")
-    parser.add_argument("playlist_id", help="Identifiant ou URL de la playlist YouTube")
+    parser = argparse.ArgumentParser(description="Synchronise une ou plusieurs playlists YouTube vers Google Sheets")
+    parser.add_argument(
+        "playlist_id",
+        help="Identifiant(s) ou URL(s) de playlist YouTube (séparés par des virgules si plusieurs)",
+    )
     parser.add_argument("--sheet-tab-name", default="AllVideos", help="Nom de l'onglet cible dans Google Sheets")
     args = parser.parse_args()
     sync_videos(args.playlist_id, args.sheet_tab_name)
