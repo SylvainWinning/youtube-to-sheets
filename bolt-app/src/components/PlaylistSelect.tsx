@@ -4,7 +4,13 @@ import type { VideoData } from '../types/video';
 import { DropdownMenu } from './ui/DropdownMenu';
 import { DropdownItem } from './ui/DropdownItem';
 
-const NEW_PLAYLIST_ID = 'PLtBV_WamBQbCWySxrSDkbEcTYsxZ8FOvx';
+const PLAYLIST_LABELS: Record<string, string> = {
+  PLtBV_WamBQbCWySxrSDkbEcTYsxZ8FOvx: 'Playlist secondaire',
+};
+
+function getPlaylistLabel(playlistId: string): string {
+  return PLAYLIST_LABELS[playlistId] ?? `Playlist ${playlistId.slice(0, 8)}…`;
+}
 
 interface PlaylistSelectProps {
   videos: VideoData[];
@@ -25,14 +31,9 @@ export function PlaylistSelect({
     [videos],
   );
 
-  const hasNewPlaylist = playlistIds.includes(NEW_PLAYLIST_ID);
-  const label = selectedPlaylistId
-    ? selectedPlaylistId === NEW_PLAYLIST_ID
-      ? 'Nouvelle playlist'
-      : 'Playlist principale'
-    : 'Playlists';
+  const label = selectedPlaylistId ? getPlaylistLabel(selectedPlaylistId) : 'Playlists';
 
-  if (playlistIds.length <= 1 && !hasNewPlaylist) return null;
+  if (playlistIds.length <= 1) return null;
 
   return (
     <DropdownMenu
@@ -60,7 +61,7 @@ export function PlaylistSelect({
           }}
           isSelected={selectedPlaylistId === playlistId}
         >
-          {playlistId === NEW_PLAYLIST_ID ? 'Nouvelle playlist' : 'Playlist principale'}
+          {getPlaylistLabel(playlistId)}
         </DropdownItem>
       ))}
     </DropdownMenu>
