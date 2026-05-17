@@ -26,7 +26,7 @@ import { SortOptions } from './types/sort';
  * touch handler for iOS that emulates the native behaviour of
  * scrolling back to the top of the page when the user taps the top
  * left corner of the screen. This supplements the Cordova/Ionic
- * `statusTap` event which is only available in certain contexts【729783637461514†L56-L59】.
+ * `statusTap` event which is only available in certain contexts.
  */
 export default function App() {
   const { error: configError } = getConfig();
@@ -207,6 +207,8 @@ export default function App() {
           onSortOptionsChange={setSortOptions}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
+          selectedPlaylistId={selectedPlaylistId}
+          onPlaylistChange={setSelectedPlaylistId}
         />
       )}
     </div>
