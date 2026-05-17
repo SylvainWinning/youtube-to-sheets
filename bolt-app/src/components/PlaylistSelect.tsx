@@ -5,7 +5,8 @@ import { DropdownMenu } from './ui/DropdownMenu';
 import { DropdownItem } from './ui/DropdownItem';
 
 const PLAYLIST_LABELS: Record<string, string> = {
-  PLtBV_WamBQbCWySxrSDkbEcTYsxZ8FOvx: 'Playlist complémentaire',
+  PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR: 'Playlist principale',
+  PLtBV_WamBQbCWySxrSDkbEcTYsxZ8FOvx: 'Vrouuum',
 };
 
 function getPlaylistLabel(playlistId: string): string {
