@@ -3,6 +3,7 @@ import type { SortOptions } from '../types/sort';
 import type { VideoData } from '../types/video';
 import { SortSelect } from './SortSelect';
 import { CategorySelect } from './CategorySelect';
+import { PlaylistSelect } from './PlaylistSelect';
 import { getUniqueCategories } from '../utils/getUniqueCategories';
 
 interface MobileFilterBarProps {
@@ -11,6 +12,8 @@ interface MobileFilterBarProps {
   onSortOptionsChange: (options: SortOptions | null) => void;
   selectedCategory: string | null;
   onCategoryChange: (category: string | null) => void;
+  selectedPlaylistId: string | null;
+  onPlaylistChange: (playlistId: string | null) => void;
 }
 
 export function MobileFilterBar({
@@ -19,9 +22,15 @@ export function MobileFilterBar({
   onSortOptionsChange,
   selectedCategory,
   onCategoryChange,
+  selectedPlaylistId,
+  onPlaylistChange,
 }: MobileFilterBarProps) {
   const hasCategories = React.useMemo(
     () => getUniqueCategories(videos).length > 0,
+    [videos],
+  );
+  const hasPlaylists = React.useMemo(
+    () => new Set(videos.map(video => video.playlistId).filter(Boolean)).size > 1,
     [videos],
   );
 
@@ -244,7 +253,7 @@ export function MobileFilterBar({
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200/80 to-transparent dark:via-neutral-700/80" />
         </div>
         <div
-          className={`grid gap-3 ${hasCategories ? 'grid-cols-2' : 'grid-cols-1'}`}
+          className={`grid gap-3 ${hasCategories || hasPlaylists ? 'grid-cols-2' : 'grid-cols-1'}`}
         >
           <SortSelect
             options={sortOptions}
@@ -257,6 +266,14 @@ export function MobileFilterBar({
               selectedCategory={selectedCategory}
               onCategoryChange={onCategoryChange}
               className="bg-white/70 dark:bg-neutral-800/70"
+            />
+          )}
+          {hasPlaylists && (
+            <PlaylistSelect
+              videos={videos}
+              selectedPlaylistId={selectedPlaylistId}
+              onPlaylistChange={onPlaylistChange}
+              className="col-span-2 bg-white/70 dark:bg-neutral-800/70"
             />
           )}
         </div>
