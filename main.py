@@ -40,6 +40,7 @@ HEADERS = [
     "thumbnail",
     "myCategory",
     "playlistPosition",
+    "playlistId",
 ]
 
 # Valeurs par défaut pour les miniatures et avatars en cas d’absence de données
@@ -401,6 +402,7 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
                 thumbnail_url,
                 "",  # myCategory (colonne personnalisée optionnelle)
                 str(playlist_position) if playlist_position is not None else "",
+                playlist_source_id,
             ]
             add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
     # Écriture des données dans chaque onglet de catégorie

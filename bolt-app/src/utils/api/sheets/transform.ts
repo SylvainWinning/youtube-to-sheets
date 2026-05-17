@@ -37,6 +37,10 @@ export function mapRowToVideo(row: any[], index = 0): VideoData {
   } else if (typeof index === 'number' && Number.isFinite(index)) {
     video.playlistPosition = index;
   }
+  const playlistIdRaw = row.length > 15 ? row[15] : undefined;
+  if (typeof playlistIdRaw === 'string' && playlistIdRaw.trim() !== '') {
+    video.playlistId = playlistIdRaw.trim();
+  }
 
   return video;
 }

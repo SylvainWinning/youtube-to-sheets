@@ -20,6 +20,7 @@ export interface VideoData {
    * l’utilisateur sélectionne « Playlist d’origine » dans le tri.
    */
   playlistPosition?: number;
+  playlistId?: string;
 }
 
 export interface VideoResponse {
