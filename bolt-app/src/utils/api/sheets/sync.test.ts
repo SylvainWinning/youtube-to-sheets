@@ -124,3 +124,70 @@ test('buildMasterOrderMap privilégie la colonne playlistPosition lorsque dispon
   assert.equal(orderMap['https://youtu.be/c3'], 2);
   assert.equal(explicitCount, 2);
 });
+
+test('synchronizeSheets conserve playlistId pour alimenter le filtre playlist', async () => {
+  const masterValues = [
+    HEADER_ROW,
+    ['', 'Video A', 'https://www.youtube.com/watch?v=abc123', '', '', '', '', '', '', '', '', '', '', '', '0', 'PL_TEST_123'],
+  ];
+  const tabValues = [
+    HEADER_ROW,
+    [
+      'https://example.com/avatar.jpg',
+      'Video A',
+      'https://www.youtube.com/watch?v=abc123',
+      'Channel',
+      '2020-01-01T00:00:00Z',
+      'PT10M',
+      '100',
+      '10',
+      '1',
+      'Description',
+      'tag',
+      'Category',
+      'https://example.com/thumb.jpg',
+      '',
+      '0',
+      'PL_TEST_123',
+    ],
+  ];
+
+  const originalSpreadsheetId = process.env.SPREADSHEET_ID;
+  const originalApiKey = process.env.YOUTUBE_API_KEY;
+  process.env.SPREADSHEET_ID = 'test-id';
+  process.env.YOUTUBE_API_KEY = 'test-key';
+
+  const { synchronizeSheets } = await import(`./sync.ts?playlist=${Date.now()}`);
+  const { SHEET_TABS } = await import('../../constants.ts');
+  const originalTabs = SHEET_TABS.map(tab => ({ ...tab }));
+
+  try {
+    SHEET_TABS.length = 1;
+    SHEET_TABS[0].range = 'tab!A:Z';
+
+    mock.method(globalThis, 'fetch', async (input: string | URL) => {
+      const url = String(input);
+      if (url.includes('AllVideos')) {
+        return new Response(JSON.stringify({ values: masterValues }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ values: tabValues }), { status: 200 });
+    });
+
+    const videos = await synchronizeSheets();
+    assert.equal(videos.length, 1);
+    assert.equal(videos[0].playlistId, 'PL_TEST_123');
+  } finally {
+    mock.restoreAll();
+    SHEET_TABS.splice(0, SHEET_TABS.length, ...originalTabs);
+    if (originalSpreadsheetId === undefined) {
+      delete process.env.SPREADSHEET_ID;
+    } else {
+      process.env.SPREADSHEET_ID = originalSpreadsheetId;
+    }
+    if (originalApiKey === undefined) {
+      delete process.env.YOUTUBE_API_KEY;
+    } else {
+      process.env.YOUTUBE_API_KEY = originalApiKey;
+    }
+  }
+});
