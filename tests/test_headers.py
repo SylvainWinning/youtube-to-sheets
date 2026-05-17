@@ -21,6 +21,7 @@ EXPECTED_HEADERS = [
     "thumbnail",
     "myCategory",
     "playlistPosition",
+    "playlistId",
 ]
 
 

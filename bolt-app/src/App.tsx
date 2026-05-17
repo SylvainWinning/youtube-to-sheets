@@ -5,6 +5,7 @@ import { DurationTabs } from './components/DurationTabs';
 import { SearchBar } from './components/SearchBar';
 import { SortSelect } from './components/SortSelect';
 import { CategorySelect } from './components/CategorySelect';
+import { PlaylistSelect } from './components/PlaylistSelect';
 import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
 import { MissingConfig } from './components/MissingConfig';
@@ -38,6 +39,7 @@ export default function App() {
     fields: ['title', 'channel', 'category'],
   });
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
+  const [selectedPlaylistId, setSelectedPlaylistId] = React.useState<string | null>(null);
 
   const scrollToTop = React.useCallback(
     () => window.scrollTo({ top: 0, behavior: 'smooth' }),
@@ -55,6 +57,7 @@ export default function App() {
     });
     setSortOptions(null);
     setSelectedCategory(null);
+    setSelectedPlaylistId(null);
     await loadVideos();
   }, [loadVideos, playClick, scrollToTop]);
 
@@ -100,12 +103,20 @@ export default function App() {
     [filteredBySearch, selectedCategory],
   );
 
+  const filteredByPlaylist = React.useMemo(
+    () =>
+      selectedPlaylistId
+        ? filteredByCategory.filter(v => v.playlistId === selectedPlaylistId)
+        : filteredByCategory,
+    [filteredByCategory, selectedPlaylistId],
+  );
+
   const filteredByDuration = React.useMemo(
     () =>
       selectedTab === -1
-        ? filteredByCategory
-        : filterVideosByDuration(filteredByCategory, SHEET_TABS[selectedTab]),
-    [filteredByCategory, selectedTab],
+        ? filteredByPlaylist
+        : filterVideosByDuration(filteredByPlaylist, SHEET_TABS[selectedTab]),
+    [filteredByPlaylist, selectedTab],
   );
 
   const sortedVideos = React.useMemo(
@@ -157,6 +168,12 @@ export default function App() {
                   onCategoryChange={setSelectedCategory}
                   className="w-full max-w-[280px]"
                 />
+                <PlaylistSelect
+                  videos={videos}
+                  selectedPlaylistId={selectedPlaylistId}
+                  onPlaylistChange={setSelectedPlaylistId}
+                  className="w-full max-w-[280px]"
+                />
               </div>
             )}
           </div>
@@ -174,7 +191,7 @@ export default function App() {
             <DurationTabs
               selectedTab={selectedTab}
               onTabChange={setSelectedTab}
-              videos={filteredByCategory}
+              videos={filteredByPlaylist}
             />
           </>
         )}
