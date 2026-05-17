@@ -166,7 +166,10 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
           description,
           tags,
           category,
-          thumbnail
+          thumbnail,
+          myCategory,
+          ,
+          playlistId
         ] = row.map(cell => String(cell || '').trim());
 
         // Skip rows with no link
@@ -199,6 +202,8 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
             tags: tags || '',
             category: category || 'Non catégorisé',
             thumbnail: thumbnail || '',
+            myCategory: myCategory || '',
+            playlistId: playlistId || undefined,
             playlistPosition: typeof masterOrder === 'number' ? masterOrder : fallbackOrder
           };
 
