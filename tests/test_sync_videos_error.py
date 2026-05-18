@@ -1,4 +1,5 @@
 import logging
+import pytest
 from main import sync_videos
 
 
@@ -18,7 +19,7 @@ def test_sync_videos_handles_fetch_error(monkeypatch, caplog, tmp_path):
 
     monkeypatch.setattr("main.fetch_all_playlist_items", fake_fetch)
 
-    with caplog.at_level(logging.ERROR):
+    with caplog.at_level(logging.ERROR), pytest.raises(RuntimeError, match="boom"):
         sync_videos("PL123")
     assert "Impossible de récupérer les vidéos de la playlist" in caplog.text
 
@@ -39,7 +40,7 @@ def test_sync_videos_stops_when_playlist_is_empty(monkeypatch, caplog):
         lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not continue")),
     )
 
-    with caplog.at_level(logging.ERROR):
+    with caplog.at_level(logging.ERROR), pytest.raises(RuntimeError, match="Aucun élément récupéré"):
         sync_videos("PL123")
 
     assert "Aucun élément récupéré pour la playlist PL123" in caplog.text
