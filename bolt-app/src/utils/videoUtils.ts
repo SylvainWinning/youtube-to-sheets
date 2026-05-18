@@ -81,9 +81,12 @@ function isLikelyVisionOSDevice(): boolean {
 
 function buildYouTubeAppUrls(link: string, videoId: string): string[] {
   const appUrls = new Set<string>();
+  const watchYoutubeUrl = `youtube://watch?v=${videoId}`;
+  const watchVndYoutubeUrl = `vnd.youtube://watch?v=${videoId}`;
   const webDerivedYoutubeUrl = `youtube://www.youtube.com/watch?v=${videoId}`;
   const webDerivedVndYoutubeUrl = `vnd.youtube://www.youtube.com/watch?v=${videoId}`;
   const idBasedYoutubeUrl = `youtube://${videoId}`;
+  const idBasedVndYoutubeUrl = `vnd.youtube://${videoId}`;
 
   // Conversion recommandée pour YouTube: remplacer https:// par youtube://
   // (Universal Link en fallback web si le schéma n'est pas géré par l'OS/app).
@@ -100,12 +103,15 @@ function buildYouTubeAppUrls(link: string, videoId: string): string[] {
     // Pas bloquant: on garde les fallbacks basés sur l'identifiant vidéo.
   }
 
-  // Fallback très compatible pour les liens vidéo standards.
+  // Fallbacks compatibles avec les variantes historiques de l'app YouTube.
+  appUrls.add(watchYoutubeUrl);
+  appUrls.add(watchVndYoutubeUrl);
   appUrls.add(idBasedYoutubeUrl);
+  appUrls.add(idBasedVndYoutubeUrl);
 
   // Sur visionOS, on privilégie explicitement le schéma classique YouTube
   // avant tout fallback web, sans supposer de schéma propriétaire dédié.
-  if (isLikelyVisionOSDevice() && appUrls.has(idBasedYoutubeUrl)) {
+  if (isLikelyVisionOSDevice()) {
     const prioritized: string[] = [];
     const pushIfAvailable = (url: string) => {
       if (appUrls.has(url) && !prioritized.includes(url)) {
@@ -113,9 +119,12 @@ function buildYouTubeAppUrls(link: string, videoId: string): string[] {
       }
     };
 
+    pushIfAvailable(watchYoutubeUrl);
+    pushIfAvailable(watchVndYoutubeUrl);
     pushIfAvailable(webDerivedYoutubeUrl);
     pushIfAvailable(webDerivedVndYoutubeUrl);
     pushIfAvailable(idBasedYoutubeUrl);
+    pushIfAvailable(idBasedVndYoutubeUrl);
 
     for (const url of appUrls) {
       pushIfAvailable(url);
@@ -190,7 +199,7 @@ export function playVideo(video: VideoData | null) {
     // éviter l'affichage d'un navigateur intégré à l'application (écran blanc
     // avec un bouton de fermeture), on privilégie l'ouverture dans le
     // navigateur système lorsque c'est possible.
-    let schemeRetryTimer: ReturnType<typeof window.setTimeout> | undefined;
+    const schemeRetryTimers: Array<ReturnType<typeof window.setTimeout>> = [];
     let fallbackTimer: ReturnType<typeof window.setTimeout> | undefined;
     let didLeavePage = false;
 
@@ -201,9 +210,11 @@ export function playVideo(video: VideoData | null) {
     };
 
     const clearFallbackTimer = () => {
-      if (schemeRetryTimer !== undefined) {
-        window.clearTimeout(schemeRetryTimer);
-        schemeRetryTimer = undefined;
+      while (schemeRetryTimers.length > 0) {
+        const schemeRetryTimer = schemeRetryTimers.pop();
+        if (schemeRetryTimer !== undefined) {
+          window.clearTimeout(schemeRetryTimer);
+        }
       }
 
       if (fallbackTimer !== undefined) {
@@ -247,19 +258,20 @@ export function playVideo(video: VideoData | null) {
 
     window.location.href = appUrls[0];
 
-    if (appUrls.length > 1) {
-      schemeRetryTimer = window.setTimeout(() => {
+    appUrls.slice(1).forEach((appUrl, index) => {
+      const retryTimer = window.setTimeout(() => {
         if (didLeavePage || document.visibilityState === 'hidden') {
           clearFallbackTimer();
           cleanupFallbackGuards();
           return;
         }
 
-        window.location.href = appUrls[1];
-      }, 350);
-    }
+        window.location.href = appUrl;
+      }, 350 * (index + 1));
+      schemeRetryTimers.push(retryTimer);
+    });
 
-    fallbackTimer = window.setTimeout(fallbackToWeb, 1200);
+    fallbackTimer = window.setTimeout(fallbackToWeb, 350 * appUrls.length + 850);
     return;
   }
 
