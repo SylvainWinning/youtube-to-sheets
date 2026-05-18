@@ -9,6 +9,8 @@ const PLAYLIST_LABELS: Record<string, string> = {
   PLtBV_WamBQbCWySxrSDkbEcTYsxZ8FOvx: 'Vrouuum',
 };
 
+export const PRIMARY_PLAYLIST_ID = 'PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR';
+
 function getPlaylistLabel(playlistId: string): string {
   return PLAYLIST_LABELS[playlistId] ?? `Playlist ${playlistId.slice(0, 8)}…`;
 }
@@ -28,7 +30,14 @@ export function PlaylistSelect({
 }: PlaylistSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const playlistIds = React.useMemo(
-    () => Array.from(new Set(videos.map(v => v.playlistId).filter(Boolean) as string[])),
+    () => {
+      const ids = Array.from(new Set(videos.map(v => v.playlistId).filter(Boolean) as string[]));
+      return ids.sort((a, b) => {
+        if (a === PRIMARY_PLAYLIST_ID) return -1;
+        if (b === PRIMARY_PLAYLIST_ID) return 1;
+        return getPlaylistLabel(a).localeCompare(getPlaylistLabel(b), 'fr');
+      });
+    },
     [videos],
   );
 
