@@ -137,11 +137,11 @@ function openUrlInSystem(webUrl: string, options?: { sameTab?: boolean }) {
   }
 
   if (!preferSameTab) {
-    const openedWindow = typeof window.open === 'function'
-      ? window.open(webUrl, '_blank', 'noopener,noreferrer')
-      : null;
-    if (openedWindow) {
-      openedWindow.opener = null;
+    if (typeof window.open === 'function') {
+      const openedWindow = window.open(webUrl, '_blank', 'noopener,noreferrer');
+      if (openedWindow) {
+        openedWindow.opener = null;
+      }
       return;
     }
   }
