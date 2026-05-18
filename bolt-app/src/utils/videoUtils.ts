@@ -43,25 +43,17 @@ export function getRandomVideo(videos: VideoData[], tab: SheetTab | null): Video
   return filteredVideos[randomIndex];
 }
 
-function shouldOpenWebInSafari(): boolean {
+function shouldOpenWebInNewTabOnMac(): boolean {
   if (typeof navigator === 'undefined') return false;
 
   const userAgent = navigator.userAgent ?? '';
-  const vendor = (navigator as any).vendor ?? '';
   const uaPlatform = (navigator as any).userAgentData?.platform ?? '';
-  const maxTouchPoints = (navigator as any).maxTouchPoints ?? 0;
-  const isSafari = /Safari/i.test(userAgent) && !/Chrome|CriOS|FxiOS|EdgA|EdgiOS/i.test(userAgent);
   const isIOS = /iPad|iPhone|iPod/i.test(userAgent);
-  const isAppleVendor = /Apple Computer,? Inc\./i.test(vendor);
-  const hints = `${userAgent} ${uaPlatform}`;
-  const isLikelyVisionOS =
-    /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision|AppleVisionPro|visionos/i.test(hints) ||
-    maxTouchPoints > 0;
+  const isMacLike = /Macintosh|Mac OS X|MacIntel/i.test(userAgent) || /macOS/i.test(uaPlatform);
 
-  // Sur Safari desktop (macOS, visionOS), le schéma youtube:// affiche un message
-  // d'erreur "adresse invalide" sur macOS. On garde l'URL web sur macOS,
-  // mais on laisse visionOS tenter l'ouverture directe de l'app YouTube.
-  return isSafari && isAppleVendor && !isIOS && !isLikelyVisionOS;
+  // Sur Mac desktop, on évite les schémas youtube:// et on ouvre YouTube web
+  // dans un nouvel onglet. Sur visionOS, on garde le chemin app YouTube.
+  return isMacLike && !isIOS && !isLikelyVisionOSDevice();
 }
 
 function isLikelyVisionOSDevice(): boolean {
@@ -180,19 +172,18 @@ export function playVideo(video: VideoData | null) {
   const videoId = extractYouTubeId(video.link);
 
   if (videoId) {
-    const appUrls = buildYouTubeAppUrls(video.link, videoId);
     const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
     if (isDuplicateOpen(webUrl)) {
       return;
     }
 
-    const isSafariNeedingWebFallback = shouldOpenWebInSafari();
-
-    if (isSafariNeedingWebFallback) {
+    if (shouldOpenWebInNewTabOnMac()) {
       openUrlInSystem(webUrl);
       return;
     }
+
+    const appUrls = buildYouTubeAppUrls(video.link, videoId);
 
     // Redirige vers l'app YouTube. Si elle n'est pas installée, la redirection
     // échoue et l'on ouvre l'URL web en repli après un court délai. Pour
