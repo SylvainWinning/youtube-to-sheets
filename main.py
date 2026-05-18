@@ -364,10 +364,11 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
             logging.error("Impossible de récupérer les vidéos de la playlist %s", playlist_source_id)
             return
         if not items:
-            logging.warning(
+            logging.error(
                 "Aucun élément récupéré pour la playlist %s. Vérifiez l'identifiant ou la visibilité.",
                 playlist_source_id,
             )
+            return
         all_items_by_playlist.append((playlist_source_id, items))
         all_video_ids.extend(it["contentDetails"]["videoId"] for it in items)
 
