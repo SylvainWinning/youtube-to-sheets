@@ -266,6 +266,31 @@ test('playVideo ouvre YouTube web dans un nouvel onglet sur Safari Mac', () => {
   env.restore();
 });
 
+test('playVideo ouvre YouTube web dans un nouvel onglet sur Atlas Mac', () => {
+  const env = createMockEnvironment({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    vendor: 'Google Inc.',
+    supportsWindowOpen: true,
+    platform: 'MacIntel',
+    uaPlatform: 'macOS',
+    maxTouchPoints: 0
+  });
+
+  playVideo({ link: 'https://www.youtube.com/watch?v=atlasTab123' } as any);
+
+  assert.equal(env.location.href, '');
+  assert.deepEqual(env.openedWindows, [
+    {
+      url: 'https://www.youtube.com/watch?v=atlasTab123',
+      target: '_blank',
+      features: 'noopener,noreferrer'
+    }
+  ]);
+  assert.equal(env.timeoutScheduled(), false);
+
+  env.restore();
+});
+
 test('playVideo ignore un second clic rapproché vers la même vidéo', () => {
   const env = createMockEnvironment({
     userAgent: 'Mozilla/5.0 (VisionOS) AppleWebKit/000.0 Safari/000.0',
