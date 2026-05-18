@@ -5,7 +5,7 @@ import { DurationTabs } from './components/DurationTabs';
 import { SearchBar } from './components/SearchBar';
 import { SortSelect } from './components/SortSelect';
 import { CategorySelect } from './components/CategorySelect';
-import { PlaylistSelect } from './components/PlaylistSelect';
+import { PlaylistSelect, PRIMARY_PLAYLIST_ID } from './components/PlaylistSelect';
 import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
 import { MissingConfig } from './components/MissingConfig';
@@ -39,7 +39,7 @@ export default function App() {
     fields: ['title', 'channel', 'category'],
   });
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
-  const [selectedPlaylistId, setSelectedPlaylistId] = React.useState<string | null>(null);
+  const [selectedPlaylistId, setSelectedPlaylistId] = React.useState<string | null>(PRIMARY_PLAYLIST_ID);
 
   const scrollToTop = React.useCallback(
     () => window.scrollTo({ top: 0, behavior: 'smooth' }),
@@ -57,7 +57,7 @@ export default function App() {
     });
     setSortOptions(null);
     setSelectedCategory(null);
-    setSelectedPlaylistId(null);
+    setSelectedPlaylistId(PRIMARY_PLAYLIST_ID);
     await loadVideos();
   }, [loadVideos, playClick, scrollToTop]);
 
