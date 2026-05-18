@@ -174,7 +174,7 @@ test('playVideo tente d’ouvrir l’app sur visionOS avec fallback différé', 
 
   playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
 
-  assert.equal(env.location.href, 'youtube://www.youtube.com/watch?v=vision123');
+  assert.equal(env.location.href, 'youtube://watch?v=vision123');
   assert.equal(env.timeoutScheduled(), true);
 
   env.triggerAllTimeouts();
@@ -193,7 +193,7 @@ test('playVideo tente d’ouvrir l’app sur Safari macOS tactile (cas visionOS)
 
   playVideo({ link: 'https://www.youtube.com/watch?v=visionMac' } as any);
 
-  assert.equal(env.location.href, 'youtube://www.youtube.com/watch?v=visionMac');
+  assert.equal(env.location.href, 'youtube://watch?v=visionMac');
   assert.equal(env.timeoutScheduled(), true);
 
   env.triggerAllTimeouts();
@@ -227,7 +227,7 @@ test('playVideo ignore un second clic rapproché vers la même vidéo', () => {
 
   env.setNow(1000);
   playVideo({ link: 'https://www.youtube.com/watch?v=vision123' } as any);
-  assert.equal(env.location.href, 'youtube://www.youtube.com/watch?v=vision123');
+  assert.equal(env.location.href, 'youtube://watch?v=vision123');
 
   env.location.href = '';
   env.setNow(1500);
@@ -245,10 +245,10 @@ test('playVideo respecte l’ordre des schémas visionOS avant le fallback web',
   });
 
   playVideo({ link: 'https://www.youtube.com/watch?v=ordered001' } as any);
-  assert.equal(env.location.href, 'youtube://www.youtube.com/watch?v=ordered001');
+  assert.equal(env.location.href, 'youtube://watch?v=ordered001');
 
   env.triggerNextTimeout();
-  assert.equal(env.location.href, 'vnd.youtube://www.youtube.com/watch?v=ordered001');
+  assert.equal(env.location.href, 'vnd.youtube://watch?v=ordered001');
 
   env.restore();
 });
