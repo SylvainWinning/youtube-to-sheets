@@ -190,7 +190,7 @@ export function playVideo(video: VideoData | null) {
     const isSafariNeedingWebFallback = shouldOpenWebInSafari();
 
     if (isSafariNeedingWebFallback) {
-      openUrlInSystem(webUrl, { sameTab: true });
+      openUrlInSystem(webUrl);
       return;
     }
 
