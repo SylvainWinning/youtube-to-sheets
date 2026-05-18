@@ -7,6 +7,7 @@ type MockEnvOptions = {
   matchMediaMatches?: boolean;
   vendor?: string;
   supportsWindowOpen?: boolean;
+  windowOpenReturnsNull?: boolean;
   platform?: string;
   uaPlatform?: string;
   maxTouchPoints?: number;
@@ -92,7 +93,7 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
   if (options.supportsWindowOpen) {
     windowMock.open = (url: string, target: string, features?: string) => {
       openedWindows.push({ url, target, features });
-      return { opener: null };
+      return options.windowOpenReturnsNull ? null : { opener: null };
     };
   }
 
@@ -282,6 +283,32 @@ test('playVideo ouvre YouTube web dans un nouvel onglet sur Atlas Mac', () => {
   assert.deepEqual(env.openedWindows, [
     {
       url: 'https://www.youtube.com/watch?v=atlasTab123',
+      target: '_blank',
+      features: 'noopener,noreferrer'
+    }
+  ]);
+  assert.equal(env.timeoutScheduled(), false);
+
+  env.restore();
+});
+
+test('playVideo ne navigue pas l’onglet courant quand window.open renvoie null sur Mac', () => {
+  const env = createMockEnvironment({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    vendor: 'Google Inc.',
+    supportsWindowOpen: true,
+    windowOpenReturnsNull: true,
+    platform: 'MacIntel',
+    uaPlatform: 'macOS',
+    maxTouchPoints: 0
+  });
+
+  playVideo({ link: 'https://www.youtube.com/watch?v=nullOpen123' } as any);
+
+  assert.equal(env.location.href, '');
+  assert.deepEqual(env.openedWindows, [
+    {
+      url: 'https://www.youtube.com/watch?v=nullOpen123',
       target: '_blank',
       features: 'noopener,noreferrer'
     }
