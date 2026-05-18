@@ -16,10 +16,7 @@ export function VideoCard({ video }: VideoCardProps) {
 
   const handleClick = () => {
     playClick();
-    // Add a small delay before opening the video
-    setTimeout(() => {
-      playVideo(video);
-    }, 150); // 150ms delay feels natural
+    playVideo(video);
   };
 
   return (
