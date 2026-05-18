@@ -5,6 +5,8 @@ import { playVideo } from './videoUtils.ts';
 type MockEnvOptions = {
   userAgent: string;
   matchMediaMatches?: boolean;
+  vendor?: string;
+  supportsWindowOpen?: boolean;
   platform?: string;
   uaPlatform?: string;
   maxTouchPoints?: number;
@@ -12,6 +14,7 @@ type MockEnvOptions = {
 
 type MockEnv = {
   location: { href: string };
+  openedWindows: Array<{ url: string; target: string; features?: string }>;
   timeoutScheduled: () => boolean;
   triggerNextTimeout: () => void;
   triggerAllTimeouts: () => void;
@@ -34,6 +37,10 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
   const location = { href: '' };
   const navigatorMock = { userAgent: options.userAgent } as Navigator;
 
+  if (options.vendor) {
+    (navigatorMock as any).vendor = options.vendor;
+  }
+
   if (options.platform) {
     (navigatorMock as any).platform = options.platform;
   }
@@ -46,9 +53,11 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
     (navigatorMock as any).maxTouchPoints = options.maxTouchPoints;
   }
 
-  const scheduledCallbacks: Array<() => void> = [];
+  const scheduledCallbacks: Array<{ id: number; fn: () => void; active: boolean }> = [];
+  const openedWindows: Array<{ url: string; target: string; features?: string }> = [];
   let hasScheduledTimeout = false;
   let nowValue = 0;
+  let nextTimeoutId = 1;
 
   Date.now = () => nowValue;
 
@@ -68,16 +77,24 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
     },
     setTimeout: (fn: () => void) => {
       hasScheduledTimeout = true;
-      scheduledCallbacks.push(fn);
-      return scheduledCallbacks.length;
+      const id = nextTimeoutId++;
+      scheduledCallbacks.push({ id, fn, active: true });
+      return id;
     },
     clearTimeout: (timeoutId: number) => {
-      const callbackIndex = timeoutId - 1;
-      if (callbackIndex >= 0 && callbackIndex < scheduledCallbacks.length) {
-        scheduledCallbacks[callbackIndex] = () => {};
+      const scheduledCallback = scheduledCallbacks.find(callback => callback.id === timeoutId);
+      if (scheduledCallback) {
+        scheduledCallback.active = false;
       }
     }
   };
+
+  if (options.supportsWindowOpen) {
+    windowMock.open = (url: string, target: string, features?: string) => {
+      openedWindows.push({ url, target, features });
+      return { opener: null };
+    };
+  }
 
   const documentMock: any = {
     visibilityState: 'visible',
@@ -116,15 +133,20 @@ function createMockEnvironment(options: MockEnvOptions): MockEnv {
 
   return {
     location,
+    openedWindows,
     timeoutScheduled: () => hasScheduledTimeout,
     triggerNextTimeout: () => {
       const callback = scheduledCallbacks.shift();
-      callback?.();
+      if (callback?.active) {
+        callback.fn();
+      }
     },
     triggerAllTimeouts: () => {
       while (scheduledCallbacks.length > 0) {
         const callback = scheduledCallbacks.shift();
-        callback?.();
+        if (callback?.active) {
+          callback.fn();
+        }
       }
     },
     setNow: (value: number) => {
@@ -215,6 +237,31 @@ test('playVideo conserve le fallback web hors visionOS', () => {
 
   env.triggerAllTimeouts();
   assert.equal(env.location.href, 'https://www.youtube.com/watch?v=mobile456');
+
+  env.restore();
+});
+
+test('playVideo ouvre YouTube web dans un nouvel onglet sur Safari Mac', () => {
+  const env = createMockEnvironment({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+    vendor: 'Apple Computer, Inc.',
+    supportsWindowOpen: true,
+    platform: 'MacIntel',
+    uaPlatform: 'macOS',
+    maxTouchPoints: 0
+  });
+
+  playVideo({ link: 'https://www.youtube.com/watch?v=macTab123' } as any);
+
+  assert.equal(env.location.href, '');
+  assert.deepEqual(env.openedWindows, [
+    {
+      url: 'https://www.youtube.com/watch?v=macTab123',
+      target: '_blank',
+      features: 'noopener,noreferrer'
+    }
+  ]);
+  assert.equal(env.timeoutScheduled(), false);
 
   env.restore();
 });
