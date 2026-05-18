@@ -8,6 +8,7 @@ on:
       - "main.py"
       - "export_data.py"
       - "scripts/export_sheet.py"
+      - "tests/**"
   # Lancement manuel si besoin
   workflow_dispatch:
   # synchronisation automatique aux horaires (heure de Paris)
