@@ -362,13 +362,13 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
             items = fetch_all_playlist_items(playlist_source_id, YOUTUBE_API_KEY)
         except RuntimeError:
             logging.error("Impossible de récupérer les vidéos de la playlist %s", playlist_source_id)
-            return
+            raise
         if not items:
             logging.error(
                 "Aucun élément récupéré pour la playlist %s. Vérifiez l'identifiant ou la visibilité.",
                 playlist_source_id,
             )
-            return
+            raise RuntimeError(f"Aucun élément récupéré pour la playlist {playlist_source_id}")
         all_items_by_playlist.append((playlist_source_id, items))
         all_video_ids.extend(it["contentDetails"]["videoId"] for it in items)
 
