@@ -6,6 +6,7 @@ on:
   workflow_run:
     workflows: ["YouTube to Sheets Sync", "Export Google Sheet to public data"]
     types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -68,6 +69,18 @@ jobs:
 
       # 7. Déploie vers GitHub Pages
       - name: Deploy to GitHub Pages
+        id: deploy-pages
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+        with:
+          token: ${{ github.token }}
+
+      - name: Wait before retrying GitHub Pages deployment
+        if: ${{ steps.deploy-pages.outcome == 'failure' }}
+        run: sleep 30
+
+      - name: Retry deploy to GitHub Pages
+        if: ${{ steps.deploy-pages.outcome == 'failure' }}
         uses: actions/deploy-pages@v4
         with:
           token: ${{ github.token }}
