@@ -38,7 +38,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -63,7 +63,7 @@ jobs:
       PLAYLIST_ID: PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR,PLtBV_WamBQbCWySxrSDkbEcTYsxZ8FOvx
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

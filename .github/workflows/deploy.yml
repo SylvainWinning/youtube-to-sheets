@@ -30,13 +30,13 @@ jobs:
     steps:
       # 1. Récupère le dépôt
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # nécessaire pour l’historique complet
 
       # 2. Configure Node.js (version et cache)
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 18
           cache: npm
@@ -54,7 +54,7 @@ jobs:
 
       # (Optionnel mais recommandé) configure Pages
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       # 5. Compile le site (Vite lira SPREADSHEET_ID / YOUTUBE_API_KEY)
       - name: Build project
@@ -63,14 +63,14 @@ jobs:
 
       # 6. Prépare l’artefact à publier
       - name: Upload build artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: bolt-app/dist
 
       # 7. Déploie vers GitHub Pages
       - name: Deploy to GitHub Pages
         id: deploy-pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         continue-on-error: true
         with:
           token: ${{ github.token }}
@@ -81,6 +81,6 @@ jobs:
 
       - name: Retry deploy to GitHub Pages
         if: ${{ steps.deploy-pages.outcome == 'failure' }}
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         with:
           token: ${{ github.token }}
