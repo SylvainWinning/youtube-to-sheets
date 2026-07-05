@@ -77,10 +77,22 @@ jobs:
 
       - name: Wait before retrying GitHub Pages deployment
         if: ${{ steps.deploy-pages.outcome == 'failure' }}
-        run: sleep 30
+        run: sleep 90
 
       - name: Retry deploy to GitHub Pages
+        id: deploy-pages-retry-1
         if: ${{ steps.deploy-pages.outcome == 'failure' }}
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+        with:
+          token: ${{ github.token }}
+
+      - name: Wait before final GitHub Pages deployment retry
+        if: ${{ steps.deploy-pages.outcome == 'failure' && steps.deploy-pages-retry-1.outcome == 'failure' }}
+        run: sleep 180
+
+      - name: Final retry deploy to GitHub Pages
+        if: ${{ steps.deploy-pages.outcome == 'failure' && steps.deploy-pages-retry-1.outcome == 'failure' }}
         uses: actions/deploy-pages@v5
         with:
           token: ${{ github.token }}
