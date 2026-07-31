@@ -10,6 +10,12 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 
+# Google Sheets can occasionally exceed the transport read timeout.  Let the
+# client retry transient network and 5xx failures with exponential backoff
+# instead of failing the whole scheduled export on the first slow response.
+GOOGLE_API_RETRIES = 5
+
+
 def parse_ranges(raw: str) -> List[str]:
     """Return a list of sheet ranges from a string.
 
@@ -65,7 +71,7 @@ for idx, sheet_range in enumerate(sheet_ranges):
         )
     resp = service.spreadsheets().values().get(
         spreadsheetId=SPREADSHEET_ID, range=sheet_range
-    ).execute()
+    ).execute(num_retries=GOOGLE_API_RETRIES)
     values = resp.get("values", [])
     if not values:
         continue
