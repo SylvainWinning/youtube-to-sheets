@@ -166,7 +166,8 @@ def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5)
     items: list[dict] = []
     seen_item_ids: set[str] = set()
     backoff = 1
-    pagination_restarts = 0
+    page_sizes = [50, 25, 10, 5]
+    page_size_index = 0
     while True:
         data = None
         restart_pagination = False
@@ -179,11 +180,18 @@ def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5)
             except Exception as err:
                 logging.warning("Erreur API YouTube (playlistItems): %s", err)
                 status_code = getattr(getattr(err, "response", None), "status_code", None)
-                if params.get("pageToken") and status_code in {400, 404} and pagination_restarts < 1:
+                if (
+                    params.get("pageToken")
+                    and status_code in {400, 404}
+                    and page_size_index < len(page_sizes) - 1
+                ):
+                    page_size_index += 1
+                    params["maxResults"] = page_sizes[page_size_index]
                     logging.warning(
-                        "Jeton de pagination YouTube devenu invalide; reprise de la playlist depuis le début."
+                        "Jeton de pagination YouTube devenu invalide; reprise depuis le début "
+                        "avec des pages de %s éléments.",
+                        params["maxResults"],
                     )
-                    pagination_restarts += 1
                     params.pop("pageToken", None)
                     items.clear()
                     seen_item_ids.clear()

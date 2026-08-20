@@ -27,10 +27,10 @@ def test_fetch_all_playlist_items_restarts_after_stale_page_token(monkeypatch, c
         ({"items": [{"id": "fresh-1"}], "nextPageToken": "fresh"}, 200),
         ({"items": [{"id": "fresh-1"}, {"id": "fresh-2"}]}, 200),
     ]
-    requested_tokens = []
+    requested_pages = []
 
     def fake_get(url, params=None, timeout=None):
-        requested_tokens.append(params.get("pageToken"))
+        requested_pages.append((params["maxResults"], params.get("pageToken")))
         payload, status = responses.pop(0)
         response = requests.Response()
         response.status_code = status
@@ -43,8 +43,8 @@ def test_fetch_all_playlist_items_restarts_after_stale_page_token(monkeypatch, c
         items = fetch_all_playlist_items("playlist", "key")
 
     assert [item["id"] for item in items] == ["fresh-1", "fresh-2"]
-    assert requested_tokens == [None, "stale", None, "fresh"]
-    assert "reprise de la playlist depuis le début" in caplog.text
+    assert requested_pages == [(50, None), (50, "stale"), (25, None), (25, "fresh")]
+    assert "pages de 25 éléments" in caplog.text
 
 
 def test_fetch_videos_details_max_retries(monkeypatch):
