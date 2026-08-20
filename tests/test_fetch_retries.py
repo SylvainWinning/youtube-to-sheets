@@ -2,7 +2,7 @@ import logging
 import json
 import requests
 import pytest
-from main import fetch_all_playlist_items, fetch_videos_details
+from main import fetch_all_playlist_items, fetch_videos_details, load_cached_playlist_items
 
 
 def test_fetch_all_playlist_items_max_retries(monkeypatch, caplog):
@@ -45,6 +45,27 @@ def test_fetch_all_playlist_items_restarts_after_stale_page_token(monkeypatch, c
     assert [item["id"] for item in items] == ["fresh-1", "fresh-2"]
     assert requested_pages == [(50, None), (50, "stale"), (25, None), (25, "fresh")]
     assert "pages de 25 éléments" in caplog.text
+
+
+def test_load_cached_playlist_items(tmp_path):
+    cache_path = tmp_path / "videos.json"
+    cache_path.write_text(
+        json.dumps(
+            [
+                ["link", "playlistPosition", "playlistId"],
+                ["https://www.youtube.com/watch?v=abcdefghijk", "2", "wanted"],
+                ["https://youtu.be/lmnopqrstuv", "1", "wanted"],
+                ["https://www.youtube.com/watch?v=zzzzzzzzzzz", "0", "other"],
+            ]
+        )
+    )
+
+    items = load_cached_playlist_items("wanted", str(cache_path))
+
+    assert [item["contentDetails"]["videoId"] for item in items] == [
+        "lmnopqrstuv",
+        "abcdefghijk",
+    ]
 
 
 def test_fetch_videos_details_max_retries(monkeypatch):

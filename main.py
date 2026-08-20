@@ -149,7 +149,46 @@ def ensure_sheet_exists(service, spreadsheet_id: str, sheet_name: str) -> int:
     return sheet_id
 
 
-def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5) -> list[dict]:
+def load_cached_playlist_items(source_id: str, cache_path: str = "data/videos.json") -> list[dict]:
+    """Reconstruit les items d'une playlist depuis le dernier export local valide."""
+    try:
+        with open(cache_path, encoding="utf-8") as cache_file:
+            rows = json.load(cache_file)
+    except (OSError, json.JSONDecodeError):
+        return []
+    if not isinstance(rows, list) or not rows:
+        return []
+    headers = rows[0]
+    if not isinstance(headers, list):
+        return []
+    try:
+        link_index = headers.index("link")
+        position_index = headers.index("playlistPosition")
+        playlist_index = headers.index("playlistId")
+    except ValueError:
+        return []
+    cached_items = []
+    for row in rows[1:]:
+        if not isinstance(row, list) or len(row) <= max(link_index, position_index, playlist_index):
+            continue
+        if row[playlist_index] != source_id:
+            continue
+        match = re.search(r"(?:v=|youtu\.be/)([A-Za-z0-9_-]{11})", str(row[link_index]))
+        if not match:
+            continue
+        try:
+            position = int(row[position_index])
+        except (TypeError, ValueError):
+            position = len(cached_items)
+        cached_items.append(
+            {"id": f"cached-{match.group(1)}", "contentDetails": {"videoId": match.group(1)}, "snippet": {"position": position}}
+        )
+    return sorted(cached_items, key=lambda item: item["snippet"]["position"])
+
+
+def fetch_all_playlist_items(
+    source_id: str, api_key: str, max_retries: int = 5, cache_path: str = "data/videos.json"
+) -> list[dict]:
     """
     Récupère tous les items d’une playlist YouTube en gérant la pagination,
     avec gestion d’erreurs réseau et backoff exponentiel.
@@ -199,6 +238,26 @@ def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5)
                     restart_pagination = True
                     break
                 if attempt == max_retries - 1:
+                    status_code = getattr(getattr(err, "response", None), "status_code", None)
+                    if params.get("pageToken") and status_code in {400, 404}:
+                        cached_items = load_cached_playlist_items(source_id, cache_path)
+                        if cached_items:
+                            fresh_ids = {
+                                item.get("contentDetails", {}).get("videoId") for item in items
+                            }
+                            merged_items = items + [
+                                item
+                                for item in cached_items
+                                if item["contentDetails"]["videoId"] not in fresh_ids
+                            ]
+                            for position, item in enumerate(merged_items):
+                                item.setdefault("snippet", {})["position"] = position
+                            logging.warning(
+                                "Pagination YouTube indisponible; utilisation du dernier export "
+                                "pour préserver %s vidéos de la playlist.",
+                                len(merged_items),
+                            )
+                            return merged_items
                     logging.error(
                         "Toutes les tentatives (%s) ont échoué pour récupérer les items de la playlist.",
                         max_retries,
