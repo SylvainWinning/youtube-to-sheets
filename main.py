@@ -164,9 +164,12 @@ def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5)
         "key": api_key,
     }
     items: list[dict] = []
+    seen_item_ids: set[str] = set()
     backoff = 1
+    pagination_restarts = 0
     while True:
         data = None
+        restart_pagination = False
         for attempt in range(max_retries):
             try:
                 resp = requests.get(base_url, params=params, timeout=10)
@@ -175,6 +178,18 @@ def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5)
                 break
             except Exception as err:
                 logging.warning("Erreur API YouTube (playlistItems): %s", err)
+                status_code = getattr(getattr(err, "response", None), "status_code", None)
+                if params.get("pageToken") and status_code in {400, 404} and pagination_restarts < 1:
+                    logging.warning(
+                        "Jeton de pagination YouTube devenu invalide; reprise de la playlist depuis le début."
+                    )
+                    pagination_restarts += 1
+                    params.pop("pageToken", None)
+                    items.clear()
+                    seen_item_ids.clear()
+                    backoff = 1
+                    restart_pagination = True
+                    break
                 if attempt == max_retries - 1:
                     logging.error(
                         "Toutes les tentatives (%s) ont échoué pour récupérer les items de la playlist.",
@@ -183,7 +198,15 @@ def fetch_all_playlist_items(source_id: str, api_key: str, max_retries: int = 5)
                     raise RuntimeError("Échec de récupération des items de la playlist") from err
                 time.sleep(backoff)
                 backoff = min(backoff * 2, 60)
-        items.extend(data.get("items", []))
+        if restart_pagination:
+            continue
+        for item in data.get("items", []):
+            item_id = item.get("id") or item.get("contentDetails", {}).get("videoId")
+            if item_id and item_id in seen_item_ids:
+                continue
+            items.append(item)
+            if item_id:
+                seen_item_ids.add(item_id)
         next_page_token = data.get("nextPageToken")
         if not next_page_token:
             break

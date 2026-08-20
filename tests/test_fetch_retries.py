@@ -1,4 +1,5 @@
 import logging
+import json
 import requests
 import pytest
 from main import fetch_all_playlist_items, fetch_videos_details
@@ -17,6 +18,33 @@ def test_fetch_all_playlist_items_max_retries(monkeypatch, caplog):
             fetch_all_playlist_items("playlist", "key", max_retries=3)
     assert calls["count"] == 3
     assert "Toutes les tentatives" in caplog.text
+
+
+def test_fetch_all_playlist_items_restarts_after_stale_page_token(monkeypatch, caplog):
+    responses = [
+        ({"items": [{"id": "old-1"}], "nextPageToken": "stale"}, 200),
+        ({}, 404),
+        ({"items": [{"id": "fresh-1"}], "nextPageToken": "fresh"}, 200),
+        ({"items": [{"id": "fresh-1"}, {"id": "fresh-2"}]}, 200),
+    ]
+    requested_tokens = []
+
+    def fake_get(url, params=None, timeout=None):
+        requested_tokens.append(params.get("pageToken"))
+        payload, status = responses.pop(0)
+        response = requests.Response()
+        response.status_code = status
+        response.url = url
+        response._content = json.dumps(payload).encode()
+        return response
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    with caplog.at_level(logging.WARNING):
+        items = fetch_all_playlist_items("playlist", "key")
+
+    assert [item["id"] for item in items] == ["fresh-1", "fresh-2"]
+    assert requested_tokens == [None, "stale", None, "fresh"]
+    assert "reprise de la playlist depuis le début" in caplog.text
 
 
 def test_fetch_videos_details_max_retries(monkeypatch):
