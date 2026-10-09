@@ -41,7 +41,7 @@ export function PlaylistSelect({
     [videos],
   );
 
-  const label = selectedPlaylistId ? getPlaylistLabel(selectedPlaylistId) : 'Playlists';
+  const label = selectedPlaylistId ? getPlaylistLabel(selectedPlaylistId) : 'Toutes les playlists';
 
   if (playlistIds.length <= 1) return null;
 
