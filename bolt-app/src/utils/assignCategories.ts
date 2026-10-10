@@ -1,5 +1,12 @@
-import { VideoData } from '../types/video';
-import { channelCategories } from './channelCategories';
+import type { VideoData } from '../types/video.ts';
+import { channelCategories } from './channelCategories.ts';
+
+export function getVideoCategory(video: VideoData): string {
+  return video.myCategory?.trim()
+    || channelCategories[video.channel?.trim() ?? '']
+    || video.category?.trim()
+    || '';
+}
 
 /**
  * Returns a new array of videos where the `myCategory` property is
@@ -11,15 +18,6 @@ import { channelCategories } from './channelCategories';
  */
 export function assignCategories(videos: VideoData[]): VideoData[] {
   return videos.map((video) => {
-    const newVideo: VideoData = { ...video };
-    const hasCustomCategory = newVideo.myCategory && newVideo.myCategory.trim() !== '';
-    // Only assign if no custom category is set
-    if (!hasCustomCategory) {
-      const channelName = newVideo.channel?.trim();
-      if (channelName && channelCategories[channelName]) {
-        newVideo.myCategory = channelCategories[channelName];
-      }
-    }
-    return newVideo;
+    return { ...video, myCategory: getVideoCategory(video) };
   });
 }

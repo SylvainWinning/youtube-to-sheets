@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { VideoData } from '../types/video';
 import { fetchAllVideos, fetchLocalVideos } from '../utils/api/sheets/index.ts';
+import { assignCategories } from '../utils/assignCategories.ts';
 
 export function useVideos(configError?: string) {
   const [videos, setVideos] = useState<VideoData[]>([]);
@@ -19,7 +20,7 @@ export function useVideos(configError?: string) {
         ? metadata.errors.join('\n')
         : null);
 
-      setVideos(errorMessage ? [] : data);
+      setVideos(errorMessage ? [] : assignCategories(data));
 
       if (errorMessage) {
         setError(navigator.onLine === false
