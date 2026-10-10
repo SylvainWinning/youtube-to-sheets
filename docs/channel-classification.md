@@ -2,7 +2,7 @@
 
 État du catalogue vérifié le 10 octobre 2026 : 110 chaînes, 627 entrées dans Playlist principale et Vrouuum. Toutes ont une catégorie; les choix existants sont conservés.
 
-Le classement suit le contenu des chaînes et des vidéos enregistrées. Pause dej regroupe notamment les entretiens et podcasts; Youtuber pref reste un choix personnel. Hardisk et Kyan Khojandi y ont été ajoutées à la demande de l’utilisateur. Ce document est un instantané; le test de couverture vérifie les exports lors des changements futurs.
+Le classement suit le contenu des chaînes et des vidéos enregistrées. Pause dej regroupe notamment les entretiens et podcasts; Youtuber pref reste un choix personnel. Kyan Khojandi y a été ajoutée à la demande de l’utilisateur. Sa préférence concerne Hardisk TV, déjà classée dans Youtuber pref; Hardisk reste dans Pause dej. Hardisk TV ne figure pas dans cet instantané des playlists. Ce document est un instantané; le test de couverture vérifie les exports lors des changements futurs.
 
 ## Culture
 
@@ -106,6 +106,7 @@ Le classement suit le contenu des chaînes et des vidéos enregistrées. Pause d
 | Elise Lucet | 1 | Déjà classée |
 | Fatche | 3 | Déjà classée |
 | Floodcast | 1 | Oui |
+| Hardisk | 29 | Déjà classée |
 | Jimmy | 9 | Déjà classée |
 | LEGEND | 53 | Déjà classée |
 | La Veillée | 7 | Déjà classée |
@@ -138,7 +139,6 @@ Le classement suit le contenu des chaînes et des vidéos enregistrées. Pause d
 | Basti Sans MS | 1 | Déjà classée |
 | Best Of du Grenier | 2 | Déjà classée |
 | Defend Intelligence | 1 | Déjà classée |
-| Hardisk | 29 | Choix personnel confirmé |
 | Konbini | 1 | Déjà classée |
 | Kyan Khojandi | 12 | Choix personnel confirmé |
 | LE ROI DES RATS | 1 | Déjà classée |
