@@ -1,4 +1,3 @@
-import React from 'react';
 import { SortOptions } from '../../types/sort';
 import { getOptionValue } from '../../utils/sort/utils';
 

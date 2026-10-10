@@ -190,8 +190,8 @@ export function playVideo(video: VideoData | null) {
     // éviter l'affichage d'un navigateur intégré à l'application (écran blanc
     // avec un bouton de fermeture), on privilégie l'ouverture dans le
     // navigateur système lorsque c'est possible.
-    const schemeRetryTimers: Array<ReturnType<typeof window.setTimeout>> = [];
-    let fallbackTimer: ReturnType<typeof window.setTimeout> | undefined;
+    const schemeRetryTimers: number[] = [];
+    let fallbackTimer: number | undefined;
     let didLeavePage = false;
 
     const cleanupFallbackGuards = () => {
