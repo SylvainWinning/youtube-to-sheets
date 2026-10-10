@@ -12,9 +12,10 @@ interface DurationTabsProps {
   selectedTab: number;
   onTabChange: (index: number) => void;
   videos: VideoData[];
+  compact?: boolean;
 }
 
-export function DurationTabs({ selectedTab, onTabChange, videos }: DurationTabsProps) {
+export function DurationTabs({ selectedTab, onTabChange, videos, compact = false }: DurationTabsProps) {
   const tabCounts = React.useMemo(() => 
     SHEET_TABS.map(tab => getVideoCountByDuration(videos, tab)),
     [videos]
@@ -28,6 +29,35 @@ export function DurationTabs({ selectedTab, onTabChange, videos }: DurationTabsP
       playVideo(randomVideo);
     }
   }, [videos]);
+
+  if (compact) {
+    const count = selectedTab === -1 ? videos.length : tabCounts[selectedTab];
+    const label = selectedTab === -1 ? 'Toutes durées'
+      : formatDurationRange(SHEET_TABS[selectedTab].durationRange.min, SHEET_TABS[selectedTab].durationRange.max);
+    return (
+      <div className="flex flex-1 min-w-0">
+        <select
+          aria-label="Durée"
+          value={selectedTab}
+          onChange={event => onTabChange(Number(event.target.value))}
+          className="neu-button h-11 min-w-0 flex-1 rounded-l-lg px-2 text-sm text-gray-700 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark]"
+        >
+          <option value={-1}>Toutes durées</option>
+          {SHEET_TABS.map((tab, index) => (
+            <option key={tab.name} value={index}>
+              {formatDurationRange(tab.durationRange.min, tab.durationRange.max)}
+            </option>
+          ))}
+        </select>
+        <ShuffleButton
+          onClick={() => handleShuffle(selectedTab)}
+          disabled={count === 0}
+          label={`Lecture aléatoire : ${label}`}
+          className="min-w-11"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mb-6">

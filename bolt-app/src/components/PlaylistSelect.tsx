@@ -11,7 +11,7 @@ const PLAYLIST_LABELS: Record<string, string> = {
 
 export const PRIMARY_PLAYLIST_ID = 'PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR';
 
-function getPlaylistLabel(playlistId: string): string {
+export function getPlaylistLabel(playlistId: string): string {
   return PLAYLIST_LABELS[playlistId] ?? `Playlist ${playlistId.slice(0, 8)}…`;
 }
 

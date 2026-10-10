@@ -40,7 +40,6 @@ export default function App() {
   });
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [selectedPlaylistId, setSelectedPlaylistId] = React.useState<string | null>(null);
-  const [mobileFilterBarHeight, setMobileFilterBarHeight] = React.useState(0);
 
   const scrollToTop = React.useCallback(
     () => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }),
@@ -129,7 +128,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden pt-2">
-      <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50 mb-6">
+      <header className="bg-white dark:bg-neutral-800 shadow-sm sticky top-0 z-50 mb-4 sm:mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -181,7 +180,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0 pb-[calc(var(--mobile-filter-bar-height)+1rem)] sm:pb-4" style={{ '--mobile-filter-bar-height': `${mobileFilterBarHeight}px` } as React.CSSProperties}>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0 pb-4">
         {configError && <MissingConfig message={configError} />}
         {!isLoading && !appError && (
           <>
@@ -189,11 +188,25 @@ export default function App() {
               filters={searchFilters}
               onFiltersChange={setSearchFilters}
             />
-            <DurationTabs
+            <MobileFilterBar
+              videos={videos}
+              durationVideos={filteredByPlaylist}
               selectedTab={selectedTab}
               onTabChange={setSelectedTab}
-              videos={filteredByPlaylist}
+              sortOptions={sortOptions}
+              onSortOptionsChange={setSortOptions}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              selectedPlaylistId={selectedPlaylistId}
+              onPlaylistChange={setSelectedPlaylistId}
             />
+            <div className="hidden sm:block">
+              <DurationTabs
+                selectedTab={selectedTab}
+                onTabChange={setSelectedTab}
+                videos={filteredByPlaylist}
+              />
+            </div>
           </>
         )}
         {isLoading && <LoadingState />}
@@ -211,18 +224,6 @@ export default function App() {
         ))}
       </main>
 
-      {!isLoading && !appError && (
-        <MobileFilterBar
-          videos={videos}
-          sortOptions={sortOptions}
-          onSortOptionsChange={setSortOptions}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          selectedPlaylistId={selectedPlaylistId}
-          onPlaylistChange={setSelectedPlaylistId}
-          onHeightChange={setMobileFilterBarHeight}
-        />
-      )}
     </div>
   );
 }
