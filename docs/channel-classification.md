@@ -61,7 +61,6 @@ Le classement suit le contenu des chaînes et des vidéos enregistrées. Pause d
 | What a Fail ! | 2 | Déjà classée |
 | billet réduc | 1 | Déjà classée |
 | brinyheart. | 1 | Déjà classée |
-| euuhhh | 63 | Oui |
 
 ## Finance & Business
 
@@ -148,6 +147,7 @@ Le classement suit le contenu des chaînes et des vidéos enregistrées. Pause d
 | MrBeast | 2 | Déjà classée |
 | TheiCollection | 1 | Déjà classée |
 | Thomas Gauthier | 3 | Déjà classée |
+| euuhhh | 63 | Choix personnel confirmé |
 
 ## Vérification
 
