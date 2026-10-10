@@ -1,4 +1,4 @@
-import { channelCategories } from './channelCategories.ts';
+import { getVideoCategory } from './assignCategories.ts';
 import type { VideoData } from '../types/video.ts';
 
 /**
@@ -17,16 +17,8 @@ export function getUniqueCategories(
 ): string[] {
   const uniqueCategories = new Set<string>();
   videos.forEach((video) => {
-    let cat: string | undefined | null = (video as any).myCategory ?? (video as any).category;
-    if (!cat || cat.trim() === '') {
-      const mapped = (channelCategories as any)[(video as any).channel as string];
-      if (mapped) {
-        cat = mapped;
-        // assign mapped category to myCategory so other parts of the app can use it
-        (video as any).myCategory = mapped;
-      }
-    }
-    if (cat && cat.trim() !== '') {
+    const cat = getVideoCategory(video);
+    if (cat) {
       uniqueCategories.add(cat);
     }
   });
