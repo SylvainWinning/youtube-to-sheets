@@ -194,6 +194,6 @@ export const channelCategories: Record<string, string> = {
   "Speakeasy by /influx": "Finance & Business",
   "Sphères Magazine": "Pause dej",
   "Vald stream": "Divertissement",
-  "euuhhh": "Divertissement",
+  "euuhhh": "Youtuber pref",
 
 };
