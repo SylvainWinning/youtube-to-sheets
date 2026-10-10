@@ -14,6 +14,7 @@ interface MobileFilterBarProps {
   onCategoryChange: (category: string | null) => void;
   selectedPlaylistId: string | null;
   onPlaylistChange: (playlistId: string | null) => void;
+  onHeightChange: (height: number) => void;
 }
 
 export function MobileFilterBar({
@@ -24,7 +25,21 @@ export function MobileFilterBar({
   onCategoryChange,
   selectedPlaylistId,
   onPlaylistChange,
+  onHeightChange,
 }: MobileFilterBarProps) {
+  const barRef = React.useRef<HTMLDivElement>(null);
+  React.useLayoutEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const updateHeight = () => onHeightChange(bar.getBoundingClientRect().height);
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(bar);
+    updateHeight();
+    return () => {
+      observer.disconnect();
+      onHeightChange(0);
+    };
+  }, [onHeightChange]);
   const hasCategories = React.useMemo(
     () => getUniqueCategories(videos).length > 0,
     [videos],
@@ -239,6 +254,7 @@ export function MobileFilterBar({
 
   return (
     <div
+      ref={barRef}
       className="sm:hidden fixed inset-x-0 bottom-0 z-50"
       style={fixedContainerStyle}
     >
@@ -273,7 +289,8 @@ export function MobileFilterBar({
               videos={videos}
               selectedPlaylistId={selectedPlaylistId}
               onPlaylistChange={onPlaylistChange}
-              className="col-span-2 bg-white/70 dark:bg-neutral-800/70"
+              containerClassName="col-span-2"
+              className="bg-white/70 dark:bg-neutral-800/70"
             />
           )}
         </div>

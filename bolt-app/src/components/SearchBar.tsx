@@ -86,7 +86,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
   return (
     <div className="mb-6">
       <div className="relative max-w-[640px] mx-auto flex items-center gap-4">
-        <div className="relative flex-1 group">
+        <div className="relative flex-1 min-w-0 group">
           {/* Calque visuel séparé pour éviter le décalage du curseur iOS quand backdrop-filter est appliqué au formulaire */}
           <div
             aria-hidden="true"
@@ -101,11 +101,12 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
             onSubmit={handleSubmit}
             className="relative z-[1] flex-1 flex items-center border-[1.5px] border-youtube-border dark:border-neutral-600 rounded-full transition-all duration-200 focus-within:border-youtube-red focus-within:ring-1 focus-within:ring-youtube-red focus-within:ring-opacity-50 focus-within:shadow-[0_0_10px_rgba(255,0,0,0.3)]"
           >
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-0">
               <input
                 ref={inputRef}
                 type="text"
                 placeholder="Rechercher"
+                aria-label="Rechercher des vidéos"
                 value={filters.query}
                 onChange={(e) => onFiltersChange({ ...filters, query: e.target.value })}
                 className="w-full pl-4 pr-10 h-10 rounded-l-full bg-transparent text-youtube-black dark:text-white placeholder-youtube-gray-dark dark:placeholder-gray-400 text-[16px] sm:text-sm focus:outline-none"
@@ -113,6 +114,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
               {filters.query && (
                 <button
                   type="button"
+                  aria-label="Effacer la recherche"
                   onClick={handleClear}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-600 text-youtube-gray-dark dark:text-gray-400 hover:text-youtube-black dark:hover:text-white transition-colors"
                 >
@@ -122,6 +124,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
             </div>
             <button
               type="submit"
+              aria-label="Rechercher"
               className="h-10 px-6 bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 text-youtube-black dark:text-white rounded-r-full border-l-[1.5px] border-youtube-border dark:border-neutral-600 transition-all duration-200 focus:outline-none group-focus-within:border-youtube-red"
             >
               <Search className="w-5 h-5" />
@@ -130,8 +133,11 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
         </div>
         {/* Voice search button retains its existing styling */}
         <button
+          type="button"
+          aria-label={isListening ? 'Arrêter la recherche vocale' : 'Rechercher avec la voix'}
+          aria-pressed={isListening}
           onClick={isListening ? stopListening : startListening}
-          className={`w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center border-[1.5px] border-transparent ${
+          className={`shrink-0 w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center border-[1.5px] border-transparent ${
             isListening
               ? 'bg-youtube-red text-white shadow-[0_0_10px_rgba(255,0,0,0.3)] border-youtube-red'
               : 'bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 hover:border-youtube-red hover:shadow-[0_0_10px_rgba(255,0,0,0.3)] text-youtube-black dark:text-white'

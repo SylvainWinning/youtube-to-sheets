@@ -21,6 +21,15 @@ export function VideoCard({ video }: VideoCardProps) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Ouvrir ${video.title} sur YouTube`}
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleClick();
+        }
+      }}
       onClick={handleClick}
       className="group cursor-pointer p-3 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-neu-base dark:bg-neutral-700/50 shadow-[2px_2px_4px_#d1d9e6,_-2px_-2px_4px_#ffffff] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.2),_-2px_-2px_4px_rgba(255,255,255,0.05)] hover:shadow-[4px_4px_8px_#d1d9e6,_-4px_-4px_8px_#ffffff] dark:hover:shadow-[4px_4px_8px_rgba(0,0,0,0.25),_-4px_-4px_8px_rgba(255,255,255,0.1)] flex flex-col"
     >
