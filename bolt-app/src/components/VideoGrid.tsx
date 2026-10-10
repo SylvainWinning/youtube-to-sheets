@@ -75,7 +75,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
         {remainingCount > 0 && (
           <button
             type="button"
-            className="neu-button rounded-xl px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red"
+            className="neu-button rounded-xl px-4 py-3 text-gray-700 dark:text-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red"
             onClick={() => {
               nextFocusIndex.current = visibleCount;
               setPage(current => ({ ...current, count: current.count + batchSize }));
