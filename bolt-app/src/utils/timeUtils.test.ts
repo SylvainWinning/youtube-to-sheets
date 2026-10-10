@@ -3,75 +3,43 @@ import assert from 'node:assert/strict';
 import { parseDate, formatPublishDate } from './timeUtils.ts';
 import { sortVideos } from './sortUtils.ts';
 
-test('parseDate parses DD/MM/YYYY HH:MM format', () => {
-  const result = parseDate('17/05/2024 14:30');
-  assert.ok(result);
-  assert.equal(result?.getFullYear(), 2024);
-  assert.equal(result?.getMonth(), 4);
-  assert.equal(result?.getDate(), 17);
-  assert.equal(result?.getHours(), 14);
-  assert.equal(result?.getMinutes(), 30);
+test('parseDate interprets DD/MM/YYYY HH:MM as UTC', () => {
+  assert.equal(parseDate('17/05/2024 14:30')?.toISOString(), '2024-05-17T14:30:00.000Z');
 });
 
-test('parseDate parses French date format', () => {
-  const result = parseDate('11 avril 2024');
-  assert.ok(result);
-  assert.equal(result?.getFullYear(), 2024);
-  assert.equal(result?.getMonth(), 3);
-  assert.equal(result?.getDate(), 11);
+test('parseDate interprets ISO timestamps without a timezone as UTC', () => {
+  assert.equal(parseDate('2024-05-17T14:30:00')?.toISOString(), '2024-05-17T14:30:00.000Z');
 });
 
-test('formatPublishDate handles minutes', () => {
-  const now = new Date();
-  const recent = new Date(now.getTime() - 5 * 60 * 1000);
-  const dd = String(recent.getDate()).padStart(2, '0');
-  const mm = String(recent.getMonth() + 1).padStart(2, '0');
-  const yyyy = recent.getFullYear();
-  const hh = String(recent.getHours()).padStart(2, '0');
-  const min = String(recent.getMinutes()).padStart(2, '0');
-  const dateString = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-  const expected = 'Il y a 5 minutes';
-  assert.equal(formatPublishDate(dateString), expected);
+test('parseDate respects an explicit ISO timezone offset', () => {
+  assert.equal(parseDate('2024-05-17T14:30:00+02:00')?.toISOString(), '2024-05-17T12:30:00.000Z');
 });
 
-test('formatPublishDate handles hours', () => {
-  const now = new Date();
-  const recent = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-  const dd = String(recent.getDate()).padStart(2, '0');
-  const mm = String(recent.getMonth() + 1).padStart(2, '0');
-  const yyyy = recent.getFullYear();
-  const hh = String(recent.getHours()).padStart(2, '0');
-  const min = String(recent.getMinutes()).padStart(2, '0');
-  const dateString = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-  const expected = 'Il y a 3 heures';
-  assert.equal(formatPublishDate(dateString), expected);
+test('parseDate parses French date format in the local calendar', () => {
+  assert.equal(parseDate('11 avril 2024')?.getTime(), new Date(2024, 3, 11).getTime());
 });
 
-test('formatPublishDate handles days', () => {
-  const now = new Date();
-  const recent = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-  const dd = String(recent.getDate()).padStart(2, '0');
-  const mm = String(recent.getMonth() + 1).padStart(2, '0');
-  const yyyy = recent.getFullYear();
-  const hh = String(recent.getHours()).padStart(2, '0');
-  const min = String(recent.getMinutes()).padStart(2, '0');
-  const dateString = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-  const expected = 'Il y a 3 jours';
-  assert.equal(formatPublishDate(dateString), expected);
-});
-
-test('formatPublishDate handles dates older than a week', () => {
-  const now = new Date();
-  const older = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000);
-  const dd = String(older.getDate()).padStart(2, '0');
-  const mm = String(older.getMonth() + 1).padStart(2, '0');
-  const yyyy = older.getFullYear();
-  const hh = String(older.getHours()).padStart(2, '0');
-  const min = String(older.getMinutes()).padStart(2, '0');
-  const dateString = `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-  const expected = new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }).format(older);
-  assert.equal(formatPublishDate(dateString), expected);
-});
+// Sheet timestamps with a time are UTC. Freeze the clock and serialize fixtures
+// in UTC so these assertions also hold in local timezones and across seasons.
+for (const [now, olderDate] of [
+  ['2026-01-15T12:00:00Z', '7 janvier 2026'],
+  ['2026-07-15T12:00:00Z', '7 juillet 2026'],
+]) {
+  for (const [ageMs, expected] of [
+    [5 * 60 * 1000, 'Il y a 5 minutes'],
+    [3 * 60 * 60 * 1000, 'Il y a 3 heures'],
+    [3 * 24 * 60 * 60 * 1000, 'Il y a 3 jours'],
+    [8 * 24 * 60 * 60 * 1000, olderDate],
+  ] as const) {
+    test(`formatPublishDate: ${expected} with clock ${now}`, context => {
+      context.mock.timers.enable({ apis: ['Date'], now: new Date(now) });
+      const recent = new Date(Date.now() - ageMs);
+      const iso = recent.toISOString();
+      const dateString = `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)} ${iso.slice(11, 16)}`;
+      assert.equal(formatPublishDate(dateString), expected);
+    });
+  }
+}
 
 test('sortVideos orders videos by chronological publishedAt', () => {
   const videos = [

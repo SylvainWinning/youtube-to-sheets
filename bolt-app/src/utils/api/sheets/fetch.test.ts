@@ -39,6 +39,7 @@ test('fetchSheetData retrieves all rows for unbounded range', async () => {
     });
 
     const result = await fetchSheetData('tab!A2:M');
+    assert.ok(result.values);
     assert.equal(result.values.length, 1201);
   } finally {
     mock.restoreAll();

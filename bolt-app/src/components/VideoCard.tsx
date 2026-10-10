@@ -1,4 +1,3 @@
-import React from 'react';
 import { Eye } from 'lucide-react';
 import { VideoData } from '../types/video';
 import { formatNumber } from '../utils/formatters';

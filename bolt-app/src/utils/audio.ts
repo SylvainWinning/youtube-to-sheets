@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 // Soft click sound from mixkit.co (free to use)
 const CLICK_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3';
 

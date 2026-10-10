@@ -2,6 +2,7 @@
 import React from 'react';
 import { XCircle, Mic, Search } from 'lucide-react';
 import { SearchFilters } from '../types/search';
+import type { BrowserSpeechRecognition } from '../types/speech';
 
 interface SearchBarProps {
   filters: SearchFilters;
@@ -10,7 +11,7 @@ interface SearchBarProps {
 
 export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const recognitionRef = React.useRef<any>(null);
+  const recognitionRef = React.useRef<BrowserSpeechRecognition | null>(null);
   const [isListening, setIsListening] = React.useState(false);
   const [isIOSDevice, setIsIOSDevice] = React.useState(false);
 
@@ -36,6 +37,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
     try {
       stopListening();
       const Recognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      if (!Recognition) throw new Error('Reconnaissance vocale indisponible');
       const recognition = new Recognition();
       recognitionRef.current = recognition;
       recognition.lang = 'fr-FR';
@@ -46,14 +48,14 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
       recognition.onstart = () => {
         setIsListening(true);
       };
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         onFiltersChange({ ...filters, query: transcript });
         inputRef.current?.focus();
         clearTimeout(timeoutId);
         stopListening();
       };
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event) => {
         console.error('Erreur de reconnaissance vocale:', event.error);
         clearTimeout(timeoutId);
         stopListening();

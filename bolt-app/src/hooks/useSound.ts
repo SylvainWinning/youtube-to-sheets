@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { audioManager } from '../utils/audio/AudioManager';
-import { SOUNDS } from '../utils/audio/constants';
 
 export function useSound() {
   const playClick = useCallback(async () => {

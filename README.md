@@ -116,8 +116,18 @@ python -m pytest
 
 ### bolt-app
 
+Utiliser Node.js 24 pour le lanceur de tests TypeScript.
+
 ```bash
-cd bolt-app && npm test
+cd bolt-app
+npm ci
+npm run typecheck
+npm test
 ```
 
 Ces tests n'exigent pas de secrets : les appels réseau sont simulés.
+Les tests de dates figent l'horloge et respectent les heures UTC des données,
+tout en conservant les dates sans heure dans le calendrier local.
+Le workflow `Frontend checks` vérifie le typage, les tests dans quatre fuseaux
+(UTC, Europe/Paris, America/Los_Angeles, Asia/Tokyo), le lint et la compilation.
+`npm run build` vérifie également le typage avant de compiler avec Vite.

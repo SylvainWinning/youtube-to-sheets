@@ -11,7 +11,7 @@ export function filterVideosBySearch(videos: VideoData[], filters: SearchFilters
   return videos.filter(video => {
     return filters.fields.some(field => {
       const key = field === 'category' ? 'myCategory' : field;
-      const value = (video[key as keyof VideoData] ?? '').toLowerCase();
+      const value = (video[key] ?? '').toLowerCase();
       return value.includes(searchTerm);
     });
   });
