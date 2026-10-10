@@ -22,7 +22,9 @@ export function useVideos(configError?: string) {
       setVideos(errorMessage ? [] : data);
 
       if (errorMessage) {
-        setError(errorMessage);
+        setError(navigator.onLine === false
+          ? 'Vous êtes hors ligne. Vérifiez votre connexion, puis réessayez.'
+          : 'Impossible de charger les vidéos. Veuillez réessayer.');
       } else if (data.length === 0) {
         setError('Aucune vidéo trouvée.');
       } else {

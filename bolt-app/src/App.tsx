@@ -40,9 +40,10 @@ export default function App() {
   });
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   const [selectedPlaylistId, setSelectedPlaylistId] = React.useState<string | null>(null);
+  const [mobileFilterBarHeight, setMobileFilterBarHeight] = React.useState(0);
 
   const scrollToTop = React.useCallback(
-    () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+    () => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }),
     [],
   );
 
@@ -134,19 +135,19 @@ export default function App() {
             <div className="flex items-center justify-between">
               <button
                 onClick={resetFilters}
-                className="flex items-center gap-3 group"
+                className="flex items-center gap-2 sm:gap-3 min-w-0 group"
                 disabled={isLoading}
               >
                 <img
                   src={import.meta.env.BASE_URL + 'youtube-logo.svg'}
                   alt="YouTube logo"
-                  className="h-8 w-8"
+                  className="h-6 w-6 sm:h-8 sm:w-8 shrink-0"
                 />
-                <h1 className="text-xl font-semibold text-youtube-black dark:text-white flex items-center gap-2">
+                <h1 className="text-base sm:text-xl font-semibold text-youtube-black dark:text-white flex items-center gap-2">
                   Mes Vidéos YouTube
                   <RefreshCw
                     className={
-                      'h-5 w-5 text-youtube-gray-light dark:text-youtube-gray-dark transition-all ' +
+                      'hidden sm:block h-5 w-5 text-youtube-gray-light dark:text-youtube-gray-dark transition-all ' +
                       (isLoading ? 'animate-spin' : 'group-hover:text-youtube-red')
                     }
                   />
@@ -180,7 +181,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0 pb-32 sm:pb-0">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0 pb-[calc(var(--mobile-filter-bar-height)+1rem)] sm:pb-4" style={{ '--mobile-filter-bar-height': `${mobileFilterBarHeight}px` } as React.CSSProperties}>
         {configError && <MissingConfig message={configError} />}
         {!isLoading && !appError && (
           <>
@@ -196,8 +197,18 @@ export default function App() {
           </>
         )}
         {isLoading && <LoadingState />}
-        {appError && <ErrorState message={appError} />}
-        {!isLoading && !appError && <VideoGrid videos={sortedVideos} />}
+        {appError && <ErrorState message={appError} onRetry={loadVideos} />}
+        {!isLoading && !appError && (sortedVideos.length > 0 ? <VideoGrid videos={sortedVideos} /> : (
+          <div className="py-8 text-center text-youtube-black dark:text-white">
+            <p role="status">Aucune vidéo ne correspond à votre recherche ou aux filtres sélectionnés.</p>
+            <button type="button" className="neu-button rounded-xl px-4 py-2 mt-4" onClick={() => {
+              setSearchFilters(filters => ({ ...filters, query: '' }));
+              setSelectedTab(-1);
+              setSelectedCategory(null);
+              setSelectedPlaylistId(null);
+            }}>Effacer les filtres</button>
+          </div>
+        ))}
       </main>
 
       {!isLoading && !appError && (
@@ -209,6 +220,7 @@ export default function App() {
           onCategoryChange={setSelectedCategory}
           selectedPlaylistId={selectedPlaylistId}
           onPlaylistChange={setSelectedPlaylistId}
+          onHeightChange={setMobileFilterBarHeight}
         />
       )}
     </div>

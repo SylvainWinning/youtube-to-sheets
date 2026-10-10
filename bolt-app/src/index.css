@@ -11,6 +11,19 @@
     @apply m-0 bg-neu-base dark:bg-neutral-900 overflow-x-hidden min-h-screen;
     touch-action: manipulation;
   }
+
+  :where(button, [role='button']):focus-visible {
+    outline: 2px solid #ef4444;
+    outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @layer components {

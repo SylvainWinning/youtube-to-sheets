@@ -20,6 +20,7 @@ interface PlaylistSelectProps {
   selectedPlaylistId: string | null;
   onPlaylistChange: (playlistId: string | null) => void;
   className?: string;
+  containerClassName?: string;
 }
 
 export function PlaylistSelect({
@@ -27,6 +28,7 @@ export function PlaylistSelect({
   selectedPlaylistId,
   onPlaylistChange,
   className = '',
+  containerClassName = '',
 }: PlaylistSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const playlistIds = React.useMemo(
@@ -52,6 +54,7 @@ export function PlaylistSelect({
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}
       className={className}
+      containerClassName={containerClassName}
     >
       <DropdownItem
         onClick={() => {

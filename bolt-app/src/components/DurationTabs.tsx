@@ -31,12 +31,12 @@ export function DurationTabs({ selectedTab, onTabChange, videos }: DurationTabsP
 
   return (
     <div className="mb-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-        <div className="flex col-span-2 sm:col-span-1">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        <div className="flex min-w-0 min-[380px]:col-span-2 sm:col-span-1">
           <button
             onClick={() => onTabChange(-1)}
             className={`
-              flex-1 rounded-l-lg px-3 py-2 flex items-center gap-2 transition-all duration-200
+              flex-1 min-w-0 rounded-l-lg px-2 sm:px-3 py-2 flex items-center gap-1 sm:gap-2 transition-all duration-200
               ${selectedTab === -1 
                 ? 'shadow-neu-pressed dark:shadow-neu-pressed-dark text-youtube-red dark:text-youtube-red' 
                 : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red dark:hover:text-youtube-red hover:bg-white/50 dark:hover:bg-white/5'
@@ -56,11 +56,11 @@ export function DurationTabs({ selectedTab, onTabChange, videos }: DurationTabsP
         </div>
         
         {SHEET_TABS.map((tab, index) => (
-          <div key={tab.name} className="flex">
+          <div key={tab.name} className="flex min-w-0">
             <button
               onClick={() => onTabChange(index)}
               className={`
-                flex-1 rounded-l-lg px-3 py-2 flex items-center gap-2 transition-all duration-200
+                flex-1 min-w-0 rounded-l-lg px-2 sm:px-3 py-2 flex items-center gap-1 sm:gap-2 transition-all duration-200
                 ${selectedTab === index 
                   ? 'shadow-neu-pressed dark:shadow-neu-pressed-dark text-youtube-red dark:text-youtube-red' 
                   : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red dark:hover:text-youtube-red hover:bg-white/50 dark:hover:bg-white/5'
