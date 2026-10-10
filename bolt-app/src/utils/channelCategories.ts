@@ -5,7 +5,7 @@ export const channelCategories: Record<string, string> = {
   "OpenAI": "Tech",
   "Scrum Life - Lean, Agile, Kanban": "Finance & Business",
   "Etoiles": "Divertissement",
-  "Hardisk": "Youtuber pref",
+  "Hardisk": "Pause dej",
   "28 minutes - ARTE": "Culture",
   "Thomas Combret": "Divertissement",
   "ARTE": "Culture",
