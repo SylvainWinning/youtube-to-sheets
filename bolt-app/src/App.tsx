@@ -20,6 +20,7 @@ import { useVideos } from './hooks/useVideos';
 import { useSound } from './hooks/useSound';
 import { SearchFilters } from './types/search';
 import { SortOptions } from './types/sort';
+import { clearLibraryProgress } from './utils/libraryProgress';
 
 /**
  * Main React component for the Bolt‑app. This version adds a custom
@@ -47,6 +48,7 @@ export default function App() {
   );
 
   const resetFilters = React.useCallback(async () => {
+    clearLibraryProgress();
     playClick();
     // Assure un retour en haut de l'écran sur iOS
     scrollToTop();
