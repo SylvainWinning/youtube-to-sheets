@@ -6,9 +6,12 @@ on:
     paths:
       - ".github/workflows/sync.yml"
       - "main.py"
+      - "sync_metadata.py"
       - "export_data.py"
       - "scripts/export_sheet.py"
       - "tests/**"
+  pull_request:
+    paths: ["main.py", "sync_metadata.py", "export_data.py", "scripts/export_sheet.py", "tests/**", ".github/workflows/sync.yml"]
   # Lancement manuel si besoin
   workflow_dispatch:
   # synchronisation automatique aux horaires (heure de Paris)
@@ -28,7 +31,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: youtube-to-sheets-sync
+  group: youtube-to-sheets-sync-${{ github.event.pull_request.number || 'production' }}
   cancel-in-progress: true
 
 jobs:
@@ -53,6 +56,7 @@ jobs:
 
   sync:
     name: Sync playlist to Google Sheets
+    if: github.event_name != 'pull_request'
     needs: tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -104,15 +108,9 @@ jobs:
           sys.exit(1)
           PY
       - name: Run sync
+        id: synchronization
+        continue-on-error: true
         run: python main.py "$PLAYLIST_ID"
-      - name: Export sheet to JSON
-        run: python export_data.py
-      - name: Export sheet to public data
-        env:
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-        run: >-
-          python scripts/export_sheet.py --sheet-range "'0-5min'!A1:Z, '5-10min'!A1:Z, '10-20min'!A1:Z, '20-30min'!A1:Z, '30-40min'!A1:Z, '40-50min'!A1:Z, '50-60min'!A1:Z, '60Plusmin'!A1:Z"
       - name: Commit data and push
         run: |
           git config --global user.name "github-actions[bot]"
@@ -120,3 +118,7 @@ jobs:
           git add bolt-app/public/data/videos.* data/videos.json
           git commit -m "Update videos data" || echo "rien à valider"
           git push
+
+      - name: Report synchronization failure
+        if: steps.synchronization.outcome == 'failure'
+        run: exit 1

@@ -56,3 +56,26 @@ test('la date de publication vient du serveur et reste inconnue si absente ou in
     } finally { mock.restoreAll(); }
   }
 });
+
+test('la provenance partielle reste distincte de la disponibilité de la copie', async () => {
+  const metadata = { status: 'degraded', source: 'mixed', videoCount: 1, lastSuccessfulSync: '2026-10-10T12:00:00Z' };
+  mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ schemaVersion: 1, metadata, videos: validRows })));
+  try {
+    const { fetchLocalVideos } = await import('./local.ts');
+    const result = await fetchLocalVideos();
+    assert.equal(result.error, undefined);
+    assert.equal(result.data.length, 1);
+    assert.deepEqual(result.metadata?.sync, metadata);
+    assert.equal(result.metadata?.warnings, undefined);
+  } finally { mock.restoreAll(); }
+});
+
+test('des métadonnées invalides ne prouvent pas une synchronisation complète', async () => {
+  mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ videos: validRows, metadata: { status: 'complete', source: 'youtube', videoCount: 1, lastSuccessfulSync: 'invalid' } })));
+  try {
+    const { fetchLocalVideos } = await import('./local.ts');
+    const result = await fetchLocalVideos();
+    assert.equal(result.error, undefined);
+    assert.equal(result.metadata?.sync, undefined);
+  } finally { mock.restoreAll(); }
+});

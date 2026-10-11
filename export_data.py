@@ -31,6 +31,7 @@ import logging
 from typing import List
 
 import requests
+from sync_metadata import export_snapshot
 
 # En-têtes attendues (doivent correspondre à celles utilisées dans main.py)
 HEADERS = [
@@ -112,8 +113,7 @@ def main() -> int:
     data_dir.mkdir(parents=True, exist_ok=True)
     json_path = data_dir / "videos.json"
     try:
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(values, f, ensure_ascii=False, indent=2)
+        export_snapshot(json_path, values)
         logging.info("Données écrites dans %s", json_path)
     except Exception as e:
         logging.error("Erreur lors de l'écriture du fichier %s: %s", json_path, e)

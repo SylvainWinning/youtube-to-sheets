@@ -193,7 +193,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0 pb-4">
         <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
           {isLoading && hasLibrary ? 'Actualisation en cours. Les vidéos restent disponibles.'
-            : !isLoading && library.loadedAt !== null && !library.warning ? 'Bibliothèque à jour.' : ''}
+            : !isLoading && library.loadedAt !== null && !library.warning ? 'Bibliothèque chargée. Consultez son état de synchronisation.' : ''}
         </p>
         <LibraryNotice state={library} isLoading={isLoading} onRetry={loadVideos} />
         {(!isLoading || hasLibrary) && !appError && (

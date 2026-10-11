@@ -1,5 +1,5 @@
 import type { LibraryVideo, VideoData } from '../types/video.ts';
-import type { ApiResponse } from './api/sheets/types.ts';
+import type { ApiResponse, SyncMetadata } from './api/sheets/types.ts';
 import { assignCategories } from './assignCategories.ts';
 import { buildVideoLibrary } from './videoLibrary.ts';
 
@@ -10,6 +10,7 @@ export interface VideoLoadState {
   source: 'local' | 'sheets' | null;
   loadedAt: number | null;
   publishedAt?: number;
+  sync?: SyncMetadata;
 }
 
 export const emptyVideoLoadState: VideoLoadState = {
@@ -50,5 +51,6 @@ export function resolveVideoLoad(
     source: response.metadata?.source ?? 'local',
     loadedAt: response.metadata?.timestamp ?? Date.now(),
     publishedAt: response.metadata?.publishedAt,
+    sync: response.metadata?.sync,
   };
 }

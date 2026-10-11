@@ -3,6 +3,8 @@ import re
 import time
 import logging
 import json
+import csv
+from sync_metadata import read_snapshot, check_volume, write_snapshot, now, preserve_failed_sync
 from datetime import datetime
 import argparse
 
@@ -156,6 +158,8 @@ def load_cached_playlist_items(source_id: str, cache_path: str = "data/videos.js
             rows = json.load(cache_file)
     except (OSError, json.JSONDecodeError):
         return []
+    if isinstance(rows, dict):
+        rows = rows.get("videos", [])
     if not isinstance(rows, list) or not rows:
         return []
     headers = rows[0]
@@ -187,7 +191,7 @@ def load_cached_playlist_items(source_id: str, cache_path: str = "data/videos.js
 
 
 def fetch_all_playlist_items(
-    source_id: str, api_key: str, max_retries: int = 5, cache_path: str = "data/videos.json"
+    source_id: str, api_key: str, max_retries: int = 5, cache_path: str = "data/videos.json", report: dict | None = None
 ) -> list[dict]:
     """
     Récupère tous les items d’une playlist YouTube en gérant la pagination,
@@ -207,6 +211,7 @@ def fetch_all_playlist_items(
     backoff = 1
     page_sizes = [50, 25, 10, 5]
     page_size_index = 0
+    expected_total = None
     while True:
         data = None
         restart_pagination = False
@@ -234,6 +239,7 @@ def fetch_all_playlist_items(
                     params.pop("pageToken", None)
                     items.clear()
                     seen_item_ids.clear()
+                    expected_total = None
                     backoff = 1
                     restart_pagination = True
                     break
@@ -257,6 +263,8 @@ def fetch_all_playlist_items(
                                 "pour préserver %s vidéos de la playlist.",
                                 len(merged_items),
                             )
+                            if report is not None:
+                                report.update(status="degraded", source="mixed", freshCount=len(items), cacheCount=len(merged_items)-len(items))
                             return merged_items
                     logging.error(
                         "Toutes les tentatives (%s) ont échoué pour récupérer les items de la playlist.",
@@ -267,6 +275,9 @@ def fetch_all_playlist_items(
                 backoff = min(backoff * 2, 60)
         if restart_pagination:
             continue
+        total = data.get("pageInfo", {}).get("totalResults")
+        if isinstance(total, int):
+            expected_total = max(expected_total or 0, total)
         for item in data.get("items", []):
             item_id = item.get("id") or item.get("contentDetails", {}).get("videoId")
             if item_id and item_id in seen_item_ids:
@@ -278,6 +289,9 @@ def fetch_all_playlist_items(
         if not next_page_token:
             break
         params["pageToken"] = next_page_token
+    if report is not None:
+        report.update(status="complete" if expected_total is None or len(items) == expected_total else "degraded",
+                      source="youtube", freshCount=len(items), cacheCount=0, expectedCount=expected_total)
     return items
 
 
@@ -409,7 +423,7 @@ def write_category(service, spreadsheet_id: str, sheet_name: str, rows: list[lis
     ).execute()
 
 
-def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
+def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | None:
     """
     Récupère les vidéos d’une playlist YouTube et met à jour un Google Sheet.
     Regroupe les vidéos par catégorie de durée et alimente les onglets correspondants,
@@ -447,9 +461,14 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
     service = build("sheets", "v4", credentials=creds)
     all_items_by_playlist: list[tuple[str, list[dict]]] = []
     all_video_ids: list[str] = []
+    reports = []
+    previous_rows, previous_metadata = read_snapshot("data/videos.json")
+    attempt_at = now()
     for playlist_source_id in playlist_source_ids:
         try:
-            items = fetch_all_playlist_items(playlist_source_id, YOUTUBE_API_KEY)
+            report = {"playlistId": playlist_source_id}
+            items = fetch_all_playlist_items(playlist_source_id, YOUTUBE_API_KEY, report=report)
+            reports.append(report)
         except RuntimeError:
             logging.error("Impossible de récupérer les vidéos de la playlist %s", playlist_source_id)
             raise
@@ -477,11 +496,18 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
     }
     # Liste globale de toutes les vidéos
     all_videos: list[list] = []
+    cached_rows = {(row[2], row[15]): row for row in previous_rows[1:] if len(row) >= 16}
+    cached_detail_count = 0
     for playlist_source_id, items in all_items_by_playlist:
         for item in items:
             video_id = item["contentDetails"]["videoId"]
             video_link = f"https://www.youtube.com/watch?v={video_id}"
             info = videos_data.get(video_id, {})
+            if not info and (video_link, playlist_source_id) in cached_rows:
+                entry = list(cached_rows[(video_link, playlist_source_id)])
+                entry[14] = str(item.get("snippet", {}).get("position", entry[14]))
+                add_video_to_categories(entry, get_duration_category(entry[5]), videos_by_category, all_videos)
+                cached_detail_count += 1
             if info:
                 snippet = info.get("snippet", {})
                 stats = info.get("statistics", {})
@@ -514,25 +540,34 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> None:
                     playlist_source_id,
                 ]
                 add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
+    candidate = [HEADERS] + all_videos
+    complete = all(report.get("status") == "complete" for report in reports) and all(video_id in videos_data for video_id in all_video_ids)
+    metadata = {"lastSuccessfulSync": previous_metadata.get("lastSuccessfulSync"),
+                "lastAttempt": attempt_at, "publishedAt": now(), "status": "complete" if complete else "degraded",
+                "source": "mixed" if cached_detail_count or any(report.get("cacheCount", 0) for report in reports) else "youtube",
+                "cachedDetailCount": cached_detail_count, "missingDetailCount": len(set(all_video_ids) - videos_data.keys()), "playlists": reports}
+    try:
+        check_volume(candidate, previous_rows)
+        check_volume(candidate, read_snapshot("bolt-app/public/data/videos.json")[0])
+    except ValueError:
+        if previous_rows:
+            metadata.update(status="degraded", source="cache", warnings=["volume_drop_blocked"], lastSuccessfulSync=previous_metadata.get("lastSuccessfulSync"))
+            write_snapshot("data/videos.json", previous_rows, metadata)
+        raise
     # Écriture des données dans chaque onglet de catégorie
     for category_name, rows in videos_by_category.items():
         write_category(service, SPREADSHEET_ID, category_name, rows)
     # Enfin, écrire l’ensemble des vidéos dans l’onglet principal
     write_category(service, SPREADSHEET_ID, SHEET_TAB_NAME, all_videos)
 
-    # -----------------------------------------------------------------------
-    # Mise à jour du fichier local `data/videos.json` pour le mode hors‑ligne.
-    # Ce bloc écrit la liste complète des vidéos (y compris les plus récentes)
-    # dans le fichier JSON. Ainsi, même sans `SPREADSHEET_ID` ni `API_KEY`,
-    # l’application affichera les vidéos à jour.
-    try:
-        os.makedirs("data", exist_ok=True)
-        local_path = os.path.join("data", "videos.json")
-        with open(local_path, "w", encoding="utf-8") as f:
-            json.dump([HEADERS] + all_videos, f, ensure_ascii=False)
-        logging.info("Fichier local mis à jour : %s", local_path)
-    except Exception as e:
-        logging.error("Erreur lors de l'écriture de videos.json : %s", e)
+    if complete:
+        metadata["lastSuccessfulSync"] = now()
+    metadata["publishedAt"] = now()
+    write_snapshot("data/videos.json", candidate, metadata)
+    write_snapshot("bolt-app/public/data/videos.json", candidate, metadata)
+    with open("bolt-app/public/data/videos.csv", "w", newline="", encoding="utf-8") as public_csv:
+        csv.writer(public_csv).writerows(candidate)
+    return True
 
 
 if __name__ == "__main__":
@@ -543,4 +578,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--sheet-tab-name", default="AllVideos", help="Nom de l'onglet cible dans Google Sheets")
     args = parser.parse_args()
-    sync_videos(args.playlist_id, args.sheet_tab_name)
+    try:
+        if sync_videos(args.playlist_id, args.sheet_tab_name) is not True:
+            raise RuntimeError("Synchronisation non effectuée : configuration invalide")
+    except Exception:
+        preserve_failed_sync()
+        raise

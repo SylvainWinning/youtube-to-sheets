@@ -4,6 +4,9 @@ import re
 import json
 import csv
 import pathlib
+import sys
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+from sync_metadata import export_snapshot
 from typing import List
 
 from google.oauth2 import service_account
@@ -88,6 +91,9 @@ if all_values:
     rows = [row for row in rows if len(row) > 1 and row[1] != "Inconnu"]
     all_values = [header] + rows
 
+# Validate and publish provenance before replacing either export.
+export_snapshot(out_dir / "videos.json", all_values)
+
 # Save CSV
 
 
@@ -95,12 +101,3 @@ csv_path = out_dir / "videos.csv"
 with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
     writer = csv.writer(csvfile)
     writer.writerows(all_values)
-
-# Save JSON
-json_path = out_dir / "videos.json"
-with open(json_path, "w", encoding="utf-8") as jsonfile:
-    json.dump(all_values, jsonfile, ensure_ascii=False, indent=2)
-
-# Print lines for debugging
-for row in all_values:
-    print(row)
