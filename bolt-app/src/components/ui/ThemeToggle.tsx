@@ -1,21 +1,15 @@
-import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import type { ThemePreference } from '../../utils/preferences';
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-
+  const { preference, setThemePreference } = useTheme();
   return (
-    <button
-      onClick={toggleTheme}
-      className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors"
-      title={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'}
-    >
-      {theme === 'dark' ? (
-        <Sun className="w-5 h-5" />
-      ) : (
-        <Moon className="w-5 h-5" />
-      )}
-    </button>
+    <select aria-label="Thème" value={preference}
+      onChange={event => setThemePreference(event.target.value as ThemePreference)}
+      className="min-h-10 rounded-xl border border-gray-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-2 text-sm text-gray-700 dark:text-gray-100">
+      <option value="auto">Auto</option>
+      <option value="light">Clair</option>
+      <option value="dark">Sombre</option>
+    </select>
   );
 }
-

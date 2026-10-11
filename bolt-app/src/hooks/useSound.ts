@@ -1,7 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { audioManager } from '../utils/audio/AudioManager';
 
 export function useSound() {
+  const isEnabled = useSyncExternalStore(audioManager.subscribe, audioManager.getSnapshot, () => true);
   const playClick = useCallback(async () => {
     await audioManager.play('CLICK');
   }, []);
@@ -11,6 +12,7 @@ export function useSound() {
   }, []);
 
   return {
+    isEnabled,
     playClick,
     playHover,
     toggleAudio: audioManager.toggle.bind(audioManager),

@@ -1,3 +1,4 @@
+import { LIBRARY_SAVE_EVENT } from './libraryProgress.ts';
 import type { VideoData } from '../types/video.ts';
 import type { SheetTab } from '../types/sheets.ts';
 import { filterVideosByDuration } from './videoFilters.ts';
@@ -179,6 +180,8 @@ export function playVideo(video: VideoData | null) {
     if (isDuplicateOpen(webUrl)) {
       return;
     }
+
+    if (typeof window.dispatchEvent === 'function') window.dispatchEvent(new Event(LIBRARY_SAVE_EVENT));
 
     if (shouldOpenWebInNewTabOnMac()) {
       openUrlInSystem(webUrl);
