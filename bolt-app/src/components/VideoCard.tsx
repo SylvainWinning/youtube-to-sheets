@@ -34,7 +34,7 @@ export function VideoCard({ video }: VideoCardProps) {
         }
       }}
       onClick={handleClick}
-      className="group focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red cursor-pointer p-3 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-neu-base dark:bg-neutral-700/50 shadow-[2px_2px_4px_#d1d9e6,_-2px_-2px_4px_#ffffff] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.2),_-2px_-2px_4px_rgba(255,255,255,0.05)] hover:shadow-[4px_4px_8px_#d1d9e6,_-4px_-4px_8px_#ffffff] dark:hover:shadow-[4px_4px_8px_rgba(0,0,0,0.25),_-4px_-4px_8px_rgba(255,255,255,0.1)] flex flex-col"
+      className="group focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark cursor-pointer p-3 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-neu-base dark:bg-neutral-700/50 shadow-[2px_2px_4px_#d1d9e6,_-2px_-2px_4px_#ffffff] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.2),_-2px_-2px_4px_rgba(255,255,255,0.05)] hover:shadow-[4px_4px_8px_#d1d9e6,_-4px_-4px_8px_#ffffff] dark:hover:shadow-[4px_4px_8px_rgba(0,0,0,0.25),_-4px_-4px_8px_rgba(255,255,255,0.1)] flex flex-col"
     >
       <div className="relative aspect-video rounded-xl overflow-hidden mb-3 shadow-[inset_2px_2px_4px_rgba(209,217,230,0.4),_inset_-2px_-2px_4px_rgba(255,255,255,0.4)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),_inset_-2px_-2px_4px_rgba(255,255,255,0.05)]">
         <img
@@ -52,7 +52,7 @@ export function VideoCard({ video }: VideoCardProps) {
       </div>
 
       <div className="flex flex-col flex-1">
-        <h3 className="font-medium text-[14px] leading-5 text-youtube-black dark:text-white line-clamp-2 group-hover:text-youtube-red transition-colors mb-1">
+        <h3 className="font-medium text-[14px] leading-5 text-youtube-black dark:text-white line-clamp-2 group-hover:text-youtube-red-accessible dark:group-hover:text-youtube-red-accessible-dark transition-colors mb-1">
           {video.title}
         </h3>
 

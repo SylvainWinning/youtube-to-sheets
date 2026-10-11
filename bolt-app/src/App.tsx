@@ -148,7 +148,7 @@ export default function App() {
                   <RefreshCw
                     className={
                       'hidden sm:block h-5 w-5 text-youtube-gray-light dark:text-youtube-gray-dark transition-all ' +
-                      (isLoading ? 'animate-spin' : 'group-hover:text-youtube-red')
+                      (isLoading ? 'animate-spin' : 'group-hover:text-youtube-red-accessible dark:group-hover:text-youtube-red-accessible-dark')
                     }
                   />
                 </h1>

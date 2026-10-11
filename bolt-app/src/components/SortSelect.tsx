@@ -29,7 +29,7 @@ export function SortSelect({ options, onOptionsChange, className = '' }: SortSel
 
   return (
     <DropdownMenu
-      icon={<ArrowUpDown className="w-5 h-5 text-gray-500 group-hover:text-youtube-red transition-colors shrink-0" />}
+      icon={<ArrowUpDown className="w-5 h-5 text-gray-500 group-hover:text-youtube-red-accessible dark:group-hover:text-youtube-red-accessible-dark transition-colors shrink-0" />}
       label={getSelectedLabel(options)}
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}

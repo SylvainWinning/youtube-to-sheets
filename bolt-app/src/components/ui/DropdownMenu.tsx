@@ -53,7 +53,7 @@ export function DropdownMenu({
         onClick={onToggle}
         className={`neu-button px-3 sm:px-4 py-2 rounded-xl flex items-center gap-2 w-full group ${className}`}
       >
-        <span className="text-gray-500 group-hover:text-youtube-red transition-colors shrink-0">
+        <span className="text-gray-500 group-hover:text-youtube-red-accessible dark:group-hover:text-youtube-red-accessible-dark transition-colors shrink-0">
           {icon}
         </span>
         <span className="text-sm text-gray-700 dark:text-gray-200 truncate flex-1 text-left">
