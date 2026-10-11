@@ -65,7 +65,8 @@ test('le hasard attribue une même part à chaque vidéo, même avec les lignes 
 });
 
 test('le JSON réel conserve toutes les appartenances et l’ordre de chaque playlist après chargement et actualisation', () => {
-  const [, ...rows] = JSON.parse(readFileSync(new URL('../../../data/videos.json', import.meta.url), 'utf8'));
+  const snapshot = JSON.parse(readFileSync(new URL('../../../data/videos.json', import.meta.url), 'utf8'));
+  const [, ...rows] = Array.isArray(snapshot) ? snapshot : snapshot.videos;
   const entries: VideoData[] = rows.map(mapRowToVideo);
   const state = resolveVideoLoad({ data: entries }, emptyVideoLoadState);
   assert.equal(state.videos.length, new Set(entries.map(getVideoIdentity)).size);
