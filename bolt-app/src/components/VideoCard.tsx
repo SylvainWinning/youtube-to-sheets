@@ -5,6 +5,8 @@ import { formatDuration } from '../utils/durationUtils';
 import { formatPublishDate } from '../utils/timeUtils';
 import { playVideo } from '../utils/videoUtils';
 import { useSound } from '../hooks/useSound';
+import { getPlaylistIds } from '../utils/videoLibrary';
+import { getPlaylistLabel } from './PlaylistSelect';
 
 interface VideoCardProps {
   video: VideoData;
@@ -12,6 +14,8 @@ interface VideoCardProps {
 
 export function VideoCard({ video }: VideoCardProps) {
   const { playClick } = useSound();
+  const playlists = getPlaylistIds([video]);
+  const membershipLabel = `Présente dans : ${playlists.map(getPlaylistLabel).join(', ')}`;
 
   const handleClick = () => {
     playClick();
@@ -66,6 +70,12 @@ export function VideoCard({ video }: VideoCardProps) {
           )}
           <div>{video.channel}</div>
         </div>
+
+        {playlists.length > 1 && (
+          <span className="text-xs text-youtube-gray-dark dark:text-gray-300 mb-1" title={membershipLabel} aria-label={membershipLabel}>
+            {playlists.length} playlists
+          </span>
+        )}
 
         <div className="mt-auto flex items-center gap-1 text-[13px] text-youtube-gray-dark dark:text-gray-400">
           <span className="flex items-center gap-1">

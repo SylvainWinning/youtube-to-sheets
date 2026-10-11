@@ -8,6 +8,7 @@ import { getUniqueCategories } from '../utils/getUniqueCategories';
 import { getOptionValue, getSelectedLabel } from '../utils/sort/utils';
 import { getVideoCountByDuration } from '../utils/videoFilters';
 import { SHEET_TABS } from '../utils/constants';
+import { getPlaylistIds } from '../utils/videoLibrary';
 
 interface MobileFilterBarProps {
   videos: VideoData[];
@@ -34,8 +35,7 @@ export function MobileFilterBar({
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelId = React.useId();
   const categories = React.useMemo(() => getUniqueCategories(videos), [videos]);
-  const playlistIds = React.useMemo(() => [...new Set(videos.map(v => v.playlistId)
-    .filter((id): id is string => Boolean(id)))].sort((a, b) => {
+  const playlistIds = React.useMemo(() => getPlaylistIds(videos).sort((a, b) => {
       if (a === PRIMARY_PLAYLIST_ID) return -1;
       if (b === PRIMARY_PLAYLIST_ID) return 1;
       return getPlaylistLabel(a).localeCompare(getPlaylistLabel(b), 'fr');

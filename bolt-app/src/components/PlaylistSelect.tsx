@@ -3,6 +3,7 @@ import { ListVideo } from 'lucide-react';
 import type { VideoData } from '../types/video';
 import { DropdownMenu } from './ui/DropdownMenu';
 import { DropdownItem } from './ui/DropdownItem';
+import { getPlaylistIds } from '../utils/videoLibrary';
 
 const PLAYLIST_LABELS: Record<string, string> = {
   PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR: 'Playlist principale',
@@ -33,7 +34,7 @@ export function PlaylistSelect({
   const [isOpen, setIsOpen] = React.useState(false);
   const playlistIds = React.useMemo(
     () => {
-      const ids = Array.from(new Set(videos.map(v => v.playlistId).filter(Boolean) as string[]));
+      const ids = getPlaylistIds(videos);
       return ids.sort((a, b) => {
         if (a === PRIMARY_PLAYLIST_ID) return -1;
         if (b === PRIMARY_PLAYLIST_ID) return 1;

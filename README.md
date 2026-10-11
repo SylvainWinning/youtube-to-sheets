@@ -140,3 +140,8 @@ ce contrôle est également exécuté en CI. Une nouvelle alerte fait échouer c
 
 Tailwind 4 cible Safari 16.4+, Chrome 111+ et Firefox 128+. Les navigateurs plus
 anciens ne sont plus couverts par cette version du moteur CSS.
+# Bibliothèque et playlists
+
+Le JSON publié conserve une ligne par appartenance à une playlist. L’interface regroupe ces lignes par identifiant vidéo YouTube (ou par URL exacte pour les autres liens) dans une bibliothèque de vidéos uniques. La première fiche fournit les métadonnées; toutes les appartenances et leurs positions sont conservées séparément, y compris les répétitions dans une même playlist.
+
+« Toutes les playlists », les compteurs de durée et le tirage aléatoire utilisent des vidéos distinctes. Une vidéo partagée porte la mention « 2 playlists ». Dans une playlist sélectionnée, le tri « Playlist d’origine » utilise sa position propre; en cas de répétition, la première position est retenue pour l’affichage unique. Les données sources ne sont pas supprimées ni réécrites par ce regroupement.
