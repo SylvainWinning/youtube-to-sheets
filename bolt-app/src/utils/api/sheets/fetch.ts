@@ -1,4 +1,5 @@
 import type { SheetResponse } from './types.ts';
+import { fetchJsonWithRetry, throwIfAborted } from '../../requestPolicy.ts';
 import { SPREADSHEET_ID, YOUTUBE_API_KEY } from '../../constants.ts';
 
 const RATE_LIMIT = {
@@ -6,12 +7,6 @@ const RATE_LIMIT = {
   lastReset: Date.now(),
   resetInterval: 60000, // 1 minute
   maxRequests: 60
-};
-
-const RETRY_CONFIG = {
-  maxRetries: 3,
-  baseDelay: 1000,
-  maxDelay: 5000
 };
 
 function checkRateLimit() {
@@ -28,61 +23,17 @@ function checkRateLimit() {
   RATE_LIMIT.requests++;
 }
 
-async function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function fetchWithRetry(url: string, retryCount = 0): Promise<Response> {
+export async function fetchSheetData(range: string, signal?: AbortSignal, beforeAttempt?: () => void): Promise<SheetResponse> {
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-
-    // Handle rate limiting
-    if (response.status === 429) {
-      const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
-      await sleep(retryAfter * 1000);
-      return fetchWithRetry(url, retryCount);
-    }
-
-    // Handle other error responses
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: { message: `HTTP error ${response.status}` } }));
-      throw new Error(errorData.error?.message || `HTTP error ${response.status}`);
-    }
-
-    return response;
-  } catch (error) {
-    console.error('Fetch error:', error instanceof Error ? error.message : 'Unknown error');
-
-    if (retryCount < RETRY_CONFIG.maxRetries) {
-      const delay = Math.min(
-        RETRY_CONFIG.baseDelay * Math.pow(2, retryCount),
-        RETRY_CONFIG.maxDelay
-      );
-      
-      console.log(`Retrying (${retryCount + 1}/${RETRY_CONFIG.maxRetries}) in ${delay}ms`);
-      await sleep(delay);
-      return fetchWithRetry(url, retryCount + 1);
-    }
-
-    throw error;
-  }
-}
-
-export async function fetchSheetData(range: string): Promise<SheetResponse> {
-  try {
-    checkRateLimit();
 
     // Properly encode the range parameter
     const encodedRange = encodeURIComponent(range);
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodedRange}?key=${YOUTUBE_API_KEY}`;
     
-    const response = await fetchWithRetry(url);
-    const data = await response.json();
+    const data = await fetchJsonWithRetry<{ values?: any[][] }>(url, {
+      signal, onAttempt: () => { beforeAttempt?.(); checkRateLimit(); },
+      init: { method: 'GET', headers: { Accept: 'application/json' } },
+    });
     
     if (!data.values) {
       console.warn(`No data found for tab: ${range}`);
@@ -91,6 +42,7 @@ export async function fetchSheetData(range: string): Promise<SheetResponse> {
 
     return { values: data.values };
   } catch (error) {
+    throwIfAborted(signal);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Sheet data fetch error:', {
       range,

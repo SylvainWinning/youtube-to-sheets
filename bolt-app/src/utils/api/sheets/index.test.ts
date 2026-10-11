@@ -201,3 +201,50 @@ test('fetchAllVideos keeps local data when synchronization fails', async () => {
     process.env.YOUTUBE_API_KEY = originalApiKey;
   }
 });
+
+test('le budget global coupe les reprises parallèles et conserve la copie locale', async t => {
+  const oldId = process.env.SPREADSHEET_ID; const oldKey = process.env.YOUTUBE_API_KEY;
+  process.env.SPREADSHEET_ID = 'a'.repeat(44); process.env.YOUTUBE_API_KEY = 'qa-only';
+  t.after(() => {
+    if (oldId === undefined) delete process.env.SPREADSHEET_ID; else process.env.SPREADSHEET_ID = oldId;
+    if (oldKey === undefined) delete process.env.YOUTUBE_API_KEY; else process.env.YOUTUBE_API_KEY = oldKey;
+  });
+  const { LOAD_MAX_ATTEMPTS } = await import('../../requestPolicy.ts');
+  const { fetchAllVideos } = await import('./index.ts');
+  let calls = 0;
+  t.mock.method(globalThis, 'fetch', async (input: string) => {
+    calls++;
+    if (input.includes('data/videos.json')) return new Response(JSON.stringify([[], ['', 'Local', 'https://youtu.be/local', 'Channel', '2020-01-01', 'PT10M', '0', '0', '0', '', '', '', '']]));
+    return new Response('', { status: 429, headers: { 'Retry-After': '0' } });
+  });
+  t.mock.method(console, 'error', () => {}); t.mock.method(console, 'warn', () => {});
+  const result = await fetchAllVideos();
+  assert.equal(result.data[0].title, 'Local');
+  assert.equal(result.error, undefined);
+  assert.ok(result.metadata?.warnings?.length);
+  assert.ok(calls <= LOAD_MAX_ATTEMPTS && calls > 4);
+  assert.ok(result.metadata?.warnings?.some(message => message.includes('Budget de requêtes')));
+});
+
+test('la durée globale couvre la synchronisation entière, pas seulement chaque requête', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const oldId = process.env.SPREADSHEET_ID; const oldKey = process.env.YOUTUBE_API_KEY;
+  process.env.SPREADSHEET_ID = 'a'.repeat(44); process.env.YOUTUBE_API_KEY = 'qa-only';
+  t.after(() => {
+    if (oldId === undefined) delete process.env.SPREADSHEET_ID; else process.env.SPREADSHEET_ID = oldId;
+    if (oldKey === undefined) delete process.env.YOUTUBE_API_KEY; else process.env.YOUTUBE_API_KEY = oldKey;
+  });
+  const signals: AbortSignal[] = [];
+  t.mock.method(globalThis, 'fetch', async (input: string, init: RequestInit) => {
+    if (input.includes('data/videos.json')) return new Response(JSON.stringify([[], ['', 'Local', 'https://youtu.be/local', 'Channel', '2020-01-01', 'PT10M', '0', '0', '0', '', '', '', '']]));
+    signals.push(init.signal as AbortSignal); return new Promise(() => {});
+  });
+  t.mock.method(console, 'error', () => {}); t.mock.method(console, 'warn', () => {});
+  const { fetchAllVideos } = await import('./index.ts');
+  const result = fetchAllVideos();
+  const flush = async () => { for (let i = 0; i < 80; i++) await Promise.resolve(); };
+  await flush(); t.mock.timers.tick(15000); await flush(); t.mock.timers.tick(5000); await flush();
+  const response = await result;
+  assert.equal(response.data[0].title, 'Local'); assert.ok(response.metadata?.warnings?.length);
+  assert.ok(signals.length > 0 && signals.every(signal => signal.aborted));
+});
