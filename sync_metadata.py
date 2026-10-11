@@ -74,6 +74,7 @@ def export_snapshot(path, rows, reference="data/videos.json"):
     matched = provenance.get("dataHash") == fingerprint(rows)
     metadata = dict(provenance if matched else old)
     if not matched:
+        metadata.pop("privateVideoCount", None)
         metadata.update(status="unknown", source="sheets", warnings=["sync_not_verified"])
     metadata["publishedAt"] = now()
     write_snapshot(path, rows, metadata)

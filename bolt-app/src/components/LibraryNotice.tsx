@@ -14,7 +14,8 @@ export function LibraryNotice({ state, isLoading, onRetry }: LibraryNoticeProps)
   return (
     <section aria-label="État de la bibliothèque" className="mb-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-slate-700 dark:text-slate-200">
       <div role="status" aria-live="polite">
-        <p className="font-medium">{sync?.videoCount ?? state.videos.length} vidéos · {sync ? sources[sync.source] : "Copie locale"} · {sync?.status === "complete" ? "Synchronisation complète" : sync?.status === "degraded" ? "Synchronisation partielle" : "Exhaustivité non vérifiée"}</p>
+        <p className="font-medium">{sync?.videoCount ?? state.videos.length} vidéos disponibles{sync?.privateVideoCount ? <> · {sync.privateVideoCount} {sync.privateVideoCount === 1 ? "vidéo privée" : "vidéos privées"}</> : null}</p>
+        <p className="mt-1 text-sm">{sync ? sources[sync.source] : "Copie locale"} · {sync?.status === "complete" ? "Synchronisation complète" : sync?.status === "degraded" ? "Synchronisation partielle" : "Exhaustivité non vérifiée"}</p>
         <p className="mt-1 text-sm">{sync?.lastSuccessfulSync ? <>Dernière synchronisation complète : <time dateTime={sync.lastSuccessfulSync}>{date(Date.parse(sync.lastSuccessfulSync))}</time>.</> : "Date de dernière synchronisation complète inconnue."}</p>
         {sync?.status === "degraded" && <p className="mt-1 text-sm">La bibliothèque reste disponible, mais certaines données proviennent du cache ou n’ont pas pu être vérifiées.</p>}
         {sync?.lastAttempt && sync.status !== "complete" && <p className="mt-1 text-sm">Dernière tentative : <time dateTime={sync.lastAttempt}>{date(Date.parse(sync.lastAttempt))}</time>.</p>}

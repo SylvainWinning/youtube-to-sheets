@@ -201,7 +201,7 @@ def fetch_all_playlist_items(
     """
     base_url = "https://www.googleapis.com/youtube/v3/playlistItems"
     params = {
-        "part": "snippet,contentDetails",
+        "part": "snippet,contentDetails,status",
         "playlistId": source_id,
         "maxResults": 50,
         "key": api_key,
@@ -482,6 +482,19 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | N
         all_video_ids.extend(it["contentDetails"]["videoId"] for it in items)
 
     videos_data = fetch_videos_details(list(dict.fromkeys(all_video_ids)), YOUTUBE_API_KEY)
+    # Only fresh, explicit YouTube placeholders explain missing details.
+    # Conflicting membership evidence must remain an incomplete synchronization.
+    missing_ids = set(all_video_ids) - videos_data.keys()
+    memberships = {}
+    for _, items in all_items_by_playlist:
+        for item in items:
+            memberships.setdefault(item["contentDetails"]["videoId"], []).append(item)
+    private_ids = {identifier for identifier in missing_ids if all(
+        item.get("snippet", {}).get("title") == "Private video"
+        and item.get("status", {}).get("privacyStatus") == "private"
+        for item in memberships[identifier]
+    )}
+    unresolved_ids = missing_ids - private_ids
     # Catégories de durée pré‑définies
     videos_by_category: dict[str, list] = {
         "0-5min": [],
@@ -501,6 +514,8 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | N
     for playlist_source_id, items in all_items_by_playlist:
         for item in items:
             video_id = item["contentDetails"]["videoId"]
+            if video_id in private_ids:
+                continue
             video_link = f"https://www.youtube.com/watch?v={video_id}"
             info = videos_data.get(video_id, {})
             if not info and (video_link, playlist_source_id) in cached_rows:
@@ -541,17 +556,17 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | N
                 ]
                 add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
     candidate = [HEADERS] + all_videos
-    complete = all(report.get("status") == "complete" for report in reports) and all(video_id in videos_data for video_id in all_video_ids)
+    complete = all(report.get("status") == "complete" for report in reports) and not unresolved_ids
     metadata = {"lastSuccessfulSync": previous_metadata.get("lastSuccessfulSync"),
                 "lastAttempt": attempt_at, "publishedAt": now(), "status": "complete" if complete else "degraded",
                 "source": "mixed" if cached_detail_count or any(report.get("cacheCount", 0) for report in reports) else "youtube",
-                "cachedDetailCount": cached_detail_count, "missingDetailCount": len(set(all_video_ids) - videos_data.keys()), "playlists": reports}
+                "cachedDetailCount": cached_detail_count, "missingDetailCount": len(unresolved_ids), "privateVideoCount": len(private_ids), "playlists": reports}
     try:
         check_volume(candidate, previous_rows)
         check_volume(candidate, read_snapshot("bolt-app/public/data/videos.json")[0])
     except ValueError:
         if previous_rows:
-            metadata.update(status="degraded", source="cache", warnings=["volume_drop_blocked"], lastSuccessfulSync=previous_metadata.get("lastSuccessfulSync"))
+            metadata = {**previous_metadata, "status": "degraded", "source": "cache", "warnings": ["volume_drop_blocked"], "lastAttempt": attempt_at, "publishedAt": now()}
             write_snapshot("data/videos.json", previous_rows, metadata)
         raise
     # Écriture des données dans chaque onglet de catégorie

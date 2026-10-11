@@ -30,9 +30,11 @@ export async function fetchLocalVideos(signal?: AbortSignal, beforeAttempt?: () 
     const raw = envelope?.metadata as Partial<SyncMetadata> | undefined;
     const sync = raw && ["complete", "degraded", "unknown"].includes(raw.status ?? "") && ["youtube", "mixed", "cache", "sheets"].includes(raw.source ?? "")
       && Number.isInteger(raw.videoCount) && raw.videoCount === new Set(videos.map(video => video.link)).size
+      && (raw.privateVideoCount === undefined || (Number.isSafeInteger(raw.privateVideoCount) && raw.privateVideoCount >= 0))
       && (raw.lastSuccessfulSync == null || (typeof raw.lastSuccessfulSync === "string" && Number.isFinite(Date.parse(raw.lastSuccessfulSync))))
       && (raw.status !== "complete" || typeof raw.lastSuccessfulSync === "string")
       ? { status: raw.status, source: raw.source, videoCount: raw.videoCount, lastSuccessfulSync: raw.lastSuccessfulSync,
+          ...(raw.privateVideoCount !== undefined ? { privateVideoCount: raw.privateVideoCount } : {}),
           ...(typeof raw.lastAttempt === "string" && Number.isFinite(Date.parse(raw.lastAttempt)) ? { lastAttempt: raw.lastAttempt } : {}) } as SyncMetadata : undefined;
     return {
       data: videos,
