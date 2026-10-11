@@ -16,10 +16,12 @@ export function VideoGrid({ videos }: VideoGridProps) {
   const restorePending = useRef(restored);
   const gridRef = useRef<HTMLDivElement>(null);
   const nextFocusIndex = useRef<number | null>(null);
+  const [batchAnnouncement, setBatchAnnouncement] = useState('');
 
   // New filter results start at one batch. Unrelated app updates preserve
   // the memoized array, mounted cards, focus and the reading position.
   if (page.videos !== videos) {
+    setBatchAnnouncement('');
     restorePending.current = null;
     nextFocusIndex.current = null;
     setPage({ videos, count: batchSize });
@@ -69,15 +71,18 @@ export function VideoGrid({ videos }: VideoGridProps) {
         ))}
       </div>
       <div className="flex flex-col items-center gap-3 py-6">
-        <p role="status" aria-live="polite" aria-atomic="true" className="text-sm text-youtube-gray-dark dark:text-gray-300">
+        <p className="text-sm text-youtube-gray-dark dark:text-gray-300">
           {visibleCount} vidéo{visibleCount === 1 ? '' : 's'} affichée{visibleCount === 1 ? '' : 's'} sur {videos.length}
         </p>
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">{batchAnnouncement}</p>
         {remainingCount > 0 && (
           <button
             type="button"
             className="neu-button rounded-xl px-4 py-3 text-gray-700 dark:text-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark"
             onClick={() => {
               nextFocusIndex.current = visibleCount;
+              const count = Math.min(visibleCount + batchSize, videos.length);
+              setBatchAnnouncement(`${count} vidéos affichées sur ${videos.length}.`);
               setPage(current => ({ ...current, count: current.count + batchSize }));
             }}
           >

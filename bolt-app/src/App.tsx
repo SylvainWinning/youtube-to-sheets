@@ -5,7 +5,9 @@ import { DurationTabs } from './components/DurationTabs';
 import { SearchBar } from './components/SearchBar';
 import { SortSelect } from './components/SortSelect';
 import { CategorySelect } from './components/CategorySelect';
-import { PlaylistSelect } from './components/PlaylistSelect';
+import { PlaylistSelect, getPlaylistLabel } from './components/PlaylistSelect';
+import { ActiveFilters, type ActiveFilter } from './components/ActiveFilters';
+import { getSelectedLabel } from './utils/sort/utils';
 import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
 import { LibraryNotice } from './components/LibraryNotice';
@@ -126,6 +128,31 @@ export default function App() {
   );
 
   const appError = videosError;
+  const clearFilters = () => {
+    clearLibraryProgress();
+    setSearchFilters(filters => ({ ...filters, query: '' }));
+    setSelectedTab(-1);
+    setSelectedCategory(null);
+    setSelectedPlaylistId(null);
+    setSortOptions(null);
+  };
+  const activeFilters: ActiveFilter[] = [];
+  if (searchFilters.query.trim()) activeFilters.push({
+    id: 'search', label: `Recherche : ${searchFilters.query.trim()}`,
+    onRemove: () => setSearchFilters(filters => ({ ...filters, query: '' })),
+  });
+  if (selectedCategory) activeFilters.push({
+    id: 'category', label: `Catégorie : ${selectedCategory}`, onRemove: () => setSelectedCategory(null),
+  });
+  if (selectedPlaylistId) activeFilters.push({
+    id: 'playlist', label: `Playlist : ${getPlaylistLabel(selectedPlaylistId)}`, onRemove: () => setSelectedPlaylistId(null),
+  });
+  if (selectedTab !== -1) activeFilters.push({
+    id: 'duration', label: `Durée : ${SHEET_TABS[selectedTab].name}`, onRemove: () => setSelectedTab(-1),
+  });
+  if (sortOptions) activeFilters.push({
+    id: 'sort', label: `Tri : ${getSelectedLabel(sortOptions)}`, onRemove: () => setSortOptions(null),
+  });
 
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden pt-2">
@@ -208,19 +235,14 @@ export default function App() {
                 videos={filteredByPlaylist}
               />
             </div>
+            <ActiveFilters resultCount={sortedVideos.length} filters={activeFilters} onClear={clearFilters} />
           </>
         )}
         {isLoading && !hasLibrary && <LoadingState />}
         {appError && <ErrorState message={appError} onRetry={loadVideos} />}
         {(!isLoading || hasLibrary) && !appError && (sortedVideos.length > 0 ? <VideoGrid videos={sortedVideos} /> : (
           <div className="py-8 text-center text-youtube-black dark:text-white">
-            <p role="status">Aucune vidéo ne correspond à votre recherche ou aux filtres sélectionnés.</p>
-            <button type="button" className="neu-button rounded-xl px-4 py-2 mt-4" onClick={() => {
-              setSearchFilters(filters => ({ ...filters, query: '' }));
-              setSelectedTab(-1);
-              setSelectedCategory(null);
-              setSelectedPlaylistId(null);
-            }}>Effacer les filtres</button>
+            <p>Aucune vidéo ne correspond à votre recherche ou aux filtres sélectionnés.</p>
           </div>
         ))}
       </main>
