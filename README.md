@@ -130,3 +130,13 @@ tout en conservant les dates sans heure dans le calendrier local.
 Le workflow `Frontend checks` vérifie le typage, les tests dans quatre fuseaux
 (UTC, Europe/Paris, America/Los_Angeles, Asia/Tokyo), le lint et la compilation.
 `npm run build` vérifie également le typage avant de compiler avec Vite.
+
+## Dépendances de l’interface
+
+Les bibliothèques Google Node ne sont pas nécessaires au navigateur. Les mises à
+jour compatibles, la migration Vite 8 et la migration Tailwind 4 sont validées
+séparément. `npm run audit` vérifie les dépendances de production et de build;
+ce contrôle est également exécuté en CI. Une nouvelle alerte fait échouer ce contrôle.
+
+Tailwind 4 cible Safari 16.4+, Chrome 111+ et Firefox 128+. Les navigateurs plus
+anciens ne sont plus couverts par cette version du moteur CSS.

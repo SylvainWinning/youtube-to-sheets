@@ -42,7 +42,7 @@ export function VideoCard({ video }: VideoCardProps) {
           height={270}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 text-white text-xs font-medium rounded">
+        <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 text-white text-xs font-medium rounded-sm">
           {formatDuration(video.duration)}
         </div>
       </div>
