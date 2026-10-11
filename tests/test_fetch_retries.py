@@ -79,3 +79,36 @@ def test_fetch_videos_details_max_retries(monkeypatch):
     details = fetch_videos_details(["id1"], "key", max_retries=3)
     assert details == {}
     assert calls["count"] == 3
+
+
+def test_pagination_cache_is_explicitly_degraded(monkeypatch, tmp_path):
+    cache = tmp_path / 'videos.json'
+    cache.write_text(json.dumps({'schemaVersion': 1, 'metadata': {}, 'videos': [
+        ['link', 'playlistPosition', 'playlistId'],
+        ['https://youtu.be/abcdefghijk', '0', 'playlist'],
+        ['https://youtu.be/lmnopqrstuv', '1', 'playlist'],
+    ]}))
+    def get(url, params, **kwargs):
+        response = requests.Response()
+        response.url = url
+        response.status_code = 404 if params.get('pageToken') else 200
+        response._content = json.dumps({'items': [{'id': 'fresh', 'contentDetails': {'videoId': 'abcdefghijk'}}], 'nextPageToken': 'stale'}).encode()
+        return response
+    monkeypatch.setattr(requests, 'get', get)
+    report = {}
+    items = fetch_all_playlist_items('playlist', 'key', max_retries=1, cache_path=str(cache), report=report)
+    assert len(items) == 2
+    assert report == {'status': 'degraded', 'source': 'mixed', 'freshCount': 1, 'cacheCount': 1}
+
+
+def test_inconsistent_total_never_proves_complete_pagination(monkeypatch):
+    def get(url, **kwargs):
+        response = requests.Response()
+        response.status_code = 200
+        response._content = json.dumps({'items': [{'id': 'one'}], 'pageInfo': {'totalResults': 2}}).encode()
+        return response
+    monkeypatch.setattr(requests, 'get', get)
+    report = {}
+    fetch_all_playlist_items('playlist', 'key', report=report)
+    assert report['status'] == 'degraded'
+    assert report['expectedCount'] == 2

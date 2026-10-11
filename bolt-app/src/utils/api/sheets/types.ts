@@ -1,3 +1,11 @@
+export interface SyncMetadata {
+  lastSuccessfulSync?: string | null;
+  lastAttempt?: string;
+  status: "complete" | "degraded" | "unknown";
+  source: "youtube" | "mixed" | "cache" | "sheets";
+  videoCount: number;
+}
+
 export interface SheetError {
   error: {
     code: number;
@@ -16,6 +24,7 @@ export interface ApiResponse<T> {
   error?: string;
   metadata?: {
     warnings?: string[];
+    sync?: SyncMetadata;
     source: 'local' | 'sheets';
     /** Time this valid response was loaded, not the age of the underlying data. */
     timestamp: number;

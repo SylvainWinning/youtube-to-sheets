@@ -145,3 +145,26 @@ anciens ne sont plus couverts par cette version du moteur CSS.
 Le JSON publié conserve une ligne par appartenance à une playlist. L’interface regroupe ces lignes par identifiant vidéo YouTube (ou par URL exacte pour les autres liens) dans une bibliothèque de vidéos uniques. La première fiche fournit les métadonnées; toutes les appartenances et leurs positions sont conservées séparément, y compris les répétitions dans une même playlist.
 
 « Toutes les playlists », les compteurs de durée et le tirage aléatoire utilisent des vidéos distinctes. Une vidéo partagée porte la mention « 2 playlists ». Dans une playlist sélectionnée, le tri « Playlist d’origine » utilise sa position propre; en cas de répétition, la première position est retenue pour l’affichage unique. Les données sources ne sont pas supprimées ni réécrites par ce regroupement.
+
+### Fraîcheur et exhaustivité de la bibliothèque
+
+Le JSON publié contient `schemaVersion: 1`, `videos` (en-têtes et lignes) et
+`metadata`. Les anciennes copies sous forme de tableau restent lisibles, mais
+leur exhaustivité et leur date de synchronisation sont affichées comme inconnues.
+`lastSuccessfulSync` avance uniquement après récupération complète de toutes les
+playlists et des détails vidéo, puis écriture réussie dans Google Sheets.
+`lastAttempt` décrit la tentative ; `publishedAt` décrit la publication de la copie.
+Le chargement du navigateur n'est jamais présenté comme une synchronisation YouTube.
+
+`status` vaut `complete`, `degraded` ou `unknown` ; `source` vaut `youtube`,
+`mixed`, `cache` ou `sheets`. Le nombre de vidéos est dédupliqué, tandis que
+`rowCount` conserve les appartenances aux playlists. Un export Sheets ne reprend
+la provenance vérifiée que si son empreinte correspond aux données synchronisées.
+Les données sans preuve de synchronisation sont signalées comme non vérifiées.
+
+Avant de modifier les onglets ou de publier un export, toute copie vide ou baisse
+supérieure à 20 % du total ou d'une playlist est refusée. La limite est configurable
+avec `MAX_VIDEO_DROP_RATIO` (valeur entre 0 inclus et 1 exclu) pour une suppression
+volontaire vérifiée. Un échec de synchronisation conserve les vidéos précédentes,
+publie leur état dégradé et laisse le workflow en échec. Le déploiement peut ainsi
+mettre à jour l'information de panne sans publier une bibliothèque amputée.

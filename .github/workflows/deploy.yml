@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success') }}
+    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository && (github.event.workflow_run.conclusion == 'success' || (github.event.workflow_run.name == 'YouTube to Sheets Sync' && github.event.workflow_run.conclusion == 'failure'))) }}
     runs-on: ubuntu-latest
 
     steps:
@@ -27,6 +27,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          ref: main
           fetch-depth: 0  # nécessaire pour l’historique complet
 
       # 2. Configure Node.js (version et cache)
