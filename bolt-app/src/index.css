@@ -1,8 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss" source(none);
+@config "../tailwind.config.js";
+@source "./";
+@source "../index.html";
 
 @layer base {
+  /* Preserve the v3 defaults while the utility engine moves to v4. */
+  *, ::before, ::after {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
   }
@@ -32,7 +42,7 @@
   }
   
   .neu-input {
-    @apply bg-neu-base dark:bg-neutral-700/50 shadow-neu-pressed dark:shadow-neu-pressed-dark focus:shadow-neu-concave dark:focus:shadow-neu-concave-dark outline-none transition-shadow duration-150;
+    @apply bg-neu-base dark:bg-neutral-700/50 shadow-neu-pressed dark:shadow-neu-pressed-dark focus:shadow-neu-concave dark:focus:shadow-neu-concave-dark outline-hidden transition-shadow duration-150;
   }
   
   .neu-card {
@@ -40,7 +50,7 @@
   }
   
   .neu-select {
-    @apply bg-neu-base dark:bg-neutral-700/50 shadow-neu-pressed dark:shadow-neu-pressed-dark focus:shadow-neu-concave dark:focus:shadow-neu-concave-dark outline-none transition-shadow duration-150;
+    @apply bg-neu-base dark:bg-neutral-700/50 shadow-neu-pressed dark:shadow-neu-pressed-dark focus:shadow-neu-concave dark:focus:shadow-neu-concave-dark outline-hidden transition-shadow duration-150;
   }
 
   .neu-badge {

@@ -28,6 +28,7 @@ jobs:
           cache: npm
           cache-dependency-path: bolt-app/package-lock.json
       - run: npm ci
+      - run: npm run audit
       - run: npm run typecheck
       - run: npm run lint
       - name: Test in multiple timezones
