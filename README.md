@@ -54,9 +54,12 @@ Ne place pas de secrets dans l’URL, les fichiers du dossier `public` ou les do
 
 ### Démarrer l’interface web
 
+Node.js 24 est utilisé pour le développement, les tests et le build Pages
+(`bolt-app/.nvmrc`).
+
 Installation :
 ```bash
-cd bolt-app && npm install
+cd bolt-app && npm ci
 ```
 
 Mode développement :
