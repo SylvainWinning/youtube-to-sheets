@@ -7,12 +7,13 @@ import { mapRowToVideo } from './transform.ts';
 export async function fetchLocalVideos(signal?: AbortSignal, beforeAttempt?: () => void): Promise<ApiResponse<VideoData[]>> {
   try {
     const baseUrl = (import.meta as any).env?.BASE_URL ?? '';
-    const url = `${baseUrl}data/videos.json?t=${Date.now()}`;
+    const url = `${baseUrl}data/videos.json`;
     let modified = NaN;
     const json = await fetchJsonWithRetry<unknown>(url, {
       signal, policy: { ...REQUEST_POLICY, maxAttempts: 1, totalTimeoutMs: 5_000 },
       onAttempt: beforeAttempt,
-      init: { cache: 'no-store' },
+      // Revalidate the stable URL using the browser's cached body and validators.
+      init: { cache: 'no-cache' },
       onResponse: response => { modified = Date.parse(response.headers.get('Last-Modified') ?? ''); },
     });
     if (!Array.isArray(json) || !json.every(Array.isArray)) {

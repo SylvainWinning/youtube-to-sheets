@@ -37,8 +37,12 @@ export function resolveVideoLoad(
     };
   }
 
+  const videos = buildVideoLibrary(assignCategories(response.data));
+  // A revalidated snapshot can be unchanged. Keep the array identity so the
+  // grid retains its loaded batches, focus and reading position.
+  const unchanged = JSON.stringify(videos) === JSON.stringify(previous.videos);
   return {
-    videos: buildVideoLibrary(assignCategories(response.data)),
+    videos: unchanged ? previous.videos : videos,
     error: null,
     warning: response.metadata?.warnings?.length
       ? 'La connexion à Google Sheets n’a pas abouti. La copie locale reste disponible.'

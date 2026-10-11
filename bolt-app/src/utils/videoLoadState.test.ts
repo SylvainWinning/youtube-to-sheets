@@ -53,3 +53,19 @@ test('une publication inconnue ne devient pas la date du chargement', () => {
   assert.equal(state.publishedAt, undefined);
   assert.equal(state.loadedAt, 200);
 });
+
+test('une actualisation identique conserve les cartes et met à jour la date de vérification', () => {
+  const previous = resolveVideoLoad(success, emptyVideoLoadState);
+  const next = resolveVideoLoad({ ...success, data: structuredClone(success.data), metadata: { ...success.metadata, timestamp: 400 } }, previous);
+  assert.equal(next.videos, previous.videos);
+  assert.equal(next.loadedAt, 400);
+  assert.equal(next.warning, null);
+});
+test('une actualisation modifiée remplace bien les données et efface l’avertissement', () => {
+  const previous = resolveVideoLoad(success, emptyVideoLoadState);
+  const changed = { ...remote[0], title: 'Titre corrigé' };
+  const next = resolveVideoLoad({ data: [changed], metadata: { source: 'local', timestamp: 400 } }, { ...previous, warning: 'Échec précédent' });
+  assert.notEqual(next.videos, previous.videos);
+  assert.equal(next.videos[0].title, 'Titre corrigé');
+  assert.equal(next.warning, null);
+});
