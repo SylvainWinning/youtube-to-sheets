@@ -10,7 +10,7 @@ interface VideoGridProps {
 export function VideoGrid({ videos }: VideoGridProps) {
   const batchSize = LIBRARY_BATCH_SIZE;
   const resultKey = useMemo(() => JSON.stringify(videos.map(video =>
-    [video.playlistId, video.playlistPosition, video.link])), [videos]);
+    [video.identity ?? video.link, video.playlistMemberships ?? [video.playlistId, video.playlistPosition]])), [videos]);
   const [restored] = useState(() => readLibraryProgress(window.history.state, resultKey, videos.length));
   const [page, setPage] = useState({ videos, count: restored?.count ?? batchSize });
   const restorePending = useRef(restored);
@@ -63,7 +63,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
       <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-x-4 gap-y-8">
         {videos.slice(0, visibleCount).map((video, index) => (
           <VideoCard
-            key={`${video.playlistId ?? 'playlist'}-${video.playlistPosition ?? index}-${video.link}`}
+            key={video.identity ?? `${video.playlistId ?? 'playlist'}-${video.playlistPosition ?? index}-${video.link}`}
             video={video}
           />
         ))}

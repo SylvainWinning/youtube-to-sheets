@@ -1,6 +1,7 @@
 import type { VideoData } from '../types/video.ts';
 import type { SheetTab } from '../types/sheets.ts';
 import { filterVideosByDuration } from './videoFilters.ts';
+import { uniqueVideoCandidates } from './videoLibrary.ts';
 
 function extractYouTubeId(url: string): string | null {
   try {
@@ -35,11 +36,12 @@ export function generateYouTubeThumbnail(url: string): string {
   return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 }
 
-export function getRandomVideo(videos: VideoData[], tab: SheetTab | null): VideoData | null {
-  const filteredVideos = tab ? filterVideosByDuration(videos, tab) : videos;
+export function getRandomVideo(videos: VideoData[], tab: SheetTab | null, random = Math.random): VideoData | null {
+  const candidates = uniqueVideoCandidates(videos);
+  const filteredVideos = tab ? filterVideosByDuration(candidates, tab) : candidates;
   if (filteredVideos.length === 0) return null;
   
-  const randomIndex = Math.floor(Math.random() * filteredVideos.length);
+  const randomIndex = Math.floor(random() * filteredVideos.length);
   return filteredVideos[randomIndex];
 }
 

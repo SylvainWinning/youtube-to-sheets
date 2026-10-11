@@ -1,3 +1,9 @@
+export interface PlaylistMembership {
+  playlistId?: string;
+  /** Position de cette occurrence dans sa playlist (y compris les répétitions). */
+  position?: number;
+}
+
 export interface VideoData {
   channelAvatar?: string; // Colonne A
   title: string; // Colonne B
@@ -21,6 +27,15 @@ export interface VideoData {
    */
   playlistPosition?: number;
   playlistId?: string;
+  /** Appartenances conservées après regroupement des lignes du JSON publié. */
+  playlistMemberships?: PlaylistMembership[];
+  identity?: string;
+}
+
+/** Une vidéo dans la bibliothèque, indépendamment du nombre de playlists. */
+export interface LibraryVideo extends VideoData {
+  identity: string;
+  playlistMemberships: PlaylistMembership[];
 }
 
 export interface VideoResponse {

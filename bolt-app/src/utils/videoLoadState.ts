@@ -1,9 +1,10 @@
-import type { VideoData } from '../types/video.ts';
+import type { LibraryVideo, VideoData } from '../types/video.ts';
 import type { ApiResponse } from './api/sheets/types.ts';
 import { assignCategories } from './assignCategories.ts';
+import { buildVideoLibrary } from './videoLibrary.ts';
 
 export interface VideoLoadState {
-  videos: VideoData[];
+  videos: LibraryVideo[];
   error: string | null;
   warning: string | null;
   source: 'local' | 'sheets' | null;
@@ -37,7 +38,7 @@ export function resolveVideoLoad(
   }
 
   return {
-    videos: assignCategories(response.data),
+    videos: buildVideoLibrary(assignCategories(response.data)),
     error: null,
     warning: response.metadata?.warnings?.length
       ? 'La connexion à Google Sheets n’a pas abouti. La copie locale reste disponible.'

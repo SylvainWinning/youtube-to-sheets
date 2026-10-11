@@ -21,6 +21,7 @@ import { useSound } from './hooks/useSound';
 import { SearchFilters } from './types/search';
 import { SortOptions } from './types/sort';
 import { clearLibraryProgress } from './utils/libraryProgress';
+import { filterVideosByPlaylist } from './utils/videoLibrary';
 
 /**
  * Main React component for the Bolt‑app. This version adds a custom
@@ -107,10 +108,7 @@ export default function App() {
   );
 
   const filteredByPlaylist = React.useMemo(
-    () =>
-      selectedPlaylistId
-        ? filteredByCategory.filter(v => v.playlistId === selectedPlaylistId)
-        : filteredByCategory,
+    () => filterVideosByPlaylist(filteredByCategory, selectedPlaylistId),
     [filteredByCategory, selectedPlaylistId],
   );
 
@@ -123,8 +121,8 @@ export default function App() {
   );
 
   const sortedVideos = React.useMemo(
-    () => sortVideos(filteredByDuration, sortOptions),
-    [filteredByDuration, sortOptions],
+    () => sortVideos(filteredByDuration, sortOptions, selectedPlaylistId),
+    [filteredByDuration, sortOptions, selectedPlaylistId],
   );
 
   const appError = videosError;
