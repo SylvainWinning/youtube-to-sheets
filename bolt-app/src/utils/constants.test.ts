@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSpreadsheetId, isValidSpreadsheetId } from './constants.ts';
+import { parseSpreadsheetId, isValidSpreadsheetId } from './api/sheets/config.ts';
 
 test('parseSpreadsheetId extracts id from full URL', () => {
   const id = '1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T1U2V3W4X5Y6Z7_';

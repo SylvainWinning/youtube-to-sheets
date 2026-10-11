@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { fetchAllVideos } from '../utils/api/sheets/index.ts';
+import { fetchAllVideos } from '../utils/api/videos.ts';
 import { emptyVideoLoadState, resolveVideoLoad } from '../utils/videoLoadState.ts';
 
 export function useVideos() {

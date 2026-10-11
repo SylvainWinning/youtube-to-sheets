@@ -1,17 +1,13 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-  return {
-    plugins: [react()],
-    base: '/youtube-to-sheets/',
-    optimizeDeps: {
-      exclude: ['lucide-react'],
-    },
-    define: {
-      'process.env': env,
-    },
-  };
+export default defineConfig({
+  plugins: [react()],
+  base: '/youtube-to-sheets/',
+  // Only Vite's built-in constants (e.g. BASE_URL) are public.
+  // Even VITE_* variables must stay out of the browser bundle.
+  envPrefix: [],
+  optimizeDeps: {
+    exclude: ['lucide-react'],
+  },
 });
