@@ -52,6 +52,7 @@ export const channelCategories: Record<string, string> = {
   "Poachimpa": "Divertissement",
   "JOYCA": "Youtuber pref",
   "Palmito": "Divertissement",
+  "Rockstar Mag'": "Divertissement",
   "Extia": "Finance & Business",
   "Welcome to the Jungle Media": "Finance & Business",
   "Elise Lucet": "Pause dej",
