@@ -29,16 +29,11 @@ export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
 
     return {
       ...localResponse,
-      // On conserve l'erreur d'origine seulement si elle existe ; sinon, on garde l'erreur locale
-      error: config.error ?? localResponse.error,
       metadata: {
-        // On fusionne les messages d'erreurs existants et, le cas échéant, l'erreur de configuration
-        errors: [
-          ...(localResponse.metadata?.errors ?? []),
-          ...(config.error ? [config.error] : []),
-          ...(localResponse.error ? [localResponse.error] : [])
-        ],
-        timestamp: Date.now()
+        ...localResponse.metadata,
+        source: 'local',
+        timestamp: localResponse.metadata?.timestamp ?? Date.now(),
+        ...(config.error ? { warnings: [config.error] } : {})
       }
     };
   }
@@ -49,25 +44,23 @@ export async function fetchAllVideos(): Promise<ApiResponse<VideoData[]>> {
     return {
       data: videos,
       metadata: {
+        source: 'sheets',
         timestamp: Date.now()
       }
     };
   } catch (error) {
     console.error('Error fetching videos:', error);
 
-    if (localResponse.error) {
-      throw new Error(localResponse.error);
-    }
-
     return {
       ...localResponse,
       metadata: {
         ...(localResponse.metadata ?? {}),
-        errors: [
-          ...(localResponse.metadata?.errors ?? []),
+        warnings: [
+          ...(localResponse.metadata?.warnings ?? []),
           error instanceof Error ? error.message : 'Erreur inconnue'
         ],
-        timestamp: Date.now()
+        source: 'local',
+        timestamp: localResponse.metadata?.timestamp ?? Date.now()
       }
     };
   }
