@@ -1,3 +1,4 @@
+export const LIBRARY_SAVE_EVENT = 'youtube:save-library-progress';
 export const LIBRARY_HISTORY_KEY = 'youtubeLibraryProgress';
 export const LIBRARY_BATCH_SIZE = 40;
 

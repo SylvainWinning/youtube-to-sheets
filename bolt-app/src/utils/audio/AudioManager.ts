@@ -1,15 +1,28 @@
 import { SOUNDS } from './constants';
+import { readPreference, writePreference, SOUND_KEY } from '../preferences';
 
 class AudioManager {
   private static instance: AudioManager;
   private sounds: Map<string, HTMLAudioElement> = new Map();
-  private isEnabled = true;
+  private isEnabled = readPreference(SOUND_KEY) !== 'off';
+  private listeners = new Set<() => void>();
+  public subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
+  };
+  public getSnapshot = () => this.isEnabled;
   private loaded = false;
   private loadPromise: Promise<void> | null = null;
 
   private constructor() {
     if (typeof window !== 'undefined') {
-      this.loadPromise = this.preloadSounds();
+      if (this.isEnabled) this.loadPromise = this.preloadSounds();
+      window.addEventListener('storage', event => {
+        if (event.key === SOUND_KEY || event.key === null) {
+          this.isEnabled = readPreference(SOUND_KEY) !== 'off';
+          this.listeners.forEach(listener => listener());
+        }
+      });
     }
   }
 
@@ -58,13 +71,14 @@ class AudioManager {
   public async play(soundKey: keyof typeof SOUNDS) {
     if (!this.isEnabled) return;
     
+    if (!this.loaded && !this.loadPromise) this.loadPromise = this.preloadSounds();
     // Wait for initial load if still loading
     if (this.loadPromise) {
       await this.loadPromise;
       this.loadPromise = null;
     }
     
-    if (!this.loaded) return; // Skip if loading failed
+    if (!this.loaded || !this.isEnabled) return; // Skip if loading failed
     
     const audio = this.sounds.get(soundKey);
     if (audio) {
@@ -81,6 +95,8 @@ class AudioManager {
 
   public toggle() {
     this.isEnabled = !this.isEnabled;
+    writePreference(SOUND_KEY, this.isEnabled ? 'on' : 'off');
+    this.listeners.forEach(listener => listener());
     return this.isEnabled;
   }
 

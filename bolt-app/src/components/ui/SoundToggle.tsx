@@ -1,14 +1,11 @@
-import React from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useSound } from '../../hooks/useSound';
 
 export function SoundToggle() {
-  const [isEnabled, setIsEnabled] = React.useState(true);
-  const { toggleAudio, playClick } = useSound();
+  const { toggleAudio, playClick, isEnabled } = useSound();
 
   const handleToggle = () => {
     const newState = toggleAudio();
-    setIsEnabled(newState);
     if (newState) {
       playClick();
     }
@@ -16,6 +13,9 @@ export function SoundToggle() {
 
   return (
     <button
+      type="button"
+      aria-pressed={isEnabled}
+      aria-label={isEnabled ? 'Désactiver le son' : 'Activer le son'}
       onClick={handleToggle}
       className={`
         p-2 rounded-full transition-all duration-200

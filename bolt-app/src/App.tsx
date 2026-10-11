@@ -20,8 +20,7 @@ import { filterVideosBySearch } from './utils/searchUtils';
 import { sortVideos } from './utils/sortUtils';
 import { useVideos } from './hooks/useVideos';
 import { useSound } from './hooks/useSound';
-import { SearchFilters } from './types/search';
-import { SortOptions } from './types/sort';
+import { useLibraryFilters } from './hooks/useLibraryFilters';
 import { clearLibraryProgress } from './utils/libraryProgress';
 import { filterVideosByPlaylist } from './utils/videoLibrary';
 
@@ -37,14 +36,9 @@ export default function App() {
   const { videos, isLoading, error: videosError, loadVideos } = library;
   const hasLibrary = videos.length > 0;
   const { playClick } = useSound();
-  const [selectedTab, setSelectedTab] = React.useState(-1);
-  const [sortOptions, setSortOptions] = React.useState<SortOptions | null>(null);
-  const [searchFilters, setSearchFilters] = React.useState<SearchFilters>({
-    query: '',
-    fields: ['title', 'channel', 'category'],
-  });
-  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
-  const [selectedPlaylistId, setSelectedPlaylistId] = React.useState<string | null>(null);
+  const { selectedTab, setSelectedTab, sortOptions, setSortOptions,
+    searchFilters, setSearchFilters, selectedCategory, setSelectedCategory,
+    selectedPlaylistId, setSelectedPlaylistId } = useLibraryFilters();
 
   const scrollToTop = React.useCallback(
     () => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }),
@@ -159,7 +153,7 @@ export default function App() {
       <header className="bg-white dark:bg-neutral-800 shadow-xs sticky top-0 z-50 mb-4 sm:mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <button
                 onClick={resetFilters}
                 className="flex items-center gap-2 sm:gap-3 min-w-0 group"
@@ -170,8 +164,8 @@ export default function App() {
                   alt="YouTube logo"
                   className="h-6 w-6 sm:h-8 sm:w-8 shrink-0"
                 />
-                <h1 className="text-base sm:text-xl font-semibold text-youtube-black dark:text-white flex items-center gap-2">
-                  Mes Vidéos YouTube
+                <h1 className="text-base sm:text-xl font-semibold text-youtube-black dark:text-white min-w-0 flex items-center gap-2">
+                  <span className="truncate">Mes Vidéos YouTube</span>
                   <RefreshCw
                     className={
                       'hidden sm:block h-5 w-5 text-youtube-gray-light dark:text-youtube-gray-dark transition-all ' +
@@ -180,7 +174,7 @@ export default function App() {
                   />
                 </h1>
               </button>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <ThemeToggle />
                 <SoundToggle />
               </div>

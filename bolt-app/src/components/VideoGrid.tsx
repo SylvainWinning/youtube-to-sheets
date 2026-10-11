@@ -1,3 +1,4 @@
+import { LIBRARY_SAVE_EVENT } from '../utils/libraryProgress';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { VideoCard } from './VideoCard';
 import { VideoData } from '../types/video';
@@ -56,8 +57,17 @@ export function VideoGrid({ videos }: VideoGridProps) {
       } }, '');
     };
     saveProgress();
+    const onVisibility = () => { if (document.visibilityState === 'hidden') saveProgress(); };
     window.addEventListener('pagehide', saveProgress);
-    return () => window.removeEventListener('pagehide', saveProgress);
+    window.addEventListener('blur', saveProgress);
+    window.addEventListener(LIBRARY_SAVE_EVENT, saveProgress);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', saveProgress);
+      window.removeEventListener('blur', saveProgress);
+      window.removeEventListener(LIBRARY_SAVE_EVENT, saveProgress);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [resultKey, visibleCount]);
 
   return (
