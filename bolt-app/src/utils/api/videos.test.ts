@@ -19,7 +19,7 @@ test('browser reader fetches only the published JSON even with private Google co
   });
   const result = await fetchAllVideos();
   assert.equal(urls.length, 1);
-  assert.match(urls[0], /^data\/videos\.json\?t=\d+$/);
+  assert.equal(urls[0], 'data/videos.json');
   assert.equal(result.metadata?.source, 'local');
   assert.equal(result.data?.[0].title, 'Published video');
 });

@@ -45,22 +45,6 @@ export default function App() {
     [],
   );
 
-  const resetFilters = React.useCallback(async () => {
-    clearLibraryProgress();
-    playClick();
-    // Assure un retour en haut de l'écran sur iOS
-    scrollToTop();
-    setSelectedTab(-1);
-    setSearchFilters({
-      query: '',
-      fields: ['title', 'channel', 'category'],
-    });
-    setSortOptions(null);
-    setSelectedCategory(null);
-    setSelectedPlaylistId(null);
-    await loadVideos();
-  }, [loadVideos, playClick, scrollToTop]);
-
   // Charge toujours les vidéos, même sans configuration Sheets
   React.useEffect(() => {
     loadVideos();
@@ -148,16 +132,18 @@ export default function App() {
     id: 'sort', label: `Tri : ${getSelectedLabel(sortOptions)}`, onRemove: () => setSortOptions(null),
   });
 
+  // Clip overflow without creating a scroll container that would trap the sticky header.
   return (
-    <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-hidden pt-2">
+    <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-clip pt-2">
       <header className="bg-white dark:bg-neutral-800 shadow-xs sticky top-0 z-50 mb-4 sm:mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
               <button
-                onClick={resetFilters}
+                onClick={() => { playClick(); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                type="button"
+                aria-label="Revenir en haut de la page"
                 className="flex items-center gap-2 sm:gap-3 min-w-0 group"
-                disabled={isLoading}
               >
                 <img
                   src={import.meta.env.BASE_URL + 'youtube-logo.svg'}
@@ -166,12 +152,6 @@ export default function App() {
                 />
                 <h1 className="text-base sm:text-xl font-semibold text-youtube-black dark:text-white min-w-0 flex items-center gap-2">
                   <span className="truncate">Mes Vidéos YouTube</span>
-                  <RefreshCw
-                    className={
-                      'hidden sm:block h-5 w-5 text-youtube-gray-light dark:text-youtube-gray-dark transition-all ' +
-                      (isLoading ? 'animate-spin' : 'group-hover:text-youtube-red-accessible dark:group-hover:text-youtube-red-accessible-dark')
-                    }
-                  />
                 </h1>
               </button>
               <div className="flex shrink-0 items-center gap-2">
@@ -179,30 +159,42 @@ export default function App() {
                 <SoundToggle />
               </div>
             </div>
-            {(!isLoading || hasLibrary) && !appError && (
-              <div className="hidden w-full sm:flex items-center justify-between gap-4">
-                <div className="w-full max-w-[280px]">
-                  <SortSelect options={sortOptions} onOptionsChange={setSortOptions} />
+            <div className="flex items-center justify-end gap-3">
+              {(!isLoading || hasLibrary) && !appError && (
+                <div className="hidden min-w-0 flex-1 sm:flex items-center justify-between gap-4">
+                  <div className="w-full max-w-[280px]">
+                    <SortSelect options={sortOptions} onOptionsChange={setSortOptions} />
+                  </div>
+                  <CategorySelect
+                    videos={videos}
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                    className="w-full max-w-[280px]"
+                  />
+                  <PlaylistSelect
+                    videos={videos}
+                    selectedPlaylistId={selectedPlaylistId}
+                    onPlaylistChange={setSelectedPlaylistId}
+                    className="w-full max-w-[280px]"
+                  />
                 </div>
-                <CategorySelect
-                  videos={videos}
-                  selectedCategory={selectedCategory}
-                  onCategoryChange={setSelectedCategory}
-                  className="w-full max-w-[280px]"
-                />
-                <PlaylistSelect
-                  videos={videos}
-                  selectedPlaylistId={selectedPlaylistId}
-                  onPlaylistChange={setSelectedPlaylistId}
-                  className="w-full max-w-[280px]"
-                />
-              </div>
-            )}
+              )}
+              <button type="button" disabled={isLoading} aria-busy={isLoading}
+                onClick={() => { playClick(); void loadVideos(); }}
+                className="neu-button flex shrink-0 min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm text-gray-700 dark:text-gray-100 disabled:opacity-60">
+                <RefreshCw aria-hidden="true" className={`h-4 w-4 ${isLoading ? 'animate-spin motion-reduce:animate-none' : ''}`} />
+                {isLoading && hasLibrary ? 'Actualisation…' : 'Actualiser'}
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0 pb-4">
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+          {isLoading && hasLibrary ? 'Actualisation en cours. Les vidéos restent disponibles.'
+            : !isLoading && library.loadedAt !== null && !library.warning ? 'Bibliothèque à jour.' : ''}
+        </p>
         <LibraryNotice state={library} isLoading={isLoading} onRetry={loadVideos} />
         {(!isLoading || hasLibrary) && !appError && (
           <>

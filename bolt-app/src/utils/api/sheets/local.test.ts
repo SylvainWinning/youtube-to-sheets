@@ -1,22 +1,24 @@
 import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 
-// Verify that fetchLocalVideos disables caching and adds a unique version parameter
-// to the request URL.
-test('fetchLocalVideos ajoute un paramètre de version et utilise cache "no-store"', async () => {
-  const fetchMock = mock.method(globalThis, 'fetch', async (input: any, init?: RequestInit) => {
+test('la copie publique utilise une adresse stable et un cache revalidé', async () => {
+  const urls: string[] = [];
+  mock.method(globalThis, 'fetch', async (input: any, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input.url;
-    assert.ok(/data\/videos\.json\?t=\d+/.test(url));
-    assert.equal(init?.cache, 'no-store');
-    return new Response(JSON.stringify([[]]), { status: 200 });
+    urls.push(url);
+    assert.equal(url, 'data/videos.json');
+    assert.equal(init?.cache, 'no-cache');
+    return new Response(JSON.stringify(validRows), { status: 200 });
   });
-
-  const { fetchLocalVideos } = await import(`./local.ts?test=${Date.now()}`);
-
-  await fetchLocalVideos();
-  assert.equal(fetchMock.mock.calls.length, 1);
-
-  mock.restoreAll();
+  try {
+    const { fetchLocalVideos } = await import('./local.ts');
+    const first = await fetchLocalVideos();
+    const second = await fetchLocalVideos();
+    assert.equal(first.error, undefined);
+    assert.equal(second.error, undefined);
+    assert.deepEqual(first.data, second.data);
+    assert.deepEqual(urls, ['data/videos.json', 'data/videos.json']);
+  } finally { mock.restoreAll(); }
 });
 
 const validRows = [[], ['', 'Local', 'https://youtu.be/local', 'Channel', '2020-01-01T00:00:00Z', 'PT10M', '0', '0', '0', '', '', '', '']];
