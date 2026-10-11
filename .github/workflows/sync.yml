@@ -1,124 +1,20 @@
 name: YouTube to Sheets Sync
-
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - ".github/workflows/sync.yml"
-      - "main.py"
-      - "sync_metadata.py"
-      - "export_data.py"
-      - "scripts/export_sheet.py"
-      - "tests/**"
-  pull_request:
-    paths: ["main.py", "sync_metadata.py", "export_data.py", "scripts/export_sheet.py", "tests/**", ".github/workflows/sync.yml"]
-  # Lancement manuel si besoin
   workflow_dispatch:
-  # synchronisation automatique aux horaires (heure de Paris)
-  schedule:
-    # CEST (UTC+2) – avril à septembre, 1‑24 octobre, 25‑31 mars
-    - cron: '0 22,23,0,10,11,12,18,19,20,21 * 4-9 *'
-    - cron: '0 22,23,0,10,11,12,18,19,20,21 1-24 10 *'
-    - cron: '0 22,23,0,10,11,12,18,19,20,21 25-31 3 *'
-    # CET (UTC+1) – novembre à février, 1‑24 mars, 25‑31 octobre
-    - cron: '0 23,0,1,11,12,13,19,20,21,22 * 11,12,1,2 *'
-    - cron: '0 23,0,1,11,12,13,19,20,21,22 1-24 3 *'
-    - cron: '0 23,0,1,11,12,13,19,20,21,22 25-31 10 *'
-
-# Donne l'accès en écriture afin de pouvoir mettre à jour le dépôt avec
-# les fichiers générés (par ex. data/videos.json)
 permissions:
-  contents: write
-
-concurrency:
-  group: youtube-to-sheets-sync-${{ github.event.pull_request.number || 'production' }}
-  cancel-in-progress: true
-
+  contents: read
 jobs:
-  tests:
-    name: Run unit tests
+  diagnose:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-          cache: "pip"
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest
-      - name: Run tests
-        run: pytest -q
-
-  sync:
-    name: Sync playlist to Google Sheets
-    if: github.event_name != 'pull_request'
-    needs: tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-      SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-      SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-      PLAYLIST_ID: PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR,PLtBV_WamBQbCWySxrSDkbEcTYsxZ8FOvx
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Sanity check secrets
-        run: |
-          test -n "${YOUTUBE_API_KEY}" || (echo "Secret YOUTUBE_API_KEY manquant" && exit 1)
-          test -n "${SPREADSHEET_ID}" || (echo "Secret SPREADSHEET_ID manquant" && exit 1)
-          test -n "${SERVICE_ACCOUNT_JSON}" || (echo "Secret SERVICE_ACCOUNT_JSON manquant" && exit 1)
-      - name: Write Google service account key
-        run: |
-          python - <<'PY'
-          import os, json, sys, base64
-          raw = os.environ.get("SERVICE_ACCOUNT_JSON", "")
-          def try_write(content: str) -> bool:
-              try:
-                  json.loads(content)
-              except json.JSONDecodeError:
-                  return False
-              else:
-                  with open("service_account.json", "w", encoding="utf-8") as f:
-                      f.write(content)
-                  return True
-          if try_write(raw): sys.exit(0)
-          fixed = raw.replace("\n", "\n").replace("\r", "\r")
-          if try_write(fixed): sys.exit(0)
-          try:
-              decoded = base64.b64decode(raw).decode("utf-8", "strict")
-              if try_write(decoded): sys.exit(0)
-          except Exception:
-              pass
-          print("SERVICE_ACCOUNT_JSON n'est pas un JSON valide.")
-          sys.exit(1)
-          PY
-      - name: Run sync
-        id: synchronization
-        continue-on-error: true
-        run: python main.py "$PLAYLIST_ID"
-      - name: Commit data and push
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add bolt-app/public/data/videos.* data/videos.json
-          git commit -m "Update videos data" || echo "rien à valider"
-          git push
-
-      - name: Report synchronization failure
-        if: steps.synchronization.outcome == 'failure'
-        run: exit 1
+      - run: pip install requests
+      - name: Diagnose unavailable videos (read only)
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          PLAYLIST_ID: PLtBV_WamBQbAxyF08PXaPxfFwcTejP9vR,PLtBV_WamBQbCWySxrSDkbEcTYsxZ8FOvx
+        run: python scripts/diagnose_unavailable.py
