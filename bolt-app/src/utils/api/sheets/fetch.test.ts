@@ -5,7 +5,7 @@ test('getConfig fournit un message d\'aide quand SPREADSHEET_ID est absent', asy
   const originalSpreadsheetId = process.env.SPREADSHEET_ID;
   delete process.env.SPREADSHEET_ID;
 
-  const { getConfig } = await import(`../../constants.ts?fetch=${Date.now()}`);
+  const { getConfig } = await import(`./config.ts?fetch=${Date.now()}`);
   const config = getConfig();
 
   assert.equal(config.SPREADSHEET_ID, '');

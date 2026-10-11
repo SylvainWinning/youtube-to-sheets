@@ -8,7 +8,7 @@ test('fetchAllVideos uses local data when config error', async () => {
   delete process.env.YOUTUBE_API_KEY;
 
   const { fetchAllVideos } = await import(`./index.ts?index=${Date.now()}`);
-  const { getConfig } = await import(`../../constants.ts?index=${Date.now()}`);
+  const { getConfig } = await import(`./config.ts?index=${Date.now()}`);
 
   const { error } = getConfig();
   assert.ok(error, 'Test requires missing configuration');

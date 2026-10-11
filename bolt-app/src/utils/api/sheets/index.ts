@@ -3,7 +3,7 @@ import type { ApiResponse } from './types.ts';
 import { synchronizeSheets } from './sync.ts';
 import { fetchLocalVideos } from './local.ts';
 import { createAbortScope, LOAD_TIMEOUT_MS, LOAD_MAX_ATTEMPTS, throwIfAborted } from '../../requestPolicy.ts';
-import { getConfig } from '../../constants.ts';
+import { getConfig } from './config.ts';
 
 export { fetchLocalVideos };
 

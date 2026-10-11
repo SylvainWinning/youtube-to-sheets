@@ -42,20 +42,15 @@ Exécute la synchronisation avec :
 python main.py PLAYLIST_ID [--sheet-tab-name NOM_ONGLET]
 ```
 
-Variables d’environnement **obligatoires** pour l’application web `bolt-app` :
-- `SPREADSHEET_ID` — identifiant **ou URL complète** de la feuille Google Sheets
-  (25 à 60 caractères alphanumériques, tirets ou soulignés)
-- `YOUTUBE_API_KEY` — clé API Google
+L’interface web `bolt-app` lit uniquement le catalogue public
+`public/data/videos.json`. Elle ne demande aucune clé Google ni identifiant
+Sheets. La synchronisation et l’export restent dans les workflows CI ou les
+scripts Python locaux; leurs secrets ne sont pas transmis au build Pages.
 
-Créer un fichier `.env` dans le dossier `bolt-app` avec ces entrées (un modèle
-est fourni dans `.env.example`). L’application échouera au démarrage si l’une de
-ces variables est absente.
-
-Le fichier de configuration Vite expose automatiquement ces variables au
-code client : aucun préfixe `VITE_` n’est nécessaire.
-
-Pour des tests rapides, ces valeurs peuvent aussi être fournies via l’URL :
-`?spreadsheetId=` et `?apiKey=`.
+Vite n’expose aucune variable d’environnement personnalisée, y compris celles
+préfixées `VITE_`. Seules ses constantes intégrées, dont `BASE_URL`, restent
+utilisées. Les paramètres `?spreadsheetId=` et `?apiKey=` ne configurent pas le site.
+Ne place pas de secrets dans l’URL, les fichiers du dossier `public` ou les données exportées.
 
 ### Démarrer l’interface web
 
@@ -74,7 +69,8 @@ Production :
 npm run build
 ```
 
-Sans variables d’environnement, le front-end lit `public/data/videos.json`.
+Le front-end utilise ce JSON en développement comme en production.
+L’actualisation relit l’instantané publié; elle ne lance pas la synchronisation Sheets.
 
 ## Export des données
 

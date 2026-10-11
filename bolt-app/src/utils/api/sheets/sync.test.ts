@@ -6,7 +6,7 @@ test("getConfig propose une aide si l'ID est absent", async () => {
   const originalSpreadsheetId = process.env.SPREADSHEET_ID;
   delete process.env.SPREADSHEET_ID;
 
-  const { getConfig } = await import(`../../constants.ts?sync=${Date.now()}`);
+  const { getConfig } = await import(`./config.ts?sync=${Date.now()}`);
   const config = getConfig();
 
   assert.equal(config.SPREADSHEET_ID, '');

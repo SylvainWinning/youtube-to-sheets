@@ -1,6 +1,6 @@
 import type { SheetResponse } from './types.ts';
 import { fetchJsonWithRetry, throwIfAborted } from '../../requestPolicy.ts';
-import { SPREADSHEET_ID, YOUTUBE_API_KEY } from '../../constants.ts';
+import { SPREADSHEET_ID, YOUTUBE_API_KEY } from './config.ts';
 
 const RATE_LIMIT = {
   requests: 0,

@@ -22,11 +22,6 @@ jobs:
     if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
 
-    # Expose les secrets au build (clé API + ID de la feuille)
-    env:
-      SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-
     steps:
       # 1. Récupère le dépôt
       - name: Checkout repository
@@ -56,7 +51,7 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
 
-      # 5. Compile le site (Vite lira SPREADSHEET_ID / YOUTUBE_API_KEY)
+      # 5. Compile le site public sans secrets Google (catalogue JSON uniquement)
       - name: Build project
         run: npm run build
         working-directory: bolt-app
