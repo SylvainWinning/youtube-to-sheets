@@ -39,8 +39,8 @@ test('fetchAllVideos uses local data when config error', async () => {
   const result = await fetchAllVideos();
 
   assert.equal(fetchMock.mock.calls.length, 1);
-  assert.equal(result.error, error);
-  assert.ok(result.metadata?.errors?.includes(error));
+  assert.equal(result.error, undefined);
+  assert.ok(result.metadata?.warnings?.includes(error));
 
   mock.restoreAll();
   if (originalSpreadsheetId === undefined) {
@@ -118,6 +118,8 @@ test('fetchAllVideos returns synchronized data on success', async () => {
 
   assert.deepEqual(calls, ['local', 'sync', 'sync']);
   assert.equal(result.data?.[0].title, 'Remote');
+  assert.equal(result.metadata?.source, 'sheets');
+  assert.equal(result.metadata?.warnings, undefined);
 
   mock.restoreAll();
   SHEET_TABS.splice(0, SHEET_TABS.length, ...originalTabs);
@@ -181,7 +183,9 @@ test('fetchAllVideos keeps local data when synchronization fails', async () => {
 
   assert.deepEqual(calls, ['local', 'sync', 'sync']);
   assert.equal(result.data?.[0].title, 'Local');
-  assert.ok(result.metadata?.errors?.length);
+  assert.equal(result.error, undefined);
+  assert.equal(result.metadata?.source, 'local');
+  assert.ok(result.metadata?.warnings?.length);
   assert.ok(consoleError.mock.calls.length >= 1);
 
   mock.restoreAll();

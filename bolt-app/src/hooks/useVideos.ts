@@ -1,48 +1,30 @@
-import { useState, useCallback } from 'react';
-import { VideoData } from '../types/video';
-import { fetchAllVideos, fetchLocalVideos } from '../utils/api/sheets/index.ts';
-import { assignCategories } from '../utils/assignCategories.ts';
+import { useState, useCallback, useRef } from 'react';
+import { fetchAllVideos } from '../utils/api/sheets/index.ts';
+import { emptyVideoLoadState, resolveVideoLoad } from '../utils/videoLoadState.ts';
 
-export function useVideos(configError?: string) {
-  const [videos, setVideos] = useState<VideoData[]>([]);
+export function useVideos() {
+  const [state, setState] = useState(emptyVideoLoadState);
+  const latest = useRef(emptyVideoLoadState);
+  const request = useRef(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const loadVideos = useCallback(async () => {
+    const id = ++request.current;
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      setError(null);
-      const { data, error: apiError, metadata } = configError
-        ? await fetchLocalVideos()
-        : await fetchAllVideos();
-
-      const errorMessage = apiError || (metadata?.errors?.length
-        ? metadata.errors.join('\n')
-        : null);
-
-      setVideos(errorMessage ? [] : assignCategories(data));
-
-      if (errorMessage) {
-        setError(navigator.onLine === false
-          ? 'Vous êtes hors ligne. Vérifiez votre connexion, puis réessayez.'
-          : 'Impossible de charger les vidéos. Veuillez réessayer.');
-      } else if (data.length === 0) {
-        setError('Aucune vidéo trouvée.');
-      } else {
-        setError(null);
-      }
-    } catch (err) {
-      setError('Une erreur inattendue est survenue. Veuillez réessayer.');
-      setVideos([]);
+      const response = await fetchAllVideos();
+      if (id !== request.current) return;
+      latest.current = resolveVideoLoad(response, latest.current, navigator.onLine);
+    } catch {
+      if (id !== request.current) return;
+      latest.current = resolveVideoLoad({ data: [], error: 'Chargement interrompu' }, latest.current, navigator.onLine);
     } finally {
-      setIsLoading(false);
+      if (id === request.current) {
+        setState(latest.current);
+        setIsLoading(false);
+      }
     }
-  }, [configError]);
+  }, []);
 
-  return {
-    videos,
-    isLoading,
-    error,
-    loadVideos
-  };
+  return { ...state, isLoading, loadVideos };
 }

@@ -8,11 +8,11 @@ import { CategorySelect } from './components/CategorySelect';
 import { PlaylistSelect } from './components/PlaylistSelect';
 import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
-import { MissingConfig } from './components/MissingConfig';
+import { LibraryNotice } from './components/LibraryNotice';
 import { SoundToggle } from './components/ui/SoundToggle';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { MobileFilterBar } from './components/MobileFilterBar';
-import { SHEET_TABS, getConfig } from './utils/constants';
+import { SHEET_TABS } from './utils/constants';
 import { filterVideosByDuration } from './utils/videoFilters';
 import { filterVideosBySearch } from './utils/searchUtils';
 import { sortVideos } from './utils/sortUtils';
@@ -30,8 +30,9 @@ import { clearLibraryProgress } from './utils/libraryProgress';
  * `statusTap` event which is only available in certain contexts.
  */
 export default function App() {
-  const { error: configError } = getConfig();
-  const { videos, isLoading, error: videosError, loadVideos } = useVideos(configError);
+  const library = useVideos();
+  const { videos, isLoading, error: videosError, loadVideos } = library;
+  const hasLibrary = videos.length > 0;
   const { playClick } = useSound();
   const [selectedTab, setSelectedTab] = React.useState(-1);
   const [sortOptions, setSortOptions] = React.useState<SortOptions | null>(null);
@@ -159,7 +160,7 @@ export default function App() {
                 <SoundToggle />
               </div>
             </div>
-            {!isLoading && !appError && (
+            {(!isLoading || hasLibrary) && !appError && (
               <div className="hidden w-full sm:flex items-center justify-between gap-4">
                 <div className="w-full max-w-[280px]">
                   <SortSelect options={sortOptions} onOptionsChange={setSortOptions} />
@@ -183,8 +184,8 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-0 pb-4">
-        {configError && <MissingConfig message={configError} />}
-        {!isLoading && !appError && (
+        <LibraryNotice state={library} isLoading={isLoading} onRetry={loadVideos} />
+        {(!isLoading || hasLibrary) && !appError && (
           <>
             <SearchBar
               filters={searchFilters}
@@ -211,9 +212,9 @@ export default function App() {
             </div>
           </>
         )}
-        {isLoading && <LoadingState />}
+        {isLoading && !hasLibrary && <LoadingState />}
         {appError && <ErrorState message={appError} onRetry={loadVideos} />}
-        {!isLoading && !appError && (sortedVideos.length > 0 ? <VideoGrid videos={sortedVideos} /> : (
+        {(!isLoading || hasLibrary) && !appError && (sortedVideos.length > 0 ? <VideoGrid videos={sortedVideos} /> : (
           <div className="py-8 text-center text-youtube-black dark:text-white">
             <p role="status">Aucune vidéo ne correspond à votre recherche ou aux filtres sélectionnés.</p>
             <button type="button" className="neu-button rounded-xl px-4 py-2 mt-4" onClick={() => {
