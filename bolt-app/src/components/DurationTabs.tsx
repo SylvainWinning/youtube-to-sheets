@@ -16,7 +16,7 @@ interface DurationTabsProps {
 }
 
 export function DurationTabs({ selectedTab, onTabChange, videos, compact = false }: DurationTabsProps) {
-  const tabCounts = React.useMemo(() => 
+  const tabCounts = React.useMemo(() =>
     SHEET_TABS.map(tab => getVideoCountByDuration(videos, tab)),
     [videos]
   );
@@ -64,12 +64,14 @@ export function DurationTabs({ selectedTab, onTabChange, videos, compact = false
       <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
         <div className="flex min-w-0 min-[380px]:col-span-2 sm:col-span-1">
           <button
+            type="button"
+            aria-pressed={selectedTab === -1}
             onClick={() => onTabChange(-1)}
             className={`
               flex-1 min-w-0 rounded-l-lg px-2 sm:px-3 py-2 flex items-center gap-1 sm:gap-2 transition-all duration-200
-              ${selectedTab === -1 
-                ? 'shadow-neu-pressed dark:shadow-neu-pressed-dark text-youtube-red dark:text-youtube-red' 
-                : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red dark:hover:text-youtube-red hover:bg-white/50 dark:hover:bg-white/5'
+              ${selectedTab === -1
+                ? 'shadow-neu-pressed dark:shadow-neu-pressed-dark text-youtube-red-accessible dark:text-youtube-red-accessible-dark'
+                : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red-accessible dark:hover:text-youtube-red-accessible-dark hover:bg-white/50 dark:hover:bg-white/5'
               }
             `}
           >
@@ -82,18 +84,21 @@ export function DurationTabs({ selectedTab, onTabChange, videos, compact = false
           <ShuffleButton
             onClick={() => handleShuffle(-1)}
             disabled={videos.length === 0}
+            label="Lecture aléatoire : Toutes durées"
           />
         </div>
-        
+
         {SHEET_TABS.map((tab, index) => (
           <div key={tab.name} className="flex min-w-0">
             <button
+              type="button"
+              aria-pressed={selectedTab === index}
               onClick={() => onTabChange(index)}
               className={`
                 flex-1 min-w-0 rounded-l-lg px-2 sm:px-3 py-2 flex items-center gap-1 sm:gap-2 transition-all duration-200
-                ${selectedTab === index 
-                  ? 'shadow-neu-pressed dark:shadow-neu-pressed-dark text-youtube-red dark:text-youtube-red' 
-                  : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red dark:hover:text-youtube-red hover:bg-white/50 dark:hover:bg-white/5'
+                ${selectedTab === index
+                  ? 'shadow-neu-pressed dark:shadow-neu-pressed-dark text-youtube-red-accessible dark:text-youtube-red-accessible-dark'
+                  : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red-accessible dark:hover:text-youtube-red-accessible-dark hover:bg-white/50 dark:hover:bg-white/5'
                 }
               `}
             >
@@ -107,6 +112,7 @@ export function DurationTabs({ selectedTab, onTabChange, videos, compact = false
             <ShuffleButton
               onClick={() => handleShuffle(index)}
               disabled={tabCounts[index] === 0}
+              label={`Lecture aléatoire : ${formatDurationRange(tab.durationRange.min, tab.durationRange.max)}`}
             />
           </div>
         ))}

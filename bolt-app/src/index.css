@@ -23,8 +23,11 @@
   }
 
   :where(button, [role='button']):focus-visible {
-    outline: 2px solid #ef4444;
+    outline: 2px solid var(--color-youtube-red-accessible);
     outline-offset: 3px;
+  }
+  .dark :where(button, [role='button']):focus-visible {
+    outline-color: var(--color-youtube-red-accessible-dark);
   }
 }
 

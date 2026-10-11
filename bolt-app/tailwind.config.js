@@ -13,6 +13,8 @@ export default {
         'youtube': {
           'red': '#FF0000',
           'red-hover': '#CC0000',
+          'red-accessible': '#B00000',
+          'red-accessible-dark': '#FF8585',
           'black': '#0F0F0F',
           'gray-dark': '#606060',
           'gray-light': '#909090',
