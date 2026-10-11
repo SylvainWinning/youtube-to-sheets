@@ -1,15 +1,20 @@
 import type { VideoData } from '../../../types/video.ts';
 import type { ApiResponse } from './types.ts';
+import { fetchJsonWithRetry, REQUEST_POLICY, throwIfAborted } from '../../requestPolicy.ts';
 import { validateRow } from './validation.ts';
 import { mapRowToVideo } from './transform.ts';
 
-export async function fetchLocalVideos(): Promise<ApiResponse<VideoData[]>> {
+export async function fetchLocalVideos(signal?: AbortSignal, beforeAttempt?: () => void): Promise<ApiResponse<VideoData[]>> {
   try {
     const baseUrl = (import.meta as any).env?.BASE_URL ?? '';
     const url = `${baseUrl}data/videos.json?t=${Date.now()}`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
+    let modified = NaN;
+    const json = await fetchJsonWithRetry<unknown>(url, {
+      signal, policy: { ...REQUEST_POLICY, maxAttempts: 1, totalTimeoutMs: 5_000 },
+      onAttempt: beforeAttempt,
+      init: { cache: 'no-store' },
+      onResponse: response => { modified = Date.parse(response.headers.get('Last-Modified') ?? ''); },
+    });
     if (!Array.isArray(json) || !json.every(Array.isArray)) {
       throw new Error('Format de la copie locale invalide');
     }
@@ -19,7 +24,6 @@ export async function fetchLocalVideos(): Promise<ApiResponse<VideoData[]>> {
       .map((row, index) => mapRowToVideo(row, index));
 
     if (videos.length === 0) throw new Error('La copie locale ne contient aucune vidéo valide');
-    const modified = Date.parse(res.headers.get('Last-Modified') ?? '');
     return {
       data: videos,
       metadata: {
@@ -29,6 +33,7 @@ export async function fetchLocalVideos(): Promise<ApiResponse<VideoData[]>> {
       }
     };
   } catch (err) {
+    throwIfAborted(signal);
     console.error('Erreur lors du chargement des vidéos locales:', err);
     return {
       data: [],

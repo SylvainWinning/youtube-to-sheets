@@ -1,3 +1,4 @@
+import { throwIfAborted } from '../../requestPolicy.ts';
 import { fetchSheetData } from './fetch.ts';
 import { SHEET_TABS } from '../../constants.ts';
 import type { VideoData } from '../../../types/video.ts';
@@ -83,7 +84,7 @@ function validateAndFormatDate(rawDate: any, videoTitle: string): string {
   }
 }
 
-export async function synchronizeSheets(): Promise<VideoData[]> {
+export async function synchronizeSheets(signal?: AbortSignal, beforeAttempt?: () => void): Promise<VideoData[]> {
   try {
     console.log('Starting sheet synchronization...');
     const videoMap: VideoMap = {};
@@ -93,7 +94,7 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
 
     let masterOrderMap: Record<string, number> = {};
     let explicitMasterPositions = 0;
-    const masterResult = await fetchSheetData(MASTER_SHEET_RANGE);
+    const masterResult = await fetchSheetData(MASTER_SHEET_RANGE, signal, beforeAttempt);
     const masterValues = masterResult.values ?? [];
 
     if (masterResult.error) {
@@ -118,11 +119,13 @@ export async function synchronizeSheets(): Promise<VideoData[]> {
       }
     }
 
+    throwIfAborted(signal);
     // Process all tabs in parallel for better performance
     const tabResults = await Promise.allSettled(
-      SHEET_TABS.map(tab => fetchSheetData(tab.range))
+      SHEET_TABS.map(tab => fetchSheetData(tab.range, signal, beforeAttempt))
     );
 
+    throwIfAborted(signal);
     // Process results from each tab
     tabResults.forEach((result, index) => {
       const tab = SHEET_TABS[index];
