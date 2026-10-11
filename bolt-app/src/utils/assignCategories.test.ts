@@ -14,7 +14,8 @@ const categories = new Set([
 
 for (const file of ['../../public/data/videos.json', '../../../data/videos.json']) {
   test(`toutes les chaînes de ${file} ont une catégorie utilisable`, () => {
-    const [, ...rows] = JSON.parse(readFileSync(new URL(file, import.meta.url), 'utf8'));
+    const snapshot = JSON.parse(readFileSync(new URL(file, import.meta.url), 'utf8'));
+    const [, ...rows] = Array.isArray(snapshot) ? snapshot : snapshot.videos;
     const videos = rows.map((row: unknown[], index: number) => mapRowToVideo(row, index));
     const classified = assignCategories(videos);
     const missing = classified.filter(video => !categories.has(video.myCategory ?? ''));

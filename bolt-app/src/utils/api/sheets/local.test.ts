@@ -79,3 +79,16 @@ test('des métadonnées invalides ne prouvent pas une synchronisation complète'
     assert.equal(result.metadata?.sync, undefined);
   } finally { mock.restoreAll(); }
 });
+
+test('les vidéos privées ont un compte validé distinct des vidéos disponibles', async () => {
+  const { fetchLocalVideos } = await import('./local.ts');
+  for (const privateVideoCount of [13, 0, -1, 1.5, '13']) {
+    const metadata = { status: 'complete', source: 'youtube', videoCount: 1, privateVideoCount, lastSuccessfulSync: '2026-10-11T12:00:00Z' };
+    mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ videos: validRows, metadata })));
+    try {
+      const result = await fetchLocalVideos();
+      assert.equal(result.data.length, 1);
+      assert.equal(result.metadata?.sync?.privateVideoCount, typeof privateVideoCount === 'number' && Number.isInteger(privateVideoCount) && privateVideoCount >= 0 ? privateVideoCount : undefined);
+    } finally { mock.restoreAll(); }
+  }
+});

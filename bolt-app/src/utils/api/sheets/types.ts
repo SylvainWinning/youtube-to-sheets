@@ -4,6 +4,7 @@ export interface SyncMetadata {
   status: "complete" | "degraded" | "unknown";
   source: "youtube" | "mixed" | "cache" | "sheets";
   videoCount: number;
+  privateVideoCount?: number;
 }
 
 export interface SheetError {

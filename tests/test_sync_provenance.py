@@ -65,3 +65,41 @@ def test_drop_is_rejected_before_any_sheet_is_cleared(synchronization, monkeypat
         main.sync_videos('PL123')
     assert synchronization == []
     assert len(read_snapshot('data/videos.json')[0]) == 11
+
+
+@pytest.mark.parametrize('privacy,title,expected_status,private_count', [
+    ('private', 'Private video', 'complete', 1),
+    ('public', 'Private video', 'degraded', 0),
+    ('private', 'Deleted video', 'degraded', 0),
+    ('private', 'Normal title', 'degraded', 0),
+])
+def test_private_placeholder_distinguished_from_missing_details(synchronization, monkeypatch, privacy, title, expected_status, private_count):
+    def fetch(*args, report, **kwargs):
+        report.update(status='complete', cacheCount=0)
+        return [
+            {'contentDetails': {'videoId': 'available'}, 'snippet': {'position': 0}},
+            {'contentDetails': {'videoId': 'hidden'}, 'snippet': {'position': 1, 'title': title}, 'status': {'privacyStatus': privacy}},
+        ]
+    monkeypatch.setattr(main, 'fetch_all_playlist_items', fetch)
+    monkeypatch.setattr(main, 'fetch_videos_details', lambda *args: details(['available']))
+    main.sync_videos('PL123')
+    rows, metadata = read_snapshot('data/videos.json')
+    assert len(rows) == 2
+    assert metadata['status'] == expected_status
+    assert metadata['privateVideoCount'] == private_count
+    assert metadata['missingDetailCount'] == 1 - private_count
+    assert bool(metadata['lastSuccessfulSync']) == (expected_status == 'complete')
+
+
+def test_private_videos_deduplicated_but_incomplete_pagination_stays_degraded(synchronization, monkeypatch):
+    def fetch(*args, report, **kwargs):
+        report.update(status='degraded', cacheCount=1)
+        return [{'contentDetails': {'videoId': 'hidden'}, 'snippet': {'title': 'Private video'}, 'status': {'privacyStatus': 'private'}},
+                {'contentDetails': {'videoId': 'available'}, 'snippet': {'position': 0}}]
+    monkeypatch.setattr(main, 'fetch_all_playlist_items', fetch)
+    monkeypatch.setattr(main, 'fetch_videos_details', lambda *args: details(['available']))
+    main.sync_videos('PL123,PL456')
+    metadata = read_snapshot('data/videos.json')[1]
+    assert metadata['privateVideoCount'] == 1
+    assert metadata['status'] == 'degraded'
+    assert metadata['lastSuccessfulSync'] is None
