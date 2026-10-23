@@ -96,7 +96,7 @@ export function VideoCard({ video }: VideoCardProps) {
       <button type="button" aria-pressed={watched}
         aria-label={`Marquer comme vue : ${video.title}`}
         onClick={() => { setChangedHere(true); setWatched(identity, !watched); }}
-        className="watch-toggle mt-2 min-h-11 flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-neutral-500 px-3 py-2 text-sm text-youtube-black dark:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark">
+        className="watch-toggle mt-2 min-h-11 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark">
         {watched && <Check aria-hidden="true" className="w-4 h-4" />}
         {watched ? 'Vue · Annuler' : 'Marquer comme vue'}
       </button>

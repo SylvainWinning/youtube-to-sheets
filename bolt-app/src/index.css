@@ -64,6 +64,10 @@
     @apply border border-transparent bg-youtube-red-accessible text-white hover:bg-red-900 dark:bg-youtube-red-accessible-dark dark:text-neutral-900 dark:hover:bg-red-200 font-medium transition-colors duration-150;
   }
 
+  .watch-toggle {
+    @apply border-gray-300 dark:border-neutral-500 text-youtube-black dark:text-white;
+  }
+
   .watch-toggle[aria-pressed="true"] {
     @apply border-youtube-red-accessible dark:border-youtube-red-accessible-dark bg-red-50 dark:bg-red-950/50 text-youtube-red-accessible dark:text-youtube-red-accessible-dark font-medium;
   }
