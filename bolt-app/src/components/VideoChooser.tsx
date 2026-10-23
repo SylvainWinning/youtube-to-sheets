@@ -1,16 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useVideoChoice } from '../hooks/useVideoChoice';
 import { Shuffle, X } from 'lucide-react';
 import type { VideoData } from '../types/video';
 import { getVideoIdentity } from '../utils/videoLibrary';
 import { getYouTubeUrl, saveVideoNavigation } from '../utils/videoUtils';
-import { choiceCandidates, drawVideo, readChoicePreferences, CHOICE_STORAGE_KEY, type ChoicePreferences } from '../utils/videoChoice';
+import { choiceCandidates, drawVideo } from '../utils/videoChoice';
 
 export function VideoChooser({ videos }: { videos: VideoData[] }) {
-  const [preferences, setPreferences] = useState(() => {
-    try { return readChoicePreferences(window.localStorage); }
-    catch { return { watched: [], excludeWatched: false }; }
-  });
-  const [storageError, setStorageError] = useState(false);
+  const { preferences, storageError, setWatched, setExcludeWatched } = useVideoChoice();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -26,14 +23,6 @@ export function VideoChooser({ videos }: { videos: VideoData[] }) {
       if (!dialog.current?.open) dialog.current?.showModal();
     } else if (dialog.current?.open) dialog.current.close();
   }, [isOpen]);
-
-  function updatePreferences(next: ChoicePreferences) {
-    setPreferences(next);
-    try {
-      window.localStorage.setItem(CHOICE_STORAGE_KEY, JSON.stringify(next));
-      setStorageError(false);
-    } catch { setStorageError(true); }
-  }
 
   function choose(previous: string | null = null) {
     const video = drawVideo(candidates, previous);
@@ -62,12 +51,10 @@ export function VideoChooser({ videos }: { videos: VideoData[] }) {
       {!selected && <p role="status">Aucune vidéo à proposer. Désactive l’exclusion des vidéos vues ou modifie les filtres.</p>}
       <div className="my-3 space-y-2 text-sm">
         {selected && <label className="flex items-center gap-2 min-h-11">
-          <input type="checkbox" checked={preferences.watched.includes(selectedId!)} onChange={event => updatePreferences({
-            ...preferences, watched: event.target.checked ? [...preferences.watched, selectedId!] : preferences.watched.filter(id => id !== selectedId),
-          })} /> Marquer cette vidéo comme vue
+          <input type="checkbox" checked={preferences.watched.includes(selectedId!)} onChange={event => setWatched(selectedId!, event.target.checked)} /> Marquer cette vidéo comme vue
         </label>}
         <label className="flex items-center gap-2 min-h-11">
-          <input type="checkbox" checked={preferences.excludeWatched} onChange={event => updatePreferences({ ...preferences, excludeWatched: event.target.checked })} />
+          <input type="checkbox" checked={preferences.excludeWatched} onChange={event => setExcludeWatched(event.target.checked)} />
           Exclure les vidéos marquées vues
         </label>
         <p className="text-gray-600 dark:text-gray-300">{storageError ? 'Mémorisation indisponible : ces choix restent valables pour cette session.' : 'Marquages et préférence conservés sur ce navigateur.'}</p>
