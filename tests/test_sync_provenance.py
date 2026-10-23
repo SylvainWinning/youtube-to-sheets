@@ -13,7 +13,7 @@ def synchronization(monkeypatch, tmp_path):
     monkeypatch.setattr(main, 'build', lambda *a, **k: object())
     monkeypatch.setattr(main, 'get_channel_avatar', lambda *a: '')
     writes = []
-    monkeypatch.setattr(main, 'write_category', lambda *args: writes.append(args[2]))
+    monkeypatch.setattr(main, 'write_library', lambda service, spreadsheet, categories, title, rows: writes.extend([*categories, title]))
     return writes
 
 
@@ -103,3 +103,20 @@ def test_private_videos_deduplicated_but_incomplete_pagination_stays_degraded(sy
     assert metadata['privateVideoCount'] == 1
     assert metadata['status'] == 'degraded'
     assert metadata['lastSuccessfulSync'] is None
+
+
+def test_failed_sheet_publication_preserves_both_local_exports(synchronization, monkeypatch):
+    previous = [main.HEADERS, entry('0'), entry('1')]
+    for path in ['data/videos.json', 'bolt-app/public/data/videos.json']:
+        write_snapshot(path, previous, {'lastSuccessfulSync': '2026-10-10T12:00:00Z'})
+    monkeypatch.setattr(main, 'fetch_all_playlist_items', fetch_items(2))
+    monkeypatch.setattr(main, 'fetch_videos_details', details)
+    def reject(*args):
+        raise RuntimeError('publication rejected')
+    monkeypatch.setattr(main, 'write_library', reject)
+    with pytest.raises(RuntimeError, match='publication rejected'):
+        main.sync_videos('PL123')
+    for path in ['data/videos.json', 'bolt-app/public/data/videos.json']:
+        rows, metadata = read_snapshot(path)
+        assert rows == previous
+        assert metadata['lastSuccessfulSync'] == '2026-10-10T12:00:00Z'
