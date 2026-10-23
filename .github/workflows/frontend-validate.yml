@@ -32,7 +32,9 @@ jobs:
       - name: Confirm the pinned revision
         env:
           EXPECTED_REVISION: ${{ inputs.ref }}
-        run: test "$(git rev-parse HEAD)" = "$EXPECTED_REVISION"
+        # checkout and shell steps have different home directories in containers;
+        # trust only this checkout for this read, without a global wildcard.
+        run: test "$(git -c safe.directory="$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_REVISION"
       - uses: actions/setup-node@v6
         with:
           node-version: 24
