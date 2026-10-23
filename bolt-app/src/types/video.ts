@@ -5,6 +5,7 @@ export interface PlaylistMembership {
 }
 
 export interface VideoData {
+  channelId?: string; // Identifiant YouTube stable, colonne Q (facultative pour les anciens exports).
   channelAvatar?: string; // Colonne A
   title: string; // Colonne B
   link: string; // Colonne C

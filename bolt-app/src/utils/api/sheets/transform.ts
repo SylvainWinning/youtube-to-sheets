@@ -16,6 +16,7 @@ export function mapRowToVideo(row: any[], index = 0): VideoData {
       : Number.NaN;
 
   const video: VideoData = {
+    channelId: safeString(row[16]),
     channelAvatar: safeString(row[0]), // Column A for channel avatar
     title: safeString(row[1]), // Column B
     link: safeString(row[2]), // Column C

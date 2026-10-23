@@ -6,6 +6,7 @@ import logging
 import json
 import csv
 from sync_metadata import read_snapshot, check_volume, write_snapshot, now, preserve_failed_sync
+from category_rules import migrate_channel_rules
 from datetime import datetime
 import argparse
 
@@ -44,6 +45,7 @@ HEADERS = [
     "myCategory",
     "playlistPosition",
     "playlistId",
+    "channelId",
 ]
 
 # Valeurs par défaut pour les miniatures et avatars en cas d’absence de données
@@ -426,16 +428,28 @@ def write_library(service, spreadsheet_id: str, categories: dict[str, list[list]
                     "rowCount": max(grid.get("rowCount", 0), len(values)),
                     "columnCount": max(grid.get("columnCount", 0), len(HEADERS))}},
                 "fields": "gridProperties.rowCount,gridProperties.columnCount"}})
-        # An unbounded row range clears stale values below the new rows in A:P.
+        # An unbounded row range clears stale values below the new rows in A:Q.
         # Only values are replaced: formatting and other columns are preserved.
         requests_body.append({"updateCells": {
             "range": {"sheetId": prop["sheetId"], "startRowIndex": 0,
                       "startColumnIndex": 0, "endColumnIndex": len(HEADERS)},
             "rows": [{"values": [{"userEnteredValue": {"stringValue": cell}} for cell in row]}
                      for row in values], "fields": "userEnteredValue"}})
+    # Column Q is newly managed. Never overwrite an unrelated existing column.
+    q_ranges = ["'" + title.replace("'", "''") + "'!Q:Q" for title in tables
+                if title in existing and existing[title].get("gridProperties", {}).get("columnCount", 0) >= 17]
+    if q_ranges:
+        columns = sheets.values().batchGet(spreadsheetId=spreadsheet_id, ranges=q_ranges,
+                                          valueRenderOption="UNFORMATTED_VALUE").execute().get("valueRanges", [])
+        if len(columns) != len(q_ranges):
+            raise RuntimeError("Vérification de la colonne Q incomplète")
+        for column in columns:
+            values = column.get("values", [])
+            if any(any(cell != "" for cell in row) for row in values) and values[0] != ["channelId"]:
+                raise RuntimeError("Colonne Q déjà utilisée : publication annulée sans écriture")
     # Google validates the entire batch and applies all requests atomically.
     sheets.batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests_body}).execute()
-    ranges = ["'" + title.replace("'", "''") + "'!A:P" for title in tables]
+    ranges = ["'" + title.replace("'", "''") + "'!A:Q" for title in tables]
     result = sheets.values().batchGet(spreadsheetId=spreadsheet_id, ranges=ranges,
                                      valueRenderOption="UNFORMATTED_VALUE").execute().get("valueRanges", [])
     if len(result) != len(tables):
@@ -543,6 +557,7 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | N
             info = videos_data.get(video_id, {})
             if not info and (video_link, playlist_source_id) in cached_rows:
                 entry = list(cached_rows[(video_link, playlist_source_id)])
+                entry += [""] * (len(HEADERS) - len(entry))
                 entry[14] = str(item.get("snippet", {}).get("position", entry[14]))
                 add_video_to_categories(entry, get_duration_category(entry[5]), videos_by_category, all_videos)
                 cached_detail_count += 1
@@ -573,9 +588,10 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | N
                     ", ".join(snippet.get("tags", []) or []),
                     snippet.get("categoryId", "Inconnu"),
                     thumbnail_url,
-                    "",  # myCategory (colonne personnalisée optionnelle)
+                    cached_rows.get((video_link, playlist_source_id), [""] * 14)[13],
                     str(playlist_position) if playlist_position is not None else "",
                     playlist_source_id,
+                    channel_id,
                 ]
                 add_video_to_categories(entry, duration_category, videos_by_category, all_videos)
     candidate = [HEADERS] + all_videos
@@ -592,7 +608,17 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | N
             metadata = {**previous_metadata, "status": "degraded", "source": "cache", "warnings": ["volume_drop_blocked"], "lastAttempt": attempt_at, "publishedAt": now()}
             write_snapshot("data/videos.json", previous_rows, metadata)
         raise
+    # Seed existing editorial choices once using IDs returned by YouTube itself.
+    # Never infer future categories from a renamed or newly created channel.
+    rules_path = Path(__file__).parent / "bolt-app/src/data/categoryRules.json"
+    rules = json.loads(rules_path.read_text(encoding="utf-8"))
+    migrated = migrate_channel_rules(rules, videos_data) if complete else rules
     write_library(service, SPREADSHEET_ID, videos_by_category, SHEET_TAB_NAME, all_videos)
+
+    if migrated != rules:
+        temporary = rules_path.with_suffix(".json.tmp")
+        temporary.write_text(json.dumps(migrated, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        temporary.replace(rules_path)
 
     if complete:
         metadata["lastSuccessfulSync"] = now()

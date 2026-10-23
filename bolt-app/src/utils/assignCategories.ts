@@ -1,23 +1,31 @@
 import type { VideoData } from '../types/video.ts';
-import { channelCategories } from './channelCategories.ts';
+import { getVideoIdentity } from './videoLibrary.ts';
+import rules from '../data/categoryRules.json' with { type: 'json' };
 
-export function getVideoCategory(video: VideoData): string {
-  return video.myCategory?.trim()
-    || channelCategories[video.channel?.trim() ?? '']
-    || video.category?.trim()
-    || '';
+export interface CategoryRules {
+  migrationComplete?: boolean;
+  channels: Record<string, string>;
+  videos: Record<string, string>;
+  legacyNames: Record<string, string>;
+}
+export const UNCLASSIFIED = 'Non classées';
+
+export function getVideoCategory(video: VideoData, mapping: CategoryRules = rules): string {
+  const personal = video.myCategory?.trim();
+  if (personal) return personal;
+  let videoId = '';
+  try {
+    const identity = getVideoIdentity(video);
+    if (identity.startsWith('youtube:')) videoId = identity.slice(8);
+  } catch { /* Legacy fixture without a link. */ }
+  return mapping.videos[videoId]?.trim()
+    || (video.channelId ? mapping.channels[video.channelId]?.trim()
+      || (mapping.migrationComplete === false ? mapping.legacyNames[video.channel?.trim() ?? '']?.trim() : undefined)
+      : mapping.legacyNames[video.channel?.trim() ?? '']?.trim())
+    || UNCLASSIFIED;
 }
 
-/**
- * Returns a new array of videos where the `myCategory` property is
- * automatically filled based on the video's channel name if not already set.
- * It looks up the channel name in the `channelCategories` mapping.
- *
- * @param videos Array of video objects to process.
- * @returns New array with categories assigned.
- */
-export function assignCategories(videos: VideoData[]): VideoData[] {
-  return videos.map((video) => {
-    return { ...video, myCategory: getVideoCategory(video) };
-  });
+/** Normalize once at ingestion without changing source objects or personal categories. */
+export function assignCategories(videos: VideoData[], mapping: CategoryRules = rules): VideoData[] {
+  return videos.map(video => ({ ...video, myCategory: getVideoCategory(video, mapping) }));
 }

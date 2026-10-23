@@ -120,3 +120,21 @@ def test_failed_sheet_publication_preserves_both_local_exports(synchronization, 
         rows, metadata = read_snapshot(path)
         assert rows == previous
         assert metadata['lastSuccessfulSync'] == '2026-10-10T12:00:00Z'
+
+
+def test_fresh_sync_transports_channel_id_and_preserves_personal_category(synchronization, monkeypatch):
+    previous = [main.HEADERS, entry('0'), entry('1')]
+    previous[1][13] = 'Personnel'
+    write_snapshot('data/videos.json', previous, {})
+    monkeypatch.setattr(main, 'fetch_all_playlist_items', fetch_items(2))
+    def fresh(ids, *args):
+        result = details(ids)
+        for value in result.values():
+            value['snippet'].update(channelId='UC' + 'x' * 22, channelTitle='Synthetic unknown')
+        return result
+    monkeypatch.setattr(main, 'fetch_videos_details', fresh)
+    main.sync_videos('PL123')
+    rows, _ = read_snapshot('data/videos.json')
+    assert rows[1][13] == 'Personnel'
+    assert rows[1][16] == 'UC' + 'x' * 22
+    assert all(len(row) == len(main.HEADERS) for row in rows)

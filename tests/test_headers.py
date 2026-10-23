@@ -22,6 +22,7 @@ EXPECTED_HEADERS = [
     "myCategory",
     "playlistPosition",
     "playlistId",
+    "channelId",
 ]
 
 

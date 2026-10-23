@@ -40,7 +40,7 @@ def counts(rows):
 
 
 def fingerprint(rows):
-    normalized = sorted([str(cell) for cell in row] + [""] * max(0, 16 - len(row)) for row in rows[1:])
+    normalized = sorted([str(cell) for cell in row] + [""] * max(0, len(rows[0]) - len(row)) for row in rows[1:])
     return hashlib.sha256(json.dumps(normalized, ensure_ascii=False).encode()).hexdigest()
 
 
