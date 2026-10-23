@@ -146,7 +146,7 @@ Le JSON publié conserve une ligne par appartenance à une playlist. L’interfa
 
 « Toutes les playlists », les compteurs de durée et le tirage aléatoire utilisent des vidéos distinctes. Une vidéo partagée porte la mention « 2 playlists ». Dans une playlist sélectionnée, le tri « Playlist d’origine » utilise sa position propre; en cas de répétition, la première position est retenue pour l’affichage unique. Les données sources ne sont pas supprimées ni réécrites par ce regroupement.
 
-« Choisir une vidéo » tire au sort parmi les résultats des filtres actifs, puis présente un aperçu. Seul le lien « Ouvrir sur YouTube » ouvre un nouvel onglet; « Autre choix » évite la proposition précédente lorsqu’une alternative existe. Sur chaque carte (« Marquer comme vue », puis « Vue · Annuler ») et dans cet aperçu, les vidéos peuvent être marquées explicitement comme vues et exclues des tirages suivants. Ces marquages et la préférence d’exclusion restent locaux au navigateur; ouvrir une vidéo ne la marque pas automatiquement. Si le stockage est indisponible, les choix restent utilisables pendant la session et un message le précise.
+« Choisir une vidéo » tire au sort parmi les résultats des filtres actifs, puis présente un aperçu. Seul le lien « Ouvrir sur YouTube » ouvre un nouvel onglet; « Autre choix » évite la proposition précédente lorsqu’une alternative existe.
 
 
 ### Fraîcheur et exhaustivité de la bibliothèque

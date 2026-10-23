@@ -1,19 +1,17 @@
 import { SafeImage } from './ui/SafeImage';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useVideoChoice } from '../hooks/useVideoChoice';
 import { Shuffle, X } from 'lucide-react';
 import type { VideoData } from '../types/video';
-import { getVideoIdentity } from '../utils/videoLibrary';
+import { getVideoIdentity, uniqueVideoCandidates } from '../utils/videoLibrary';
 import { getYouTubeUrl, saveVideoNavigation } from '../utils/videoUtils';
-import { choiceCandidates, drawVideo } from '../utils/videoChoice';
+import { drawVideo } from '../utils/videoChoice';
 
 export function VideoChooser({ videos }: { videos: VideoData[] }) {
-  const { preferences, storageError, setWatched, setExcludeWatched } = useVideoChoice();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  const candidates = useMemo(() => choiceCandidates(videos, preferences), [videos, preferences]);
+  const candidates = useMemo(() => uniqueVideoCandidates(videos), [videos]);
   // A filter change must never leave an out-of-filter preview available to open.
   const selected = videos.find(video => getVideoIdentity(video) === selectedId);
   const hasAlternative = candidates.some(video => getVideoIdentity(video) !== selectedId);
@@ -49,26 +47,14 @@ export function VideoChooser({ videos }: { videos: VideoData[] }) {
         <h3 className="font-semibold mt-3 break-words">{selected.title}</h3>
         <p className="text-sm mt-1">{selected.channel} · {selected.duration}</p>
       </div>}
-      {!selected && <p role="status">Aucune vidéo à proposer. Désactive l’exclusion des vidéos vues ou modifie les filtres.</p>}
-      <div className="my-3 space-y-2 text-sm">
-        {selected && <label className="flex items-center gap-2 min-h-11">
-          <input type="checkbox" checked={preferences.watched.includes(selectedId!)} onChange={event => setWatched(selectedId!, event.target.checked)} /> Marquer cette vidéo comme vue
-        </label>}
-        <label className="flex items-center gap-2 min-h-11">
-          <input type="checkbox" checked={preferences.excludeWatched} onChange={event => setExcludeWatched(event.target.checked)} />
-          Exclure les vidéos marquées vues
-        </label>
-        <p className="text-gray-600 dark:text-gray-300">{storageError ? 'Mémorisation indisponible : ces choix restent valables pour cette session.' : 'Marquages et préférence conservés sur ce navigateur.'}</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
+      {!selected && <p role="status">Aucune vidéo ne correspond aux filtres actifs.</p>}
+      <div className="mt-4 flex flex-wrap gap-2">
         {url && <a href={url} target="_blank" rel="noopener noreferrer" onClick={saveVideoNavigation} onAuxClick={saveVideoNavigation}
           className="primary-action rounded-xl px-4 py-3 text-sm">Ouvrir sur YouTube</a>}
         <button type="button" disabled={!hasAlternative} onClick={() => choose(selectedId)}
           className="neu-button rounded-xl px-4 py-3 text-sm disabled:opacity-50">Autre choix</button>
       </div>
-      {selected && !hasAlternative && <p role="status" className="text-sm mt-3">{preferences.excludeWatched
-        ? 'Aucune autre vidéo avec ces filtres. Tu peux désactiver l’exclusion des vidéos vues.'
-        : 'Une seule vidéo correspond aux filtres actifs.'}</p>}
+      {selected && !hasAlternative && <p role="status" className="text-sm mt-3">Une seule vidéo correspond aux filtres actifs.</p>}
     </dialog>
   </>;
 }

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { VideoData } from '../types/video.ts';
-import { choiceCandidates, drawVideo, readChoicePreferences } from './videoChoice.ts';
-import { getVideoIdentity } from './videoLibrary.ts';
+import { drawVideo } from './videoChoice.ts';
+import { getVideoIdentity, uniqueVideoCandidates } from './videoLibrary.ts';
 import { filterVideosBySearch } from './searchUtils.ts';
 import { filterVideosByPlaylist } from './videoLibrary.ts';
 import { filterVideosByDuration } from './videoFilters.ts';
@@ -14,41 +14,29 @@ const video = (id: string, category: string, playlistId: string, duration: strin
 const a = video('aBcDeFgHiJk', 'Tech', 'A', '03:00');
 const b = video('bBcDeFgHiJk', 'Tech', 'A', '03:00');
 const c = video('cBcDeFgHiJk', 'Humour', 'B', '15:00');
-const preferences = { watched: [getVideoIdentity(a)], excludeWatched: false };
 
 test('tirage limité à la recherche, catégorie, playlist et durée déjà filtrées', () => {
   const searched = filterVideosBySearch([a, b, c], { query: 'Test', fields: ['title'] });
   const category = searched.filter(v => v.myCategory === 'Tech');
   const playlist = filterVideosByPlaylist(category, 'A');
   const duration = filterVideosByDuration(playlist, { name: 'Court', range: 'A:Q', durationRange: { min: 0, max: 5 } });
-  const candidates = choiceCandidates(duration, preferences);
+  const candidates = uniqueVideoCandidates(duration);
   assert.deepEqual(candidates, [a, b]);
   assert.equal(drawVideo(candidates, null, () => 0), a);
   assert.equal(drawVideo(candidates, null, () => 0.999), b);
 });
 
-test('exclusion volontaire, déduplication, aucune répétition immédiate et épuisement explicite', () => {
+test('déduplication, aucune répétition immédiate et épuisement explicite', () => {
   const source = [a, { ...a, link: 'https://www.youtube.com/watch?v=aBcDeFgHiJk' }, b];
-  assert.deepEqual(choiceCandidates(source, preferences), [a, b]);
-  assert.deepEqual(choiceCandidates(source, { ...preferences, excludeWatched: true }), [b]);
+  assert.deepEqual(uniqueVideoCandidates(source), [a, b]);
   assert.equal(drawVideo([a, b], getVideoIdentity(a), () => 0), b);
   assert.equal(drawVideo([a], getVideoIdentity(a)), null);
   assert.equal(drawVideo([], null), null);
-  assert.deepEqual(choiceCandidates([a], { ...preferences, excludeWatched: true }), []);
   assert.equal(source.length, 3);
 });
 
-test('préférences relues après rechargement, données abîmées et stockage interdit tolérés', () => {
-  const saved = { watched: [getVideoIdentity(a), getVideoIdentity(a)], excludeWatched: true };
-  assert.deepEqual(readChoicePreferences({ getItem: () => JSON.stringify(saved) }), { ...saved, watched: [getVideoIdentity(a)] });
-  for (const raw of ['null', '{', '{"watched":[3],"excludeWatched":true}', '{"watched":[],"excludeWatched":"false"}']) {
-    assert.deepEqual(readChoicePreferences({ getItem: () => raw }), { watched: [], excludeWatched: false });
-  }
-  assert.deepEqual(readChoicePreferences({ getItem: () => { throw new Error('Denied'); } }), { watched: [], excludeWatched: false });
-});
-
 test('le tirage répartit équitablement les chances entre vidéos uniques malgré les doublons de playlists', () => {
-  const pool = choiceCandidates([a, { ...a, playlistId: 'B' }, b, c], { watched: [], excludeWatched: false });
+  const pool = uniqueVideoCandidates([a, { ...a, playlistId: 'B' }, b, c]);
   const counts = new Map<string, number>();
   for (let i = 0; i < 300; i++) {
     const selected = drawVideo(pool, null, () => (i + 0.5) / 300)!;
