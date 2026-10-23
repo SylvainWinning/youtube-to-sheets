@@ -1,3 +1,4 @@
+import { readSheetValues } from './schema.ts';
 import type { SheetResponse } from './types.ts';
 import { fetchJsonWithRetry, throwIfAborted } from '../../requestPolicy.ts';
 import { SPREADSHEET_ID, YOUTUBE_API_KEY } from './config.ts';
@@ -30,17 +31,12 @@ export async function fetchSheetData(range: string, signal?: AbortSignal, before
     const encodedRange = encodeURIComponent(range);
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodedRange}?key=${YOUTUBE_API_KEY}`;
     
-    const data = await fetchJsonWithRetry<{ values?: any[][] }>(url, {
+    const data = await fetchJsonWithRetry<unknown>(url, {
       signal, onAttempt: () => { beforeAttempt?.(); checkRateLimit(); },
       init: { method: 'GET', headers: { Accept: 'application/json' } },
     });
     
-    if (!data.values) {
-      console.warn(`No data found for tab: ${range}`);
-      return { values: [] };
-    }
-
-    return { values: data.values };
+    return { values: readSheetValues(data) };
   } catch (error) {
     throwIfAborted(signal);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

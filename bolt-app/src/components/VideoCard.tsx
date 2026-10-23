@@ -1,3 +1,4 @@
+import { SafeImage } from './ui/SafeImage';
 import { useState } from 'react';
 import { Eye, Check } from 'lucide-react';
 import { VideoData } from '../types/video';
@@ -43,7 +44,7 @@ export function VideoCard({ video }: VideoCardProps) {
         className="flex flex-col flex-1 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark"
       >
         <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
-          <img
+          <SafeImage
             src={video.thumbnail}
             alt={video.title}
             loading="lazy"
@@ -63,17 +64,15 @@ export function VideoCard({ video }: VideoCardProps) {
           </h3>
 
           <div className="flex items-center gap-2 text-[13px] text-youtube-gray-dark dark:text-gray-400 mb-1">
-            {video.channelAvatar && (
-              <img
-                src={video.channelAvatar}
-                alt={video.channel}
-                loading="lazy"
-                decoding="async"
-                width={24}
-                height={24}
-                className="w-6 h-6 rounded-full"
-              />
-            )}
+            <SafeImage
+              src={video.channelAvatar}
+              alt={video.channel}
+              loading="lazy"
+              decoding="async"
+              width={24}
+              height={24}
+              className="w-6 h-6 rounded-full"
+            />
             <div>{video.channel}</div>
           </div>
 

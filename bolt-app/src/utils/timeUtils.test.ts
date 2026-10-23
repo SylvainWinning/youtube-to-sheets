@@ -51,3 +51,14 @@ test('sortVideos orders videos by chronological publishedAt', () => {
   const sorted = sortVideos(videos as any, { field: 'publishedAt', direction: 'asc' });
   assert.deepEqual(sorted.map(v => v.title), ['B', 'A', 'C']);
 });
+
+for (const value of ['31/02/2024', '31/04/2024 12:00', '29/02/2023 12:00', '2024-02-30T12:00:00Z', '2024-01-01T24:00:00Z', '2024-01-01T12:60:00Z', '17/05/2024 14:30 garbage', '11 avril 2024 xyz', '42', '']) {
+  test(`date invalide refusée sans crash : ${value}`, () => {
+    assert.equal(parseDate(value), null);
+    assert.equal(formatPublishDate(value), 'Date inconnue');
+  });
+}
+test('les jours bissextiles et fractions ISO de l’export Python sont acceptés', () => {
+  assert.equal(parseDate("'29/02/2024 12:30")?.toISOString(), '2024-02-29T12:30:00.000Z');
+  assert.equal(parseDate('2026-10-23T11:08:15.962487+00:00')?.toISOString(), '2026-10-23T11:08:15.962Z');
+});

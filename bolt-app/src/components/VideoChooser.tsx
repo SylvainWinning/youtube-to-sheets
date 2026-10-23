@@ -1,3 +1,4 @@
+import { SafeImage } from './ui/SafeImage';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useVideoChoice } from '../hooks/useVideoChoice';
 import { Shuffle, X } from 'lucide-react';
@@ -44,7 +45,7 @@ export function VideoChooser({ videos }: { videos: VideoData[] }) {
       </div>
       <p id="video-choice-scope" className="text-sm mb-3">Le tirage respecte les filtres actifs. La vidéo s’ouvre uniquement avec « Ouvrir sur YouTube ».</p>
       {selected && <div aria-live="polite" aria-atomic="true">
-        <img src={selected.thumbnail} alt="" width={480} height={270} className="w-full aspect-video object-cover rounded-lg" />
+        <SafeImage src={selected.thumbnail} alt="" width={480} height={270} className="w-full aspect-video object-cover rounded-lg" />
         <h3 className="font-semibold mt-3 break-words">{selected.title}</h3>
         <p className="text-sm mt-1">{selected.channel} · {selected.duration}</p>
       </div>}

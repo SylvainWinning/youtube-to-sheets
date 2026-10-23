@@ -1,70 +1,24 @@
-import type { VideoData } from '../../../types/video.ts';
+import { getYouTubeUrl } from '../../videoUtils.ts';
 
-function isValidHttpUrl(url: string): boolean {
+export function cellText(value: unknown, fallback = ''): string {
+  return (typeof value === 'string' || typeof value === 'number') && String(value).trim() !== '' ? String(value).trim() : fallback;
+}
+
+export function imageUrl(value: unknown): string {
+  if (typeof value !== 'string') return '';
   try {
-    const parsed = new URL(url);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
+    const url = new URL(value.trim());
+    return url.protocol === 'https:' && !url.username && !url.password ? url.href : '';
+  } catch { return ''; }
 }
 
-export function validateRow(row: any[]): boolean {
-  if (!Array.isArray(row)) {
-    console.warn('Row validation failed: Not an array');
-    return false;
-  }
-
-  const title = String(row[1] || '').trim();
-  const link = String(row[2] || '').trim();
-  const channelAvatar = String(row[0] || '').trim(); // Validate channel avatar from column A
-  const thumbnail = String(row[12] || '').trim(); // Validate thumbnail from column M
-
-  const hasTitleAndLink = title !== '' && link !== '';
-  const hasValidLinkFormat = link.startsWith('http://') ||
-                            link.startsWith('https://') ||
-                            link.startsWith('www.');
-  const hasValidAvatar = channelAvatar === '' || isValidHttpUrl(channelAvatar);
-  const hasValidThumbnail = thumbnail === '' || isValidHttpUrl(thumbnail);
-
-  if (!hasValidAvatar && channelAvatar) {
-    console.warn('Invalid channel avatar URL:', {
-      channelAvatar,
-      rowIndex: row[0] ? `Row with title ${row[1]}` : 'Unknown row'
-    });
-  }
-
-  if (!hasValidThumbnail && thumbnail) {
-    console.warn('Invalid thumbnail URL:', {
-      thumbnail,
-      rowIndex: row[0] ? `Row with title ${row[1]}` : 'Unknown row'
-    });
-  }
-
-  const isValid = hasTitleAndLink && hasValidLinkFormat && hasValidThumbnail && hasValidAvatar;
-
-  if (!isValid) {
-    console.warn('Row validation failed:', {
-      hasTitleAndLink,
-      hasValidLinkFormat,
-      hasValidAvatar,
-      hasValidThumbnail,
-      title,
-      link,
-      channelAvatar,
-      thumbnail,
-      reason: !hasTitleAndLink ? 'Missing title or link' : 'Invalid link format'
-    });
-  }
-
-  return isValid;
+export function videoUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const link = value.trim();
+  return getYouTubeUrl(link.startsWith('www.') ? `https://${link}` : link);
 }
 
-export function validateVideoData(video: VideoData): boolean {
-  return (
-    typeof video.title === 'string' &&
-    video.title.trim().length > 0 &&
-    typeof video.link === 'string' &&
-    video.link.trim().length > 0
-  );
+/** Optional metadata/images never determine whether a playable video survives. */
+export function validateRow(row: unknown): row is unknown[] {
+  return Array.isArray(row) && typeof row[1] === 'string' && row[1].trim() !== '' && videoUrl(row[2]) !== null;
 }

@@ -55,3 +55,12 @@ test('fetchSheetData retrieves all rows for unbounded range', async () => {
     }
   }
 });
+
+test('HTTP 200 ne suffit pas pour accepter un corps Sheets invalide', async () => {
+  const { fetchSheetData } = await import('./fetch.ts');
+  mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ values: [{ bad: true }] })));
+  try {
+    const response = await fetchSheetData('test!A:Q');
+    assert.deepEqual(response.values, []); assert.ok(response.error);
+  } finally { mock.restoreAll(); }
+});

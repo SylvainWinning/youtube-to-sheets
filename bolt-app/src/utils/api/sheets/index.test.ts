@@ -18,7 +18,7 @@ test('fetchAllVideos uses local data when config error', async () => {
     [
       '',
       'Video 1',
-      'https://www.youtube.com/watch?v=1',
+      'https://www.youtube.com/watch?v=00000000001',
       'Channel',
       '2020-01-01T00:00:00Z',
       'PT10M',
@@ -72,7 +72,7 @@ test('fetchAllVideos returns synchronized data on success', async () => {
     [
       '',
       'Local',
-      'https://www.youtube.com/watch?v=local',
+      'https://www.youtube.com/watch?v=local000001',
       'Channel',
       '2020-01-01T00:00:00Z',
       'PT10M',
@@ -89,7 +89,7 @@ test('fetchAllVideos returns synchronized data on success', async () => {
     [
       '',
       'Remote',
-      'https://www.youtube.com/watch?v=remote',
+      'https://www.youtube.com/watch?v=remote00001',
       'Channel',
       '2020-01-02T00:00:00Z',
       'PT10M',
@@ -152,7 +152,7 @@ test('fetchAllVideos keeps local data when synchronization fails', async () => {
     [
       '',
       'Local',
-      'https://www.youtube.com/watch?v=local',
+      'https://www.youtube.com/watch?v=local000001',
       'Channel',
       '2020-01-01T00:00:00Z',
       'PT10M',
@@ -214,7 +214,7 @@ test('le budget global coupe les reprises parallèles et conserve la copie local
   let calls = 0;
   t.mock.method(globalThis, 'fetch', async (input: string) => {
     calls++;
-    if (input.includes('data/videos.json')) return new Response(JSON.stringify([[], ['', 'Local', 'https://youtu.be/local', 'Channel', '2020-01-01', 'PT10M', '0', '0', '0', '', '', '', '']]));
+    if (input.includes('data/videos.json')) return new Response(JSON.stringify([[], ['', 'Local', 'https://youtu.be/local000001', 'Channel', '2020-01-01', 'PT10M', '0', '0', '0', '', '', '', '']]));
     return new Response('', { status: 429, headers: { 'Retry-After': '0' } });
   });
   t.mock.method(console, 'error', () => {}); t.mock.method(console, 'warn', () => {});
@@ -236,7 +236,7 @@ test('la durée globale couvre la synchronisation entière, pas seulement chaque
   });
   const signals: AbortSignal[] = [];
   t.mock.method(globalThis, 'fetch', async (input: string, init: RequestInit) => {
-    if (input.includes('data/videos.json')) return new Response(JSON.stringify([[], ['', 'Local', 'https://youtu.be/local', 'Channel', '2020-01-01', 'PT10M', '0', '0', '0', '', '', '', '']]));
+    if (input.includes('data/videos.json')) return new Response(JSON.stringify([[], ['', 'Local', 'https://youtu.be/local000001', 'Channel', '2020-01-01', 'PT10M', '0', '0', '0', '', '', '', '']]));
     signals.push(init.signal as AbortSignal); return new Promise(() => {});
   });
   t.mock.method(console, 'error', () => {}); t.mock.method(console, 'warn', () => {});
