@@ -21,13 +21,13 @@ test('démarrage, écoute, résultat et fin ne perdent pas le résultat', () => 
   const states: VoiceState[] = []; const texts: string[] = [];
   startSpeechSession(Recognition, state => states.push(state), text => texts.push(text));
   const r = Recognition.current;
-  assert.match(states.at(-1)!.message, /Démarrage/);
-  r.onstart?.(); assert.match(states.at(-1)!.message, /Écoute/);
+  assert.match(states[states.length - 1].message, /Démarrage/);
+  r.onstart?.(); assert.match(states[states.length - 1].message, /Écoute/);
   const lateEnd = r.onend;
   r.onresult?.({ results: [[{ transcript: '  OpenAI  ' }]] }); lateEnd?.();
   assert.deepEqual(texts, ['OpenAI']);
-  assert.match(states.at(-1)!.message, /terminée/);
-  assert.equal(states.at(-1)!.active, false);
+  assert.match(states[states.length - 1].message, /terminée/);
+  assert.equal(states[states.length - 1].active, false);
 });
 
 for (const [error, expected] of [['not-allowed', /refusé/], ['audio-capture', /micro accessible/], ['network', /réseau/], ['no-speech', /Aucune parole/], ['unknown', /échoué/]] as const) {
@@ -36,8 +36,8 @@ for (const [error, expected] of [['not-allowed', /refusé/], ['audio-capture', /
     startSpeechSession(Recognition, state => states.push(state), () => assert.fail('no result'));
     const end = Recognition.current.onend;
     Recognition.current.onerror?.({ error }); end?.();
-    assert.match(states.at(-1)!.message, expected);
-    assert.equal(states.at(-1)!.active, false);
+    assert.match(states[states.length - 1].message, expected);
+    assert.equal(states[states.length - 1].active, false);
   });
 }
 
@@ -46,7 +46,7 @@ test('timeout borné et nettoyage sans callback tardif', context => {
   const states: VoiceState[] = [];
   startSpeechSession(Recognition, state => states.push(state), () => assert.fail());
   context.mock.timers.tick(10_000);
-  assert.match(states.at(-1)!.message, /Délai/);
+  assert.match(states[states.length - 1].message, /Délai/);
   const count = states.length;
   const cancel = startSpeechSession(Recognition, state => states.push(state), () => assert.fail());
   const late = Recognition.current.onresult;
@@ -58,6 +58,6 @@ test('un démarrage qui lève une exception reste récupérable', () => {
   class Broken extends Recognition { start() { throw new Error('blocked'); } }
   const states: VoiceState[] = [];
   startSpeechSession(Broken, state => states.push(state), () => assert.fail());
-  assert.equal(states.at(-1)!.active, false);
-  assert.match(states.at(-1)!.message, /Impossible de démarrer/);
+  assert.equal(states[states.length - 1].active, false);
+  assert.match(states[states.length - 1].message, /Impossible de démarrer/);
 });
