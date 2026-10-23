@@ -141,6 +141,12 @@ parcours, le focus et la géométrie, pas sur une comparaison pixel par pixel.
 Ces tests n'exigent pas de secrets : les appels réseau sont simulés.
 Les tests de dates figent l'horloge et respectent les heures UTC des données,
 tout en conservant les dates sans heure dans le calendrier local.
+La CI utilise l’image officielle Playwright 1.64.1 Noble, avec navigateurs et
+bibliothèques Linux préinstallés, épinglée par empreinte. Mettre à jour cette image
+avec la version Playwright du lockfile. Elle évite une installation via les miroirs
+Ubuntu à chaque exécution. Les tests UI ont une limite globale de cinq minutes,
+avec un délai de job supérieur permettant de conserver le rapport en cas d’échec.
+
 Le workflow réutilisable `Validate frontend artifact` vérifie les dépendances, le lint,
 les tests dans quatre fuseaux (UTC, Europe/Paris, America/Los_Angeles, Asia/Tokyo),
 le typage, la compilation et les parcours UI sur ce build. Il est appelé par les
