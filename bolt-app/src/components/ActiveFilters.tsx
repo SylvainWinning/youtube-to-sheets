@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
 export interface ActiveFilter {
@@ -11,9 +11,10 @@ interface ActiveFiltersProps {
   resultCount: number;
   filters: ActiveFilter[];
   onClear: () => void;
+  action?: ReactNode;
 }
 
-export function ActiveFilters({ resultCount, filters, onClear }: ActiveFiltersProps) {
+export function ActiveFilters({ resultCount, filters, onClear, action }: ActiveFiltersProps) {
   const [announcement, setAnnouncement] = useState('');
   const buttons = useRef<Array<HTMLButtonElement | null>>([]);
   const countRef = useRef<HTMLParagraphElement>(null);
@@ -41,10 +42,13 @@ export function ActiveFilters({ resultCount, filters, onClear }: ActiveFiltersPr
     <section aria-label="Résultats et filtres actifs" className="mb-2 sm:mb-5 text-youtube-black dark:text-white">
       <div className={`flex flex-wrap items-center justify-between gap-3 ${filters.length ? 'mb-3' : ''}`}>
         <p ref={countRef} tabIndex={-1} className="font-semibold">{countLabel}</p>
-        {filters.length > 0 && <button type="button" onClick={() => { removedIndex.current = 0; onClear(); }}
-          className="neu-button rounded-xl px-4 py-2 text-sm min-h-11">
-          Tout effacer
-        </button>}
+        <div className="flex flex-wrap items-center gap-2">
+          {action}
+          {filters.length > 0 && <button type="button" onClick={() => { removedIndex.current = 0; onClear(); }}
+            className="neu-button rounded-xl px-4 py-2 text-sm min-h-11">
+            Tout effacer
+          </button>}
+        </div>
       </div>
       {filters.length > 0 && (
         <ul aria-label="Filtres actifs" className="flex flex-wrap gap-2">
