@@ -38,7 +38,7 @@ export function ActiveFilters({ resultCount, filters, onClear }: ActiveFiltersPr
   });
 
   return (
-    <section aria-label="Résultats et filtres actifs" className="mb-5 text-youtube-black dark:text-white">
+    <section aria-label="Résultats et filtres actifs" className="mb-2 sm:mb-5 text-youtube-black dark:text-white">
       <div className={`flex flex-wrap items-center justify-between gap-3 ${filters.length ? 'mb-3' : ''}`}>
         <p ref={countRef} tabIndex={-1} className="font-semibold">{countLabel}</p>
         {filters.length > 0 && <button type="button" onClick={() => { removedIndex.current = 0; onClear(); }}
