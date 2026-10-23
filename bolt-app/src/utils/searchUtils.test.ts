@@ -75,3 +75,17 @@ test('la recherche conserve les références, l’ordre et les données du catal
   assert.equal(result[0], catalogue[2]);
   assert.equal(JSON.stringify(catalogue), before);
 });
+
+test('les libellés de catégories lisibles et les anciens noms retrouvent les mêmes vidéos sans réécrire les données', () => {
+  const videos = [
+    { ...catalogue[0], myCategory: 'Pause dej' },
+    { ...catalogue[1], myCategory: 'Youtuber pref' },
+  ];
+  for (const query of ['Pause déjeuner', 'Pause dej']) {
+    assert.deepEqual(filterVideosBySearch(videos, { query, fields: ['category'] }), [videos[0]]);
+  }
+  for (const query of ['Créateurs favoris', 'Youtuber pref']) {
+    assert.deepEqual(filterVideosBySearch(videos, { query, fields: ['category'] }), [videos[1]]);
+  }
+  assert.deepEqual(videos.map(video => video.myCategory), ['Pause dej', 'Youtuber pref']);
+});

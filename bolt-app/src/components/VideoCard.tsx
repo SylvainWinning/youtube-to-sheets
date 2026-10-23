@@ -32,7 +32,7 @@ export function VideoCard({ video }: VideoCardProps) {
   };
 
   return (
-    <article className="group focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark p-3 rounded-xl transition-all duration-200 hover:scale-[1.02] bg-neu-base dark:bg-neutral-700/50 shadow-[2px_2px_4px_#d1d9e6,_-2px_-2px_4px_#ffffff] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.2),_-2px_-2px_4px_rgba(255,255,255,0.05)] hover:shadow-[4px_4px_8px_#d1d9e6,_-4px_-4px_8px_#ffffff] dark:hover:shadow-[4px_4px_8px_rgba(0,0,0,0.25),_-4px_-4px_8px_rgba(255,255,255,0.1)] flex flex-col">
+    <article className="group p-3 rounded-xl bg-white dark:bg-neutral-800 shadow-[0_1px_3px_rgba(15,23,42,0.08)] flex flex-col">
       <a
         href={href}
         target="_blank"
@@ -42,7 +42,7 @@ export function VideoCard({ video }: VideoCardProps) {
         onClick={handleClick}
         className="flex flex-col flex-1 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark"
       >
-        <div className="relative aspect-video rounded-xl overflow-hidden mb-3 shadow-[inset_2px_2px_4px_rgba(209,217,230,0.4),_inset_-2px_-2px_4px_rgba(255,255,255,0.4)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),_inset_-2px_-2px_4px_rgba(255,255,255,0.05)]">
+        <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
           <img
             src={video.thumbnail}
             alt={video.title}
@@ -50,7 +50,7 @@ export function VideoCard({ video }: VideoCardProps) {
             decoding="async"
             width={480}
             height={270}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover "
           />
           <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 text-white text-xs font-medium rounded-sm">
             {formatDuration(video.duration)}
@@ -96,7 +96,7 @@ export function VideoCard({ video }: VideoCardProps) {
       <button type="button" aria-pressed={watched}
         aria-label={`Marquer comme vue : ${video.title}`}
         onClick={() => { setChangedHere(true); setWatched(identity, !watched); }}
-        className="mt-2 min-h-11 flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-neutral-500 px-3 py-2 text-sm text-youtube-black dark:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark">
+        className="watch-toggle mt-2 min-h-11 flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-neutral-500 px-3 py-2 text-sm text-youtube-black dark:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark">
         {watched && <Check aria-hidden="true" className="w-4 h-4" />}
         {watched ? 'Vue · Annuler' : 'Marquer comme vue'}
       </button>

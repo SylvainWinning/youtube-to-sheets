@@ -24,7 +24,7 @@ export interface VideoData {
    * Position de la vidéo dans la playlist YouTube d’origine.
    *
    * Elle est utilisée pour rétablir l’ordre exact de la playlist quand
-   * l’utilisateur sélectionne « Playlist d’origine » dans le tri.
+   * l’utilisateur sélectionne « Ordre de la playlist » dans le tri.
    */
   playlistPosition?: number;
   playlistId?: string;

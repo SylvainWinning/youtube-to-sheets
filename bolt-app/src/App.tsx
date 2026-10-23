@@ -1,3 +1,4 @@
+import { getCategoryLabel } from './utils/categoryLabels';
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
 import { VideoChooser } from './components/VideoChooser';
@@ -120,7 +121,7 @@ export default function App() {
     onRemove: () => setSearchFilters(filters => ({ ...filters, query: '' })),
   });
   if (selectedCategory) activeFilters.push({
-    id: 'category', label: `Catégorie : ${selectedCategory}`, onRemove: () => setSelectedCategory(null),
+    id: 'category', label: `Catégorie : ${getCategoryLabel(selectedCategory)}`, onRemove: () => setSelectedCategory(null),
   });
   if (selectedPlaylistId) activeFilters.push({
     id: 'playlist', label: `Playlist : ${getPlaylistLabel(selectedPlaylistId)}`, onRemove: () => setSelectedPlaylistId(null),
@@ -151,7 +152,7 @@ export default function App() {
                   className="h-6 w-6 sm:h-8 sm:w-8 shrink-0"
                 />
                 <h1 className="text-base sm:text-xl font-semibold text-youtube-black dark:text-white min-w-0 flex items-center gap-2">
-                  <span className="truncate">Mes Vidéos YouTube</span>
+                  <span className="text-left leading-tight">Mes vidéos YouTube</span>
                 </h1>
               </button>
               <div className="flex shrink-0 items-center gap-2">
@@ -161,21 +162,21 @@ export default function App() {
             </div>
             <div className="flex items-center justify-end gap-3">
               {(!isLoading || hasLibrary) && !appError && (
-                <div className="hidden min-w-0 flex-1 sm:flex items-center justify-between gap-4">
-                  <div className="w-full max-w-[280px]">
+                <div className="hidden min-w-0 flex-1 sm:grid grid-cols-3 items-stretch gap-2">
+                  <div className="w-full h-full">
                     <SortSelect options={sortOptions} onOptionsChange={setSortOptions} />
                   </div>
                   <CategorySelect
                     videos={videos}
                     selectedCategory={selectedCategory}
                     onCategoryChange={setSelectedCategory}
-                    className="w-full max-w-[280px]"
+                    className="w-full h-full"
                   />
                   <PlaylistSelect
                     videos={videos}
                     selectedPlaylistId={selectedPlaylistId}
                     onPlaylistChange={setSelectedPlaylistId}
-                    className="w-full max-w-[280px]"
+                    className="w-full h-full"
                   />
                 </div>
               )}

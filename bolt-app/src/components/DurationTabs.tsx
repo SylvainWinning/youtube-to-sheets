@@ -49,8 +49,8 @@ export function DurationTabs({ selectedTab, onTabChange, videos, compact = false
             className={`
               flex-1 min-w-0 rounded-lg px-2 sm:px-3 py-2 flex items-center gap-1 sm:gap-2 transition-all duration-200
               ${selectedTab === -1
-                ? 'shadow-neu-pressed dark:shadow-neu-pressed-dark text-youtube-red-accessible dark:text-youtube-red-accessible-dark'
-                : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red-accessible dark:hover:text-youtube-red-accessible-dark hover:bg-white/50 dark:hover:bg-white/5'
+                ? 'filter-selected'
+                : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red-accessible dark:hover:text-youtube-red-accessible-dark '
               }
             `}
           >
@@ -71,8 +71,8 @@ export function DurationTabs({ selectedTab, onTabChange, videos, compact = false
               className={`
                 flex-1 min-w-0 rounded-lg px-2 sm:px-3 py-2 flex items-center gap-1 sm:gap-2 transition-all duration-200
                 ${selectedTab === index
-                  ? 'shadow-neu-pressed dark:shadow-neu-pressed-dark text-youtube-red-accessible dark:text-youtube-red-accessible-dark'
-                  : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red-accessible dark:hover:text-youtube-red-accessible-dark hover:bg-white/50 dark:hover:bg-white/5'
+                  ? 'filter-selected'
+                  : 'neu-button text-gray-700 dark:text-gray-100 hover:text-youtube-red-accessible dark:hover:text-youtube-red-accessible-dark '
                 }
               `}
             >
