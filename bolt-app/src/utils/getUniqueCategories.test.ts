@@ -10,6 +10,6 @@ test('getUniqueCategories utilise myCategory et trie correctement', () => {
     { myCategory: '' },
     {}
   ];
-  assert.deepEqual(getUniqueCategories(videos as any, 'asc'), ['Alpha', 'Beta']);
-  assert.deepEqual(getUniqueCategories(videos as any, 'desc'), ['Beta', 'Alpha']);
+  assert.deepEqual(getUniqueCategories(videos as any, 'asc'), ['Alpha', 'Beta', 'Non classées']);
+  assert.deepEqual(getUniqueCategories(videos as any, 'desc'), ['Non classées', 'Beta', 'Alpha']);
 });

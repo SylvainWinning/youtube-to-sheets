@@ -54,3 +54,10 @@ def test_failure_publishes_cache_without_advancing_success_date(tmp_path):
     assert metadata["status"] == "degraded"
     assert metadata["source"] == "cache"
     assert metadata["lastAttempt"]
+
+
+def test_fingerprint_includes_new_channel_id_and_normalizes_missing_trailing_cell():
+    from sync_metadata import fingerprint
+    headers = [''] * 17
+    assert fingerprint([headers, ['a'] * 16]) == fingerprint([headers, ['a'] * 16 + ['']])
+    assert fingerprint([headers, ['a'] * 16 + ['UCfirst']]) != fingerprint([headers, ['a'] * 16 + ['UCsecond']])

@@ -9,7 +9,7 @@ import type { VideoData } from '../types/video.ts';
 
 const categories = new Set([
   'Culture', 'Divertissement', 'Finance & Business', 'Musique',
-  'Pause dej', 'Tech', 'Youtuber pref',
+  'Pause dej', 'Tech', 'Youtuber pref', 'Non classées',
 ]);
 
 for (const file of ['../../public/data/videos.json', '../../../data/videos.json']) {
@@ -52,4 +52,31 @@ test('classe avant la recherche, sans dépendre du rendu du menu catégories', (
   assert.deepEqual(filterVideosBySearch(videos, { query: 'musique', fields: ['category'] })
     .map(video => video.channel), ['EKKSTACYVEVO']);
   assert.equal(getVideoCategory(videos[1]), 'Tech');
+});
+
+test('IDs stables, exceptions par vidéo et catégories personnelles ont une priorité explicite', () => {
+  const rules = { channels: { UCstable: 'Tech' }, videos: { aBcDeFgHiJk: 'Culture' }, legacyNames: { Ancien: 'Musique' } };
+  const base = { channelId: 'UCstable', channel: 'Nouveau nom', link: 'https://www.youtube.com/watch?v=aBcDeFgHiJk', category: '22' } as VideoData;
+  assert.equal(getVideoCategory(base, rules), 'Culture');
+  assert.equal(getVideoCategory({ ...base, link: 'https://youtu.be/aBcDeFgHiJk' }, rules), 'Culture');
+  assert.equal(getVideoCategory({ ...base, link: 'https://www.youtube.com/watch?v=otherVideo1' }, rules), 'Tech');
+  assert.equal(getVideoCategory({ ...base, myCategory: ' Personnel ' }, rules), 'Personnel');
+  assert.equal(getVideoCategory({ ...base, channelId: 'UCunknown', channel: 'Ancien', link: '' }, rules), 'Non classées');
+  assert.equal(getVideoCategory({ ...base, channelId: '', channel: 'Ancien', link: '' }, rules), 'Musique');
+  assert.equal(getVideoCategory({ channel: 'Unknown', category: '22' } as VideoData, rules), 'Non classées');
+});
+
+test('les non classées sont retrouvables et la lecture des catégories reste pure', () => {
+  const video = Object.freeze({ channelId: 'UCunknown', channel: 'Unknown', category: '22', myCategory: '' }) as VideoData;
+  const normalized = assignCategories([video]);
+  assert.equal(normalized[0].myCategory, 'Non classées');
+  assert.deepEqual(getUniqueCategories([video]), ['Non classées']);
+  assert.equal(video.myCategory, '');
+});
+
+test('une première synchronisation partielle conserve les anciens choix jusqu’à la migration complète', () => {
+  const video = { channelId: 'UCstable', channel: 'Ancien' } as VideoData;
+  const rules = { channels: {}, videos: {}, legacyNames: { Ancien: 'Culture' }, migrationComplete: false };
+  assert.equal(getVideoCategory(video, rules), 'Culture');
+  assert.equal(getVideoCategory(video, { ...rules, migrationComplete: true }), 'Non classées');
 });

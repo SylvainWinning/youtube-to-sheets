@@ -71,3 +71,9 @@ test('mapRowToVideo ignore une valeur non numérique de playlistPosition', () =>
 
   assert.equal(video.playlistPosition, 9);
 });
+
+test('la colonne Q transporte un identifiant de chaîne sans casser les anciens exports', () => {
+  const row = new Array(17).fill(''); row[16] = 'UCabcdefghijklmnopqrstuv';
+  assert.equal(mapRowToVideo(row).channelId, row[16]);
+  assert.equal(mapRowToVideo(row.slice(0, 16)).channelId, '');
+});
