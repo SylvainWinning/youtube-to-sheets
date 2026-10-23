@@ -1,14 +1,12 @@
 import { SafeImage } from './ui/SafeImage';
-import { useState } from 'react';
-import { Eye, Check } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { VideoData } from '../types/video';
 import { formatNumber } from '../utils/formatters';
 import { formatDuration } from '../utils/durationUtils';
 import { formatPublishDate } from '../utils/timeUtils';
 import { getYouTubeUrl, saveVideoNavigation } from '../utils/videoUtils';
 import { useSound } from '../hooks/useSound';
-import { useVideoChoice } from '../hooks/useVideoChoice';
-import { getVideoIdentity, getPlaylistIds } from '../utils/videoLibrary';
+import { getPlaylistIds } from '../utils/videoLibrary';
 import { getPlaylistLabel } from './PlaylistSelect';
 
 interface VideoCardProps {
@@ -17,10 +15,6 @@ interface VideoCardProps {
 
 export function VideoCard({ video }: VideoCardProps) {
   const { playClick } = useSound();
-  const { preferences, storageError, setWatched } = useVideoChoice();
-  const [changedHere, setChangedHere] = useState(false);
-  const identity = getVideoIdentity(video);
-  const watched = preferences.watched.includes(identity);
   const playlists = getPlaylistIds([video]);
   const membershipLabel = `Présente dans : ${playlists.map(getPlaylistLabel).join(', ')}`;
 
@@ -92,14 +86,6 @@ export function VideoCard({ video }: VideoCardProps) {
           </div>
         </div>
       </a>
-      <button type="button" aria-pressed={watched}
-        aria-label={`Marquer comme vue : ${video.title}`}
-        onClick={() => { setChangedHere(true); setWatched(identity, !watched); }}
-        className="watch-toggle mt-2 min-h-11 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark">
-        {watched && <Check aria-hidden="true" className="w-4 h-4" />}
-        {watched ? 'Vue · Annuler' : 'Marquer comme vue'}
-      </button>
-      {storageError && changedHere && <p role="status" className="mt-1 text-xs text-gray-600 dark:text-gray-300">Marquage conservé pour cette session uniquement.</p>}
     </article>
   );
 }
