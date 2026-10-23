@@ -35,13 +35,13 @@ export function VideoGrid({ videos }: VideoGridProps) {
     if (restorePending.current) {
       const saved = restorePending.current;
       if (saved.focusIndex !== null) {
-        (gridRef.current?.children[saved.focusIndex] as HTMLElement | undefined)?.focus({ preventScroll: true });
+        gridRef.current?.children[saved.focusIndex]?.querySelector('a')?.focus({ preventScroll: true });
       }
       window.scrollTo({ top: saved.scrollY, behavior: 'instant' });
       restorePending.current = null;
     }
     if (nextFocusIndex.current !== null) {
-      const card = gridRef.current?.children[nextFocusIndex.current] as HTMLElement | undefined;
+      const card = gridRef.current?.children[nextFocusIndex.current]?.querySelector('a');
       card?.focus({ preventScroll: true });
       nextFocusIndex.current = null;
     }
@@ -51,7 +51,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
     // History state belongs to this browser entry, so Back and refresh can
     // recover even when the browser cannot keep the React tree in its cache.
     const saveProgress = () => {
-      const focused = gridRef.current ? Array.from(gridRef.current.children).indexOf(document.activeElement!) : -1;
+      const focused = gridRef.current ? Array.from(gridRef.current.children).findIndex(card => card.contains(document.activeElement)) : -1;
       window.history.replaceState({ ...window.history.state, [LIBRARY_HISTORY_KEY]: {
         key: resultKey, count: visibleCount, scrollY: window.scrollY, focusIndex: focused < 0 ? null : focused,
       } }, '');
