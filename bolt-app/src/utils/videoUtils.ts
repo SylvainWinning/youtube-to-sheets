@@ -4,37 +4,29 @@ import type { SheetTab } from '../types/sheets.ts';
 import { filterVideosByDuration } from './videoFilters.ts';
 import { uniqueVideoCandidates } from './videoLibrary.ts';
 
-function extractYouTubeId(url: string): string | null {
+/** Only recognized YouTube video links can be opened from library data. */
+export function getYouTubeUrl(link: string): string | null {
   try {
-    // Gère les formats d'URL courants de YouTube
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-      /youtube\.com\/shorts\/([^&\n?#]+)/
-    ];
-
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match && match[1]) {
-        return match[1];
-      }
-    }
-
-    console.warn('Format d\'URL YouTube non reconnu:', url);
-    return null;
-  } catch (error) {
-    console.error('Erreur lors de l\'extraction de l\'ID YouTube:', error);
-    return null;
-  }
+    const url = new URL(link);
+    if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+    const hosts = ['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtu.be'];
+    if (!hosts.includes(url.hostname)) return null;
+    const parts = url.pathname.split('/').filter(Boolean);
+    const id = url.hostname === 'youtu.be' ? parts[0]
+      : url.pathname === '/watch' ? url.searchParams.get('v')
+      : ['shorts', 'embed', 'live'].includes(parts[0]) ? parts[1] : null;
+    if (!id || !/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
+    return `https://www.youtube.com/watch?v=${id}`;
+  } catch { return null; }
 }
 
-export function generateYouTubeThumbnail(url: string): string {
-  const videoId = extractYouTubeId(url);
-  if (!videoId) {
-    return ''; // URL de fallback ou vide si pas d'ID valide
-  }
+export function generateYouTubeThumbnail(link: string): string {
+  const url = getYouTubeUrl(link);
+  return url ? `https://img.youtube.com/vi/${new URL(url).searchParams.get('v')}/maxresdefault.jpg` : '';
+}
 
-  // On utilise maxresdefault.jpg pour la meilleure qualité
-  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+export function saveVideoNavigation() {
+  window.dispatchEvent(new Event(LIBRARY_SAVE_EVENT));
 }
 
 export function getRandomVideo(videos: VideoData[], tab: SheetTab | null, random = Math.random): VideoData | null {
@@ -46,236 +38,10 @@ export function getRandomVideo(videos: VideoData[], tab: SheetTab | null, random
   return filteredVideos[randomIndex];
 }
 
-function shouldOpenWebInNewTabOnMac(): boolean {
-  if (typeof navigator === 'undefined') return false;
-
-  const userAgent = navigator.userAgent ?? '';
-  const uaPlatform = (navigator as any).userAgentData?.platform ?? '';
-  const isIOS = /iPad|iPhone|iPod/i.test(userAgent);
-  const isMacLike = /Macintosh|Mac OS X|MacIntel/i.test(userAgent) || /macOS/i.test(uaPlatform);
-
-  // Sur Mac desktop, on évite les schémas youtube:// et on ouvre YouTube web
-  // dans un nouvel onglet. Sur visionOS, on garde le chemin app YouTube.
-  return isMacLike && !isIOS && !isLikelyVisionOSDevice();
-}
-
-function isLikelyVisionOSDevice(): boolean {
-  if (typeof navigator === 'undefined') return false;
-
-  const userAgent = navigator.userAgent ?? '';
-  const uaPlatform = (navigator as any).userAgentData?.platform ?? '';
-  const maxTouchPoints = (navigator as any).maxTouchPoints ?? 0;
-  const hints = `${userAgent} ${uaPlatform}`;
-  const isMacLike = /Macintosh|Mac OS X|MacIntel/i.test(userAgent) || /macOS/i.test(uaPlatform);
-
-  return (
-    /VisionOS|Vision\s?Pro|VisionPro|Apple\s?Vision|AppleVisionPro|visionos/i.test(hints) ||
-    (isMacLike && maxTouchPoints > 0)
-  );
-}
-
-function buildYouTubeAppUrls(link: string, videoId: string): string[] {
-  const appUrls = new Set<string>();
-  const watchYoutubeUrl = `youtube://watch?v=${videoId}`;
-  const watchVndYoutubeUrl = `vnd.youtube://watch?v=${videoId}`;
-  const webDerivedYoutubeUrl = `youtube://www.youtube.com/watch?v=${videoId}`;
-  const webDerivedVndYoutubeUrl = `vnd.youtube://www.youtube.com/watch?v=${videoId}`;
-  const idBasedYoutubeUrl = `youtube://${videoId}`;
-  const idBasedVndYoutubeUrl = `vnd.youtube://${videoId}`;
-
-  // Conversion recommandée pour YouTube: remplacer https:// par youtube://
-  // (Universal Link en fallback web si le schéma n'est pas géré par l'OS/app).
-  try {
-    const parsedUrl = new URL(link);
-    const isYouTubeHost = /(^|\.)youtube\.com$/i.test(parsedUrl.hostname);
-
-    if (isYouTubeHost) {
-      const normalized = `${parsedUrl.hostname}${parsedUrl.pathname}${parsedUrl.search}`;
-      appUrls.add(`youtube://${normalized}`);
-      appUrls.add(`vnd.youtube://${normalized}`);
-    }
-  } catch {
-    // Pas bloquant: on garde les fallbacks basés sur l'identifiant vidéo.
-  }
-
-  // Fallbacks compatibles avec les variantes historiques de l'app YouTube.
-  appUrls.add(watchYoutubeUrl);
-  appUrls.add(watchVndYoutubeUrl);
-  appUrls.add(idBasedYoutubeUrl);
-  appUrls.add(idBasedVndYoutubeUrl);
-
-  // Sur visionOS, on privilégie explicitement le schéma classique YouTube
-  // avant tout fallback web, sans supposer de schéma propriétaire dédié.
-  if (isLikelyVisionOSDevice()) {
-    const prioritized: string[] = [];
-    const pushIfAvailable = (url: string) => {
-      if (appUrls.has(url) && !prioritized.includes(url)) {
-        prioritized.push(url);
-      }
-    };
-
-    pushIfAvailable(watchYoutubeUrl);
-    pushIfAvailable(watchVndYoutubeUrl);
-    pushIfAvailable(webDerivedYoutubeUrl);
-    pushIfAvailable(webDerivedVndYoutubeUrl);
-    pushIfAvailable(idBasedYoutubeUrl);
-    pushIfAvailable(idBasedVndYoutubeUrl);
-
-    for (const url of appUrls) {
-      pushIfAvailable(url);
-    }
-
-    return prioritized;
-  }
-
-  return Array.from(appUrls);
-}
-
-function openUrlInSystem(webUrl: string, options?: { sameTab?: boolean }) {
-  const preferSameTab = options?.sameTab ?? false;
-  const cordovaBrowser = (window as any)?.cordova?.InAppBrowser;
-  if (cordovaBrowser) {
-    cordovaBrowser.open(webUrl, '_system');
-    return;
-  }
-
-  if (!preferSameTab) {
-    if (typeof window.open === 'function') {
-      const openedWindow = window.open(webUrl, '_blank', 'noopener,noreferrer');
-      if (openedWindow) {
-        openedWindow.opener = null;
-      }
-      return;
-    }
-  }
-
-  window.location.href = webUrl;
-}
-
-let lastOpenedTarget = '';
-let lastOpenedAt = 0;
-const DUPLICATE_OPEN_GUARD_MS = 1000;
-
-function isDuplicateOpen(target: string): boolean {
-  const now = Date.now();
-  const duplicated = target === lastOpenedTarget && now - lastOpenedAt < DUPLICATE_OPEN_GUARD_MS;
-
-  if (!duplicated) {
-    lastOpenedTarget = target;
-    lastOpenedAt = now;
-  }
-
-  return duplicated;
-}
-
+/** Shuffle has no fixed destination until clicked. Cards use native anchors. */
 export function playVideo(video: VideoData | null) {
-  if (!video) return;
-
-  // Essaye d'ouvrir directement l'application YouTube via son schéma d'URL.
-  const videoId = extractYouTubeId(video.link);
-
-  if (videoId) {
-    const webUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-    if (isDuplicateOpen(webUrl)) {
-      return;
-    }
-
-    if (typeof window.dispatchEvent === 'function') window.dispatchEvent(new Event(LIBRARY_SAVE_EVENT));
-
-    if (shouldOpenWebInNewTabOnMac()) {
-      openUrlInSystem(webUrl);
-      return;
-    }
-
-    const appUrls = buildYouTubeAppUrls(video.link, videoId);
-
-    // Redirige vers l'app YouTube. Si elle n'est pas installée, la redirection
-    // échoue et l'on ouvre l'URL web en repli après un court délai. Pour
-    // éviter l'affichage d'un navigateur intégré à l'application (écran blanc
-    // avec un bouton de fermeture), on privilégie l'ouverture dans le
-    // navigateur système lorsque c'est possible.
-    const schemeRetryTimers: number[] = [];
-    let fallbackTimer: number | undefined;
-    let didLeavePage = false;
-
-    const cleanupFallbackGuards = () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', handlePageHideOrBlur);
-      window.removeEventListener('blur', handlePageHideOrBlur);
-    };
-
-    const clearFallbackTimer = () => {
-      while (schemeRetryTimers.length > 0) {
-        const schemeRetryTimer = schemeRetryTimers.pop();
-        if (schemeRetryTimer !== undefined) {
-          window.clearTimeout(schemeRetryTimer);
-        }
-      }
-
-      if (fallbackTimer !== undefined) {
-        window.clearTimeout(fallbackTimer);
-        fallbackTimer = undefined;
-      }
-    };
-
-    const fallbackToWeb = () => {
-      // Si l'utilisateur a quitté l'application pour ouvrir YouTube, on ne déclenche
-      // pas le repli vers le navigateur afin d'éviter d'afficher une vue Safari vide
-      // en revenant dans l'app.
-      if (didLeavePage || document.visibilityState === 'hidden') {
-        clearFallbackTimer();
-        cleanupFallbackGuards();
-        return;
-      }
-
-      cleanupFallbackGuards();
-      clearFallbackTimer();
-      openUrlInSystem(webUrl);
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        didLeavePage = true;
-        clearFallbackTimer();
-        cleanupFallbackGuards();
-      }
-    };
-
-    const handlePageHideOrBlur = () => {
-      didLeavePage = true;
-      clearFallbackTimer();
-      cleanupFallbackGuards();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', handlePageHideOrBlur);
-    window.addEventListener('blur', handlePageHideOrBlur);
-
-    window.location.href = appUrls[0];
-
-    appUrls.slice(1).forEach((appUrl, index) => {
-      const retryTimer = window.setTimeout(() => {
-        if (didLeavePage || document.visibilityState === 'hidden') {
-          clearFallbackTimer();
-          cleanupFallbackGuards();
-          return;
-        }
-
-        window.location.href = appUrl;
-      }, 350 * (index + 1));
-      schemeRetryTimers.push(retryTimer);
-    });
-
-    fallbackTimer = window.setTimeout(fallbackToWeb, 350 * appUrls.length + 850);
-    return;
-  }
-
-  // Si l'ID de la vidéo n'est pas détecté, on applique la même logique de
-  // fallback pour ouvrir le lien sans passer par un navigateur intégré.
-  if (isDuplicateOpen(video.link)) {
-    return;
-  }
-
-  openUrlInSystem(video.link);
+  const url = video && getYouTubeUrl(video.link);
+  if (!url) return;
+  saveVideoNavigation();
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
