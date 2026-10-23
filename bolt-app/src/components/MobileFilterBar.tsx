@@ -43,7 +43,6 @@ export function MobileFilterBar({
   const resultCount = selectedTab === -1 ? durationVideos.length
     : getVideoCountByDuration(durationVideos, SHEET_TABS[selectedTab]);
   const activeFilters = Number(Boolean(selectedCategory)) + Number(Boolean(selectedPlaylistId)) + Number(Boolean(sortOptions));
-  const playlistLabel = selectedPlaylistId ? getPlaylistLabel(selectedPlaylistId) : 'Toutes les playlists';
 
   const closePanel = () => {
     setIsOpen(false);
@@ -86,10 +85,6 @@ export function MobileFilterBar({
           Filtres{activeFilters > 0 && <span className="ml-1">({activeFilters})</span>}
         </button>
       </div>
-      <p className="mt-2 text-xs text-gray-600 dark:text-gray-300" role="status" aria-live="polite">
-        {resultCount} vidéo{resultCount === 1 ? '' : 's'} · {playlistLabel}
-        {selectedCategory && ` · ${selectedCategory}`}
-      </p>
       {isOpen && (
         <section id={panelId} aria-label="Filtres des vidéos" className="mt-3 rounded-xl border border-gray-200 dark:border-neutral-700 p-3 bg-white dark:bg-neutral-800">
           <div className="grid gap-3">
