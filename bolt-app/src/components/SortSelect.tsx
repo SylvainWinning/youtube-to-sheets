@@ -36,7 +36,7 @@ export function SortSelect({ options, onOptionsChange, className = '' }: SortSel
       className={className}
     >
       <div className="px-4 py-2">
-        <div className="text-xs font-medium text-gray-500 uppercase">Date de publication</div>
+        <div className="text-xs font-medium text-gray-500 uppercase">Trier les vidéos</div>
       </div>
 
       <DropdownItem

@@ -76,7 +76,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
           {/* Form container with Liquid Glass styling */}
           <form
             onSubmit={handleSubmit}
-            className="relative z-[1] flex-1 flex items-center border-[1.5px] border-youtube-border dark:border-neutral-600 rounded-full transition-all duration-200 focus-within:border-youtube-red focus-within:ring-1 focus-within:ring-youtube-red/50 focus-within:shadow-[0_0_10px_rgba(255,0,0,0.3)]"
+            className="relative z-[1] flex-1 flex items-center border-[1.5px] border-youtube-border dark:border-neutral-600 rounded-full transition-all duration-200 focus-within:border-youtube-red-accessible dark:focus-within:border-youtube-red-accessible-dark"
           >
             <div className="relative flex-1 min-w-0">
               <input
@@ -118,8 +118,8 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
           onClick={voice.active ? stopListening : startListening}
           className={`disabled:opacity-50 disabled:cursor-not-allowed shrink-0 w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center border-[1.5px] border-transparent ${
             voice.active
-              ? 'bg-youtube-red text-white shadow-[0_0_10px_rgba(255,0,0,0.3)] border-youtube-red'
-              : 'bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 hover:border-youtube-red hover:shadow-[0_0_10px_rgba(255,0,0,0.3)] text-youtube-black dark:text-white'
+              ? 'bg-youtube-red-accessible text-white border-youtube-red'
+              : 'bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 hover:border-youtube-red text-youtube-black dark:text-white'
           }`}
         >
           <Mic className="w-5 h-5" />

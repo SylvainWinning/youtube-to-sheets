@@ -31,7 +31,7 @@ export function VideoChooser({ videos }: { videos: VideoData[] }) {
 
   return <>
     <button ref={trigger} type="button" onClick={() => { choose(); setIsOpen(true); }} disabled={videos.length === 0}
-      className="neu-button rounded-xl px-3 py-2 text-sm min-h-11 flex items-center gap-2 disabled:opacity-50">
+      className="primary-action rounded-xl px-3 py-2 text-sm min-h-11 flex items-center gap-2 disabled:opacity-50">
       <Shuffle aria-hidden="true" className="w-4 h-4 shrink-0" /> Choisir une vidéo
     </button>
     <dialog ref={dialog} aria-labelledby="video-choice-title" aria-describedby="video-choice-scope"
@@ -61,7 +61,7 @@ export function VideoChooser({ videos }: { videos: VideoData[] }) {
       </div>
       <div className="flex flex-wrap gap-2">
         {url && <a href={url} target="_blank" rel="noopener noreferrer" onClick={saveVideoNavigation} onAuxClick={saveVideoNavigation}
-          className="neu-button rounded-xl px-4 py-3 text-sm">Ouvrir sur YouTube</a>}
+          className="primary-action rounded-xl px-4 py-3 text-sm">Ouvrir sur YouTube</a>}
         <button type="button" disabled={!hasAlternative} onClick={() => choose(selectedId)}
           className="neu-button rounded-xl px-4 py-3 text-sm disabled:opacity-50">Autre choix</button>
       </div>

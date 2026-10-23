@@ -43,7 +43,7 @@ export function DropdownMenu({
   }, [isOpen, onToggle]);
 
   return (
-    <div className={`relative min-w-0 ${containerClassName}`} ref={menuRef}>
+    <div className={`relative min-w-0 h-full ${containerClassName}`} ref={menuRef}>
       <button
         type="button"
         ref={triggerRef}
@@ -51,12 +51,12 @@ export function DropdownMenu({
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}
         onClick={onToggle}
-        className={`neu-button px-3 sm:px-4 py-2 rounded-xl flex items-center gap-2 w-full group ${className}`}
+        className={`neu-button px-3 sm:px-4 py-2 min-h-11 rounded-xl flex items-center gap-2 w-full h-full group ${className}`}
       >
         <span className="text-gray-500 group-hover:text-youtube-red-accessible dark:group-hover:text-youtube-red-accessible-dark transition-colors shrink-0">
           {icon}
         </span>
-        <span className="text-sm text-gray-700 dark:text-gray-200 truncate flex-1 text-left">
+        <span className="text-sm text-gray-700 dark:text-gray-200 min-w-0 whitespace-normal break-words flex-1 text-left">
           {label}
         </span>
         <ChevronDown

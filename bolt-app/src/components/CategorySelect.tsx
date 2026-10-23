@@ -1,3 +1,4 @@
+import { getCategoryLabel } from '../utils/categoryLabels';
 import React from 'react';
 import { List } from 'lucide-react';
 import type { VideoData } from '../types/video';
@@ -31,13 +32,13 @@ export function CategorySelect({
   const [isOpen, setIsOpen] = React.useState(false);
 
   // Compute unique categories alphabetically once per `videos` change
-  const categories = React.useMemo(() => getUniqueCategories(videos), [videos]);
+  const categories = React.useMemo(() => getUniqueCategories(videos).sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr')), [videos]);
 
   // Don't render a button if there are no categories to choose from
   if (categories.length === 0) return null;
 
   // Determine the button label: show selected category or generic label
-  const label = selectedCategory ?? 'Catégories';
+  const label = selectedCategory ? getCategoryLabel(selectedCategory) : 'Toutes les catégories';
 
   return (
     <DropdownMenu
@@ -67,7 +68,7 @@ export function CategorySelect({
           }}
           isSelected={selectedCategory === category}
         >
-          {category}
+          {getCategoryLabel(category)}
         </DropdownItem>
       ))}
     </DropdownMenu>

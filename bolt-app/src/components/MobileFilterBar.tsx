@@ -1,3 +1,4 @@
+import { getCategoryLabel } from '../utils/categoryLabels';
 import React from 'react';
 import { DurationTabs } from './DurationTabs';
 import { getPlaylistLabel, PRIMARY_PLAYLIST_ID } from './PlaylistSelect';
@@ -34,7 +35,7 @@ export function MobileFilterBar({
   const rootRef = React.useRef<HTMLDivElement>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelId = React.useId();
-  const categories = React.useMemo(() => getUniqueCategories(videos), [videos]);
+  const categories = React.useMemo(() => getUniqueCategories(videos).sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr')), [videos]);
   const playlistIds = React.useMemo(() => getPlaylistIds(videos).sort((a, b) => {
       if (a === PRIMARY_PLAYLIST_ID) return -1;
       if (b === PRIMARY_PLAYLIST_ID) return 1;
@@ -100,7 +101,7 @@ export function MobileFilterBar({
                 Catégorie
                 <select className={selectClass} value={selectedCategory ?? ''} onChange={event => onCategoryChange(event.target.value || null)}>
                   <option value="">Toutes les catégories</option>
-                  {categories.map(category => <option key={category} value={category}>{category}</option>)}
+                  {categories.map(category => <option key={category} value={category}>{getCategoryLabel(category)}</option>)}
                 </select>
               </label>
             )}
@@ -113,7 +114,7 @@ export function MobileFilterBar({
                 </select>
               </label>
             )}
-            <button type="button" className="neu-button rounded-lg px-3 min-h-11 text-sm text-gray-700 dark:text-gray-100" onClick={closePanel}>
+            <button type="button" className="primary-action rounded-lg px-3 min-h-11 text-sm" onClick={closePanel}>
               Voir {resultCount} vidéo{resultCount === 1 ? '' : 's'}
             </button>
           </div>

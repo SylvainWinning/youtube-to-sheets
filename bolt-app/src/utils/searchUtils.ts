@@ -1,3 +1,4 @@
+import { getCategoryLabel } from './categoryLabels.ts';
 import type { VideoData } from '../types/video.ts';
 import type { SearchFilters } from '../types/search.ts';
 
@@ -23,7 +24,8 @@ export function filterVideosBySearch(videos: VideoData[], filters: SearchFilters
   return videos.filter(video => {
     const values = filters.fields.map(field => {
       const key = field === 'category' ? 'myCategory' : field;
-      return normalizeSearchText(video[key] ?? '');
+      const value = video[key] ?? '';
+      return normalizeSearchText(field === 'category' ? `${value} ${getCategoryLabel(value)}` : value);
     });
     // Each word is required, but may occur in a different selected field.
     return terms.every(term => values.some(value => value.includes(term)));

@@ -171,3 +171,7 @@ avec `MAX_VIDEO_DROP_RATIO` (valeur entre 0 inclus et 1 exclu) pour une suppress
 volontaire vérifiée. Un échec de synchronisation conserve les vidéos précédentes,
 publie leur état dégradé et laisse le workflow en échec. Le déploiement peut ainsi
 mettre à jour l'information de panne sans publier une bibliothèque amputée.
+
+### Libellés et présentation
+
+Le nom affiché est « Mes vidéos YouTube ». Le tri par défaut est « Ordre de la playlist », distinct du filtre « Playlist principale ». Les catégories historiques « Pause dej » et « Youtuber pref » sont affichées comme « Pause déjeuner » et « Créateurs favoris » ; leurs valeurs internes et les anciens liens de filtres sont conservés. La recherche accepte les deux versions. Les actions secondaires sont sobres, l’action principale ressort en rouge et la sélection associe fond teinté, contour et texte renforcé.
