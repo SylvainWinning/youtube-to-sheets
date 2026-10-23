@@ -1,8 +1,8 @@
-// Résolution de conflit de merge
 import React from 'react';
 import { XCircle, Mic, Search } from 'lucide-react';
 import { SearchFilters } from '../types/search';
-import type { BrowserSpeechRecognition } from '../types/speech';
+import { startSpeechSession, unsupportedVoice } from '../utils/speechSession';
+import type { VoiceState } from '../utils/speechSession';
 
 interface SearchBarProps {
   filters: SearchFilters;
@@ -11,11 +11,21 @@ interface SearchBarProps {
 
 export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const recognitionRef = React.useRef<BrowserSpeechRecognition | null>(null);
-  const [isListening, setIsListening] = React.useState(false);
+  const cancelRef = React.useRef<(() => void) | null>(null);
+  const latestRef = React.useRef({ filters, onFiltersChange });
+  latestRef.current = { filters, onFiltersChange };
+  const [supported] = React.useState(() => typeof window !== 'undefined' && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition));
+  const [voice, setVoice] = React.useState<VoiceState>({ active: false, message: '' });
+  const voiceStatusId = React.useId();
+  const stopListening = () => {
+    cancelRef.current?.();
+    cancelRef.current = null;
+    setVoice({ active: false, message: 'Dictée arrêtée. Vous pouvez utiliser le clavier.' });
+  };
   const [isIOSDevice, setIsIOSDevice] = React.useState(false);
 
   const handleClear = () => {
+    if (voice.active) stopListening();
     onFiltersChange({ ...filters, query: '' });
     inputRef.current?.focus();
   };
@@ -25,50 +35,15 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
     inputRef.current?.blur();
   };
 
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-    setIsListening(false);
-  };
-
-  const startListening = async () => {
-    try {
-      stopListening();
-      const Recognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-      if (!Recognition) throw new Error('Reconnaissance vocale indisponible');
-      const recognition = new Recognition();
-      recognitionRef.current = recognition;
-      recognition.lang = 'fr-FR';
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      const maxListeningDuration = 10000;
-      const timeoutId = setTimeout(stopListening, maxListeningDuration);
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        onFiltersChange({ ...filters, query: transcript });
-        inputRef.current?.focus();
-        clearTimeout(timeoutId);
-        stopListening();
-      };
-      recognition.onerror = (event) => {
-        console.error('Erreur de reconnaissance vocale:', event.error);
-        clearTimeout(timeoutId);
-        stopListening();
-      };
-      recognition.onend = () => {
-      clearTimeout(timeoutId);
-        stopListening();
-      };
-      recognition.start();
-    } catch (error) {
-      console.error("La reconnaissance vocale n'est pas supportée:", error);
-      stopListening();
-    }
+  const startListening = () => {
+    cancelRef.current?.();
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) { setVoice({ active: false, message: unsupportedVoice }); return; }
+    cancelRef.current = startSpeechSession(Recognition, setVoice, transcript => {
+      const current = latestRef.current;
+      current.onFiltersChange({ ...current.filters, query: transcript });
+      inputRef.current?.focus();
+    });
   };
 
   React.useEffect(() => {
@@ -81,7 +56,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
     }
 
     return () => {
-      stopListening();
+      cancelRef.current?.();
     };
   }, []);
 
@@ -110,7 +85,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
                 placeholder="Rechercher"
                 aria-label="Rechercher des vidéos"
                 value={filters.query}
-                onChange={(e) => onFiltersChange({ ...filters, query: e.target.value })}
+                onChange={(e) => { if (voice.active) stopListening(); onFiltersChange({ ...filters, query: e.target.value }); }}
                 className="w-full pl-4 pr-10 h-10 rounded-l-full bg-transparent text-youtube-black dark:text-white placeholder-youtube-gray-dark dark:placeholder-gray-400 text-[16px] sm:text-sm focus:outline-hidden"
               />
               {filters.query && (
@@ -136,11 +111,13 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
         {/* Voice search button retains its existing styling */}
         <button
           type="button"
-          aria-label={isListening ? 'Arrêter la recherche vocale' : 'Rechercher avec la voix'}
-          aria-pressed={isListening}
-          onClick={isListening ? stopListening : startListening}
-          className={`shrink-0 w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center border-[1.5px] border-transparent ${
-            isListening
+          aria-label={voice.active ? 'Arrêter la recherche vocale' : 'Rechercher avec la voix'}
+          aria-pressed={voice.active}
+          disabled={!supported}
+          aria-describedby={voiceStatusId}
+          onClick={voice.active ? stopListening : startListening}
+          className={`disabled:opacity-50 disabled:cursor-not-allowed shrink-0 w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center border-[1.5px] border-transparent ${
+            voice.active
               ? 'bg-youtube-red text-white shadow-[0_0_10px_rgba(255,0,0,0.3)] border-youtube-red'
               : 'bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 hover:border-youtube-red hover:shadow-[0_0_10px_rgba(255,0,0,0.3)] text-youtube-black dark:text-white'
           }`}
@@ -148,6 +125,9 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
           <Mic className="w-5 h-5" />
         </button>
       </div>
+      <p id={voiceStatusId} role="status" aria-live="polite" aria-atomic="true" className="max-w-[640px] mx-auto mt-2 text-sm text-youtube-gray-dark dark:text-gray-300">
+        {supported ? voice.message : unsupportedVoice}
+      </p>
     </div>
   );
 }
