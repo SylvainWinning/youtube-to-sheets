@@ -16,7 +16,7 @@ interface ActiveFiltersProps {
 export function ActiveFilters({ resultCount, filters, onClear }: ActiveFiltersProps) {
   const [announcement, setAnnouncement] = useState('');
   const buttons = useRef<Array<HTMLButtonElement | null>>([]);
-  const clearButton = useRef<HTMLButtonElement>(null);
+  const countRef = useRef<HTMLParagraphElement>(null);
   const removedIndex = useRef<number | null>(null);
   const countLabel = `${resultCount} résultat${resultCount === 1 ? '' : 's'}`;
   const filterDescription = filters.map(filter => filter.label).join(', ');
@@ -24,7 +24,7 @@ export function ActiveFilters({ resultCount, filters, onClear }: ActiveFiltersPr
   useEffect(() => {
     // Wait for a pause in typing; announce only this summary, never the grid.
     const timer = window.setTimeout(() => {
-      setAnnouncement(`${countLabel}. ${filterDescription ? `Filtres actifs : ${filterDescription}.` : 'Aucun filtre actif.'}`);
+      setAnnouncement(`${countLabel}.${filterDescription ? ` Filtres actifs : ${filterDescription}.` : ''}`);
     }, 350);
     return () => window.clearTimeout(timer);
   }, [countLabel, filterDescription]);
@@ -32,21 +32,21 @@ export function ActiveFilters({ resultCount, filters, onClear }: ActiveFiltersPr
   useLayoutEffect(() => {
     if (removedIndex.current !== null) {
       const next = buttons.current[Math.min(removedIndex.current, filters.length - 1)];
-      (next ?? clearButton.current)?.focus({ preventScroll: true });
+      (next ?? countRef.current)?.focus({ preventScroll: true });
       removedIndex.current = null;
     }
   });
 
   return (
     <section aria-label="Résultats et filtres actifs" className="mb-5 text-youtube-black dark:text-white">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <p className="font-semibold">{countLabel}</p>
-        <button ref={clearButton} type="button" onClick={onClear}
+      <div className={`flex flex-wrap items-center justify-between gap-3 ${filters.length ? 'mb-3' : ''}`}>
+        <p ref={countRef} tabIndex={-1} className="font-semibold">{countLabel}</p>
+        {filters.length > 0 && <button type="button" onClick={() => { removedIndex.current = 0; onClear(); }}
           className="neu-button rounded-xl px-4 py-2 text-sm min-h-11">
           Tout effacer
-        </button>
+        </button>}
       </div>
-      {filters.length > 0 ? (
+      {filters.length > 0 && (
         <ul aria-label="Filtres actifs" className="flex flex-wrap gap-2">
           {filters.map((filter, index) => (
             <li key={filter.id} className="max-w-full">
@@ -60,7 +60,7 @@ export function ActiveFilters({ resultCount, filters, onClear }: ActiveFiltersPr
             </li>
           ))}
         </ul>
-      ) : <p className="text-sm text-gray-600 dark:text-gray-300">Aucun filtre actif</p>}
+      )}
       <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</p>
     </section>
   );
