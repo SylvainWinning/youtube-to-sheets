@@ -66,7 +66,7 @@ export function MobileFilterBar({
   }, []);
 
   return (
-    <div ref={rootRef} className="sm:hidden mb-4" onKeyDown={event => {
+    <div ref={rootRef} className="sm:hidden mb-2" onKeyDown={event => {
       if (isOpen && event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault();
         closePanel();
