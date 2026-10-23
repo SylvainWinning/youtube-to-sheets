@@ -1,5 +1,6 @@
 import React from 'react';
 import { RefreshCw } from 'lucide-react';
+import { VideoChooser } from './components/VideoChooser';
 import { VideoGrid } from './components/VideoGrid';
 import { DurationTabs } from './components/DurationTabs';
 import { SearchBar } from './components/SearchBar';
@@ -222,7 +223,7 @@ export default function App() {
                 videos={filteredByPlaylist}
               />
             </div>
-            <ActiveFilters resultCount={sortedVideos.length} filters={activeFilters} onClear={clearFilters} />
+            <ActiveFilters resultCount={sortedVideos.length} filters={activeFilters} onClear={clearFilters} action={<VideoChooser videos={sortedVideos} />} />
           </>
         )}
         {isLoading && !hasLibrary && <LoadingState />}
