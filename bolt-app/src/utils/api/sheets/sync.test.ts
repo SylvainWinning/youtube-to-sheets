@@ -26,7 +26,7 @@ test('synchronizeSheets handles large sheet ranges', async () => {
   const rows = Array.from({ length: 1201 }, (_, i) => [
     'https://example.com/avatar.jpg',
     `Title ${i}`,
-    `https://www.youtube.com/watch?v=${i}`,
+    `https://www.youtube.com/watch?v=${String(i).padStart(11, '0')}`,
     'Channel',
     '2020-01-01T00:00:00Z',
     'PT10M',
@@ -128,14 +128,14 @@ test('buildMasterOrderMap privilégie la colonne playlistPosition lorsque dispon
 test('synchronizeSheets conserve playlistId pour alimenter le filtre playlist', async () => {
   const masterValues = [
     HEADER_ROW,
-    ['', 'Video A', 'https://www.youtube.com/watch?v=abc123', '', '', '', '', '', '', '', '', '', '', '', '0', 'PL_TEST_123'],
+    ['', 'Video A', 'https://www.youtube.com/watch?v=abc12300000', '', '', '', '', '', '', '', '', '', '', '', '0', 'PL_TEST_123'],
   ];
   const tabValues = [
     HEADER_ROW,
     [
       'https://example.com/avatar.jpg',
       'Video A',
-      'https://www.youtube.com/watch?v=abc123',
+      'https://www.youtube.com/watch?v=abc12300000',
       'Channel',
       '2020-01-01T00:00:00Z',
       'PT10M',

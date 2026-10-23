@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import type { VideoData } from '../types/video.ts';
 import { buildVideoLibrary, filterVideosByPlaylist, getPlaylistIds, getPlaylistPosition, getVideoIdentity } from './videoLibrary.ts';
 import { sortVideos } from './sortUtils.ts';
-import { getRandomVideo } from './videoUtils.ts';
 import { mapRowToVideo } from './api/sheets/transform.ts';
 import { resolveVideoLoad, emptyVideoLoadState } from './videoLoadState.ts';
 import { filterVideosBySearch } from './searchUtils.ts';
@@ -49,19 +48,6 @@ test('chaque playlist retrouve sa propre position et les tris par date restent d
   assert.deepEqual(sortVideos(filterVideosByPlaylist(library, 'B'), null, 'B').map(v => v.title), ['bBcDeFgHiJk', 'aBcDeFgHiJk']);
   assert.equal(filterVideosBySearch(library, { query: 'abc', fields: ['title'] }).length, 1);
   assert.equal(sortVideos(library, { field: 'publishedAt', direction: 'desc' }).length, 2);
-});
-
-test('le hasard attribue une même part à chaque vidéo, même avec les lignes historiques dupliquées', () => {
-  const inputs = [entry('aBcDeFgHiJk', 'A', 0), entry('aBcDeFgHiJk', 'B', 0), entry('bBcDeFgHiJk', 'A', 1), entry('cBcDeFgHiJk', 'B', 1, { duration: '00:10:00' })];
-  const counts = new Map<string, number>();
-  for (let i = 0; i < 300; i++) {
-    const video = getRandomVideo(inputs, null, () => (i + 0.5) / 300)!;
-    counts.set(video.title, (counts.get(video.title) ?? 0) + 1);
-  }
-  assert.deepEqual([...counts.values()], [100, 100, 100]);
-  const tab = { name: 'Court', range: 'A:P', durationRange: { min: 0, max: 5 } };
-  assert.equal(getRandomVideo(inputs, tab, () => 0.75)?.title, 'bBcDeFgHiJk');
-  assert.equal(getRandomVideo([], null), null);
 });
 
 test('le JSON réel conserve toutes les appartenances et l’ordre de chaque playlist après chargement et actualisation', () => {

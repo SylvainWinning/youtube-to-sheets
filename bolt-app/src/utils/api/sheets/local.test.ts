@@ -1,3 +1,4 @@
+import { VIDEO_COLUMNS } from './schema.ts';
 import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -21,7 +22,7 @@ test('la copie publique utilise une adresse stable et un cache revalidé', async
   } finally { mock.restoreAll(); }
 });
 
-const validRows = [[], ['', 'Local', 'https://youtu.be/local', 'Channel', '2020-01-01T00:00:00Z', 'PT10M', '0', '0', '0', '', '', '', '']];
+const validRows = [[...VIDEO_COLUMNS], ['', 'Local', 'https://youtu.be/local000001', 'Channel', '2020-01-01T00:00:00Z', 'PT10M', '0', '0', '0', '', '', '', '']];
 
 test('une réponse HTTP en erreur est rejetée même avec un corps rempli', async () => {
   mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify(validRows), { status: 503 }));
@@ -90,5 +91,29 @@ test('les vidéos privées ont un compte validé distinct des vidéos disponible
       assert.equal(result.data.length, 1);
       assert.equal(result.metadata?.sync?.privateVideoCount, typeof privateVideoCount === 'number' && Number.isInteger(privateVideoCount) && privateVideoCount >= 0 ? privateVideoCount : undefined);
     } finally { mock.restoreAll(); }
+  }
+});
+
+test('une version inconnue ou des colonnes déplacées sont refusées malgré un HTTP 200', async () => {
+  const { fetchLocalVideos } = await import('./local.ts');
+  for (const content of [{ schemaVersion: 2, videos: validRows }, { schemaVersion: 1, videos: [[], validRows[1]] }]) {
+    mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify(content)));
+    try {
+      const response = await fetchLocalVideos();
+      assert.deepEqual(response.data, []); assert.ok(response.error);
+    } finally { mock.restoreAll(); }
+  }
+});
+
+test('une ligne non ouvrable est signalée et ne peut pas attester une synchronisation complète', async () => {
+  const { fetchLocalVideos } = await import('./local.ts');
+  for (const videoCount of [1, 2]) {
+  const metadata = { status: 'complete', source: 'youtube', videoCount, lastSuccessfulSync: '2026-10-23T12:00:00Z' };
+  mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ schemaVersion: 1, metadata, videos: [...validRows, ['', 'Invalide', 'https://evil.test/video']] })));
+  try {
+    const response = await fetchLocalVideos();
+    assert.equal(response.data.length, 1); assert.equal(response.error, undefined);
+    assert.ok(response.metadata?.warnings?.length); assert.equal(response.metadata?.sync, undefined);
+  } finally { mock.restoreAll(); }
   }
 });

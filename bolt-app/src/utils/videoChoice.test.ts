@@ -46,3 +46,14 @@ test('préférences relues après rechargement, données abîmées et stockage i
   }
   assert.deepEqual(readChoicePreferences({ getItem: () => { throw new Error('Denied'); } }), { watched: [], excludeWatched: false });
 });
+
+test('le tirage répartit équitablement les chances entre vidéos uniques malgré les doublons de playlists', () => {
+  const pool = choiceCandidates([a, { ...a, playlistId: 'B' }, b, c], { watched: [], excludeWatched: false });
+  const counts = new Map<string, number>();
+  for (let i = 0; i < 300; i++) {
+    const selected = drawVideo(pool, null, () => (i + 0.5) / 300)!;
+    const id = getVideoIdentity(selected);
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  assert.deepEqual([...counts.values()], [100, 100, 100]);
+});

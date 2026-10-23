@@ -7,16 +7,8 @@ export interface SyncMetadata {
   privateVideoCount?: number;
 }
 
-export interface SheetError {
-  error: {
-    code: number;
-    message: string;
-    status: string;
-  };
-}
-
 export interface SheetResponse {
-  values?: any[][];
+  values?: unknown[][];
   error?: string;
 }
 

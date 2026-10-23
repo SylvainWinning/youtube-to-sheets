@@ -142,7 +142,7 @@ Tailwind 4 cible Safari 16.4+, Chrome 111+ et Firefox 128+. Les navigateurs plus
 anciens ne sont plus couverts par cette version du moteur CSS.
 # Bibliothèque et playlists
 
-Le JSON publié conserve une ligne par appartenance à une playlist. L’interface regroupe ces lignes par identifiant vidéo YouTube (ou par URL exacte pour les autres liens) dans une bibliothèque de vidéos uniques. La première fiche fournit les métadonnées; toutes les appartenances et leurs positions sont conservées séparément, y compris les répétitions dans une même playlist.
+Le JSON publié conserve une ligne par appartenance à une playlist. L’interface regroupe ces lignes par identifiant vidéo YouTube (les liens non ouvrables sont écartés et signalés) dans une bibliothèque de vidéos uniques. La première fiche fournit les métadonnées; toutes les appartenances et leurs positions sont conservées séparément, y compris les répétitions dans une même playlist.
 
 « Toutes les playlists », les compteurs de durée et le tirage aléatoire utilisent des vidéos distinctes. Une vidéo partagée porte la mention « 2 playlists ». Dans une playlist sélectionnée, le tri « Playlist d’origine » utilise sa position propre; en cas de répétition, la première position est retenue pour l’affichage unique. Les données sources ne sont pas supprimées ni réécrites par ce regroupement.
 
@@ -175,3 +175,9 @@ mettre à jour l'information de panne sans publier une bibliothèque amputée.
 ### Libellés et présentation
 
 Le nom affiché est « Mes vidéos YouTube ». Le tri par défaut est « Ordre de la playlist », distinct du filtre « Playlist principale ». Les catégories historiques « Pause dej » et « Youtuber pref » sont affichées comme « Pause déjeuner » et « Créateurs favoris » ; leurs valeurs internes et les anciens liens de filtres sont conservés. La recherche accepte les deux versions. Les actions secondaires sont sobres, l’action principale ressort en rouge et la sélection associe fond teinté, contour et texte renforcé.
+
+### Validation du chargement
+
+Les imports local et Sheets utilisent le même validateur et le même transformateur, avec des entrées `unknown` contrôlées à l’exécution. Le lecteur accepte la version explicite 1 (colonnes contrôlées), les anciens tableaux et les enveloppes sans version. Une autre version explicite ou une réponse HTTP/Sheets mal formée est refusée. Les lignes sans titre ou lien YouTube ouvrable sont signalées ; elles ne peuvent pas prouver une synchronisation complète.
+
+Les formats de dates historiques sont conservés, avec contrôle du calendrier : une date impossible ou absente reste inconnue et n’est jamais remplacée par aujourd’hui. Les images ne conditionnent pas la validité d’une vidéo : URL d’avatar malformée, miniature manquante ou erreur de chargement affichent un repli, avec les dimensions réservées conservées. La synchronisation privée reste hors du code chargé par le navigateur.

@@ -2,8 +2,10 @@ import { throwIfAborted } from '../../requestPolicy.ts';
 import { fetchSheetData } from './fetch.ts';
 import { SHEET_TABS } from '../../constants.ts';
 import type { VideoData } from '../../../types/video.ts';
-import { validateRow } from './validation.ts';
-import { parseDate } from '../../timeUtils.ts';
+import { isVideoHeader } from './schema.ts';
+import { cellText, videoUrl } from './validation.ts';
+import { transformVideoRows, parsePlaylistPosition } from './transform.ts';
+export { parsePlaylistPosition } from './transform.ts';
 
 interface VideoMap {
   [link: string]: VideoData;
@@ -11,35 +13,18 @@ interface VideoMap {
 
 const MASTER_SHEET_RANGE = "'AllVideos'!A:Z";
 
-export function parsePlaylistPosition(value: unknown): number | null {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
-  }
-
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return null;
-    }
-
-    const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  return null;
-}
-
 export interface MasterOrderInfo {
   orderMap: Record<string, number>;
   explicitCount: number;
 }
 
-export function buildMasterOrderMap(masterValues: any[][]): MasterOrderInfo {
+export function buildMasterOrderMap(masterValues: unknown[][]): MasterOrderInfo {
   const orderMap: Record<string, number> = {};
   let explicitCount = 0;
 
-  masterValues.slice(1).forEach((row, index) => {
-    const link = String(row[2] ?? '').trim();
+  const rows = masterValues[0] && isVideoHeader(masterValues[0]) ? masterValues.slice(1) : masterValues;
+  rows.forEach((row, index) => {
+    const link = videoUrl(row[2]) ?? cellText(row[2]);
     if (!link || orderMap[link] !== undefined) {
       return;
     }
@@ -56,32 +41,6 @@ export function buildMasterOrderMap(masterValues: any[][]): MasterOrderInfo {
   });
 
   return { orderMap, explicitCount };
-}
-
-function validateAndFormatDate(rawDate: any, videoTitle: string): string {
-  if (!rawDate) {
-    console.warn('Missing date for video:', videoTitle);
-    return '';
-  }
-
-  try {
-    const date = parseDate(String(rawDate));
-    if (!date) {
-      console.warn('Invalid date for video:', {
-        title: videoTitle,
-        date: rawDate
-      });
-      return String(rawDate || '');
-    }
-    return date.toISOString();
-  } catch (error) {
-    console.error('Date parsing error:', {
-      title: videoTitle,
-      date: rawDate,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-    return String(rawDate || '');
-  }
 }
 
 export async function synchronizeSheets(signal?: AbortSignal, beforeAttempt?: () => void): Promise<VideoData[]> {
@@ -152,67 +111,14 @@ export async function synchronizeSheets(signal?: AbortSignal, beforeAttempt?: ()
 
       console.log(`Processing ${values.length} rows from ${tab.name}`);
 
-      const validRows = values.filter(row => validateRow(row));
-      console.log(`${tab.name}: ${validRows.length} valid videos found`);
-
-      validRows.forEach(row => {
-        const [
-          channelAvatar,
-          title,
-          link,
-          channel,
-          publishedAt,
-          duration,
-          views,
-          likes,
-          comments,
-          description,
-          tags,
-          category,
-          thumbnail,
-          myCategory,
-          ,
-          playlistId
-        ] = row.map(cell => String(cell || '').trim());
-
-        // Skip rows with no link
-        if (!link) {
-          console.warn('Invalid YouTube link skipped:', { link, title });
-          return;
-        }
-
-        // Accept both youtube.com and youtu.be links
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i;
-        if (!youtubeRegex.test(link)) {
-          console.warn('Unsupported video link skipped:', { link, title });
-          return;
-        }
-
+      const videos = transformVideoRows(values);
+      videos.forEach(video => {
+        const link = video.link;
         if (!videoMap[link]) {
-          const fallbackOrder = nextInsertionIndex;
-          const masterOrder = masterOrderMap[link];
-          const video: VideoData = {
-            channelAvatar: channelAvatar || '',
-            title: title || '',
-            link,
-            channel: channel || '',
-            publishedAt: validateAndFormatDate(publishedAt, title),
-            duration: duration || '00:00',
-            views: views || '0',
-            likes: likes || '0',
-            comments: comments || '0',
-            shortDescription: description || '',
-            tags: tags || '',
-            category: category || 'Non catégorisé',
-            thumbnail: thumbnail || '',
-            myCategory: myCategory || '',
-            playlistId: playlistId || undefined,
-            playlistPosition: typeof masterOrder === 'number' ? masterOrder : fallbackOrder
-          };
-
+          const fallbackOrder = nextInsertionIndex++;
+          video.playlistPosition = masterOrderMap[link] ?? fallbackOrder;
           videoMap[link] = video;
           insertionOrder[link] = fallbackOrder;
-          nextInsertionIndex++;
         }
       });
     });

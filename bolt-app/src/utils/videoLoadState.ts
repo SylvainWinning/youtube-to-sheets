@@ -46,7 +46,7 @@ export function resolveVideoLoad(
     videos: unchanged ? previous.videos : videos,
     error: null,
     warning: response.metadata?.warnings?.length
-      ? 'La connexion à Google Sheets n’a pas abouti. La copie locale reste disponible.'
+      ? 'Certaines données n’ont pas pu être actualisées. La copie disponible est affichée.'
       : null,
     source: response.metadata?.source ?? 'local',
     loadedAt: response.metadata?.timestamp ?? Date.now(),
