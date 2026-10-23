@@ -1,3 +1,4 @@
+import type { VideoData } from '../types/video.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseDate, formatPublishDate } from './timeUtils.ts';
@@ -48,7 +49,7 @@ test('sortVideos orders videos by chronological publishedAt', () => {
     { title: 'C', publishedAt: '' }
   ];
 
-  const sorted = sortVideos(videos as any, { field: 'publishedAt', direction: 'asc' });
+  const sorted = sortVideos(videos as unknown as VideoData[], { field: 'publishedAt', direction: 'asc' });
   assert.deepEqual(sorted.map(v => v.title), ['B', 'A', 'C']);
 });
 

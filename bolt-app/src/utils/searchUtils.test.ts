@@ -10,7 +10,7 @@ test('filterVideosBySearch utilise myCategory pour le champ category', () => {
   const videos = [
     { title: 'Video1', myCategory: 'News' },
     { title: 'Video2', myCategory: 'Sport' },
-  ] as any;
+  ] as unknown as VideoData[];
   const filters = { query: 'sport', fields: ['category'] } satisfies SearchFilters;
   const result = filterVideosBySearch(videos, filters);
   assert.deepEqual(result, [videos[1]]);
@@ -49,7 +49,7 @@ test('tous les mots sont nécessaires, dans tout ordre et entre champs sélectio
 
 test('les signes de ponctuation séparent les mots, sans donner tous les résultats à une requête vide de mots', () => {
   assert.deepEqual(search('hardisk, révolution!'), [catalogue[0]]);
-  assert.deepEqual(search('---\" & !'), []);
+  assert.deepEqual(search('---" & !'), []);
   assert.deepEqual(search('xyz'.repeat(1000)), []);
 });
 

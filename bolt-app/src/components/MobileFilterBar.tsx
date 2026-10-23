@@ -60,14 +60,14 @@ export function MobileFilterBar({
   }, [isOpen]);
 
   React.useEffect(() => {
-    const media = window.matchMedia('(min-width: 640px)');
+    const media = window.matchMedia('(min-width: 1024px) and (min-height: 600px)');
     const handleResize = () => { if (media.matches) setIsOpen(false); };
     media.addEventListener('change', handleResize);
     return () => media.removeEventListener('change', handleResize);
   }, []);
 
   return (
-    <div ref={rootRef} className="sm:hidden mb-2" onKeyDown={event => {
+    <div ref={rootRef} className="library-filters-compact" onKeyDown={event => {
       if (isOpen && event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault();
         closePanel();

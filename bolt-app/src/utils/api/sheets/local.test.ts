@@ -4,8 +4,8 @@ import assert from 'node:assert/strict';
 
 test('la copie publique utilise une adresse stable et un cache revalidé', async () => {
   const urls: string[] = [];
-  mock.method(globalThis, 'fetch', async (input: any, init?: RequestInit) => {
-    const url = typeof input === 'string' ? input : input.url;
+  mock.method(globalThis, 'fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = input instanceof Request ? input.url : String(input);
     urls.push(url);
     assert.equal(url, 'data/videos.json');
     assert.equal(init?.cache, 'no-cache');

@@ -120,16 +120,36 @@ Utiliser Node.js 24 pour le lanceur de tests TypeScript.
 ```bash
 cd bolt-app
 npm ci
-npm run typecheck
+npm run lint
 npm test
+npm run build
+npx playwright install chromium
+npm run test:ui
 ```
+
+Le lint couvre les fichiers JavaScript, TypeScript et TSX et les règles Hooks.
+Un contrôle avec des fixtures volontairement invalides en mémoire vérifie que
+les extensions TypeScript et les Hooks ne sont pas silencieusement ignorés.
+
+Les 24 parcours UI utilisent un catalogue synthétique intercepté dans le navigateur,
+sans charger la bibliothèque personnelle ni ouvrir YouTube. Ils couvrent ordinateur,
+petit mobile, tablette et paysage : recherche, filtres, tirage, focus clair/sombre,
+chargement par lots, reprise et panne réseau. Les captures sont enregistrées dans
+`bolt-app/test-results/` et jointes aux exécutions CI ; les assertions portent sur les
+parcours, le focus et la géométrie, pas sur une comparaison pixel par pixel.
 
 Ces tests n'exigent pas de secrets : les appels réseau sont simulés.
 Les tests de dates figent l'horloge et respectent les heures UTC des données,
 tout en conservant les dates sans heure dans le calendrier local.
-Le workflow `Frontend checks` vérifie le typage, les tests dans quatre fuseaux
-(UTC, Europe/Paris, America/Los_Angeles, Asia/Tokyo), le lint et la compilation.
-`npm run build` vérifie également le typage avant de compiler avec Vite.
+Le workflow réutilisable `Validate frontend artifact` vérifie les dépendances, le lint,
+les tests dans quatre fuseaux (UTC, Europe/Paris, America/Los_Angeles, Asia/Tokyo),
+le typage, la compilation et les parcours UI sur ce build. Il est appelé par les
+contrôles de PR et par la publication. La publication résout une seule révision,
+la valide, puis déploie uniquement son artefact nommé par ce commit ; aucun nouveau
+build n’est fait après les tests. Un échec bloque l’envoi de l’artefact et le job de
+publication. Après une synchronisation qui a committé de nouvelles données, `main`
+est résolu une fois avant cette validation. Les reprises Pages réutilisent le même
+artefact validé. `npm run build` vérifie le typage avant de compiler avec Vite.
 
 ## Dépendances de l’interface
 

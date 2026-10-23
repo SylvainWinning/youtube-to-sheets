@@ -10,59 +10,49 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  resolve:
     if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository && (github.event.workflow_run.conclusion == 'success' || (github.event.workflow_run.name == 'YouTube to Sheets Sync' && github.event.workflow_run.conclusion == 'failure'))) }}
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+    outputs:
+      revision: ${{ steps.revision.outputs.sha }}
     steps:
-      # 1. Récupère le dépôt
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      # Sync/export can commit the JSON during their run. Resolve main once,
+      # then pin every validation/build step to that exact commit.
+      - uses: actions/checkout@v7
         with:
-          ref: main
-          fetch-depth: 0  # nécessaire pour l’historique complet
+          ref: ${{ github.event_name == 'workflow_run' && 'main' || github.sha }}
+      - id: revision
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      # 2. Configure Node.js (version et cache)
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: bolt-app/package-lock.json
+  validate:
+    needs: resolve
+    permissions:
+      contents: read
+    uses: ./.github/workflows/frontend-validate.yml
+    with:
+      ref: ${{ needs.resolve.outputs.revision }}
+      publish-artifact: true
 
-      # 3. Nettoie le cache npm (pour éviter les tarballs corrompus)
-      - name: Clean npm cache
-        run: npm cache clean --force
-        working-directory: bolt-app
-
-      # 4. Installe les dépendances
-      - name: Install dependencies
-        run: npm ci
-        working-directory: bolt-app
-
-      # (Optionnel mais recommandé) configure Pages
+  deploy:
+    needs: [resolve, validate]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-pages.outputs.page_url || steps.deploy-pages-retry-1.outputs.page_url || steps.deploy-pages-retry-2.outputs.page_url }}
+    steps:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
-
-      # 5. Compile le site public sans secrets Google (catalogue JSON uniquement)
-      - name: Build project
-        run: npm run build
-        working-directory: bolt-app
-
-      # 6. Prépare l’artefact à publier
-      - name: Upload build artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: bolt-app/dist
-
       # 7. Déploie vers GitHub Pages
       - name: Deploy to GitHub Pages
         id: deploy-pages
@@ -70,6 +60,7 @@ jobs:
         continue-on-error: true
         with:
           token: ${{ github.token }}
+          artifact_name: github-pages-${{ needs.resolve.outputs.revision }}
 
       - name: Wait before retrying GitHub Pages deployment
         if: ${{ steps.deploy-pages.outcome == 'failure' }}
@@ -82,13 +73,16 @@ jobs:
         continue-on-error: true
         with:
           token: ${{ github.token }}
+          artifact_name: github-pages-${{ needs.resolve.outputs.revision }}
 
       - name: Wait before final GitHub Pages deployment retry
         if: ${{ steps.deploy-pages.outcome == 'failure' && steps.deploy-pages-retry-1.outcome == 'failure' }}
         run: sleep 180
 
       - name: Final retry deploy to GitHub Pages
+        id: deploy-pages-retry-2
         if: ${{ steps.deploy-pages.outcome == 'failure' && steps.deploy-pages-retry-1.outcome == 'failure' }}
         uses: actions/deploy-pages@v5
         with:
           token: ${{ github.token }}
+          artifact_name: github-pages-${{ needs.resolve.outputs.revision }}

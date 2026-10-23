@@ -28,8 +28,9 @@ export function buildVideoLibrary(entries: VideoData[]): LibraryVideo[] {
     const identity = getVideoIdentity(entry);
     let video = library.get(identity);
     if (!video) {
-      const { playlistId: _playlistId, playlistPosition: _playlistPosition, ...metadata } = entry;
-      video = { ...metadata, identity, playlistMemberships: [] };
+      video = { ...entry, identity, playlistMemberships: [] };
+      delete video.playlistId;
+      delete video.playlistPosition;
       library.set(identity, video);
     }
     for (const membership of getPlaylistMemberships(entry)) {

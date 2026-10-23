@@ -32,8 +32,8 @@ test('fetchSheetData retrieves all rows for unbounded range', async () => {
   try {
     const { fetchSheetData } = await import('./fetch.ts');
 
-    mock.method(globalThis as any, 'fetch', async (input: any) => {
-      const url = typeof input === 'string' ? input : input.url;
+    mock.method(globalThis, 'fetch', async (input: RequestInfo | URL) => {
+      const url = input instanceof Request ? input.url : String(input);
       assert.ok(url.includes(encodeURIComponent('tab!A2:M')));
       return new Response(JSON.stringify({ values: rows }), { status: 200 });
     });

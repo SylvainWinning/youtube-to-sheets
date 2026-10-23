@@ -103,8 +103,8 @@ test('fetchAllVideos returns synchronized data on success', async () => {
     ]
   ];
 
-  mock.method(globalThis, 'fetch', async (input: any) => {
-    const url = typeof input === 'string' ? input : input.url;
+  mock.method(globalThis, 'fetch', async (input: RequestInfo | URL) => {
+    const url = input instanceof Request ? input.url : String(input);
     if (url.includes('data/videos.json')) {
       calls.push('local');
       return new Response(JSON.stringify(localRows), { status: 200 });
@@ -166,8 +166,8 @@ test('fetchAllVideos keeps local data when synchronization fails', async () => {
     ]
   ];
 
-  mock.method(globalThis, 'fetch', async (input: any) => {
-    const url = typeof input === 'string' ? input : input.url;
+  mock.method(globalThis, 'fetch', async (input: RequestInfo | URL) => {
+    const url = input instanceof Request ? input.url : String(input);
     if (url.includes('data/videos.json')) {
       calls.push('local');
       return new Response(JSON.stringify(localRows), { status: 200 });
