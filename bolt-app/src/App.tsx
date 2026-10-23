@@ -136,10 +136,10 @@ export default function App() {
   // Clip overflow without creating a scroll container that would trap the sticky header.
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-clip pt-2">
-      <header className="bg-white dark:bg-neutral-800 shadow-xs sticky top-0 z-50 mb-2 sm:mb-6">
+      <header className="library-header bg-white dark:bg-neutral-800 shadow-xs sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
+          <div className="library-header-content">
+            <div className="library-header-main flex items-center justify-between gap-2">
               <button
                 onClick={() => { playClick(); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                 type="button"
@@ -162,7 +162,7 @@ export default function App() {
             </div>
             <div className="flex items-center justify-end gap-3">
               {(!isLoading || hasLibrary) && !appError && (
-                <div className="hidden min-w-0 flex-1 sm:grid grid-cols-3 items-stretch gap-2">
+                <div className="library-filters-expanded min-w-0 flex-1 grid-cols-3 items-stretch gap-2">
                   <div className="w-full h-full">
                     <SortSelect options={sortOptions} onOptionsChange={setSortOptions} />
                   </div>
@@ -217,7 +217,7 @@ export default function App() {
               selectedPlaylistId={selectedPlaylistId}
               onPlaylistChange={setSelectedPlaylistId}
             />
-            <div className="hidden sm:block">
+            <div className="library-durations-expanded">
               <DurationTabs
                 selectedTab={selectedTab}
                 onTabChange={setSelectedTab}

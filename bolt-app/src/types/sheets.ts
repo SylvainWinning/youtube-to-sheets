@@ -9,7 +9,7 @@ export interface SheetTab {
 
 export interface SheetData {
   id: string;
-  values: any[][];
+  values: unknown[][];
 }
 
 export interface SheetResponse {

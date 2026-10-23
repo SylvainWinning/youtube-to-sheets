@@ -1,3 +1,4 @@
+import type { VideoData } from '../types/video.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sortVideos } from './sortUtils.ts';
@@ -10,7 +11,7 @@ test('sortVideos respecte la position de playlist même avec des valeurs sous fo
     { title: 'Sans position définie' }
   ];
 
-  const sorted = sortVideos(videos as any, null);
+  const sorted = sortVideos(videos as unknown as VideoData[], null);
 
   assert.deepEqual(
     sorted.map(video => video.title),

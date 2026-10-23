@@ -1,3 +1,4 @@
+import type { VideoData } from '../types/video.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getUniqueCategories } from './getUniqueCategories.ts';
@@ -10,6 +11,6 @@ test('getUniqueCategories utilise myCategory et trie correctement', () => {
     { myCategory: '' },
     {}
   ];
-  assert.deepEqual(getUniqueCategories(videos as any, 'asc'), ['Alpha', 'Beta', 'Non classées']);
-  assert.deepEqual(getUniqueCategories(videos as any, 'desc'), ['Non classées', 'Beta', 'Alpha']);
+  assert.deepEqual(getUniqueCategories(videos as unknown as VideoData[], 'asc'), ['Alpha', 'Beta', 'Non classées']);
+  assert.deepEqual(getUniqueCategories(videos as unknown as VideoData[], 'desc'), ['Non classées', 'Beta', 'Alpha']);
 });

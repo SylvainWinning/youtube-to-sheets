@@ -42,13 +42,15 @@ export function VideoChooser({ videos }: { videos: VideoData[] }) {
           className="neu-button rounded-lg min-h-11 min-w-11 flex items-center justify-center"><X aria-hidden="true" className="w-5 h-5" /></button>
       </div>
       <p id="video-choice-scope" className="text-sm mb-3">Le tirage respecte les filtres actifs. La vidéo s’ouvre uniquement avec « Ouvrir sur YouTube ».</p>
-      {selected && <div aria-live="polite" aria-atomic="true">
-        <SafeImage src={selected.thumbnail} alt="" width={480} height={270} className="w-full aspect-video object-cover rounded-lg" />
-        <h3 className="font-semibold mt-3 break-words">{selected.title}</h3>
-        <p className="text-sm mt-1">{selected.channel} · {selected.duration}</p>
+      {selected && <div className="video-choice-preview" aria-live="polite" aria-atomic="true">
+        <SafeImage src={selected.thumbnail} alt="" width={480} height={270} className="video-choice-image w-full aspect-video object-cover rounded-lg" />
+        <div className="video-choice-copy min-w-0">
+          <h3 className="font-semibold break-words">{selected.title}</h3>
+          <p className="text-sm mt-1">{selected.channel} · {selected.duration}</p>
+        </div>
       </div>}
       {!selected && <p role="status">Aucune vidéo ne correspond aux filtres actifs.</p>}
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="video-choice-actions mt-4 flex flex-wrap gap-2">
         {url && <a href={url} target="_blank" rel="noopener noreferrer" onClick={saveVideoNavigation} onAuxClick={saveVideoNavigation}
           className="primary-action rounded-xl px-4 py-3 text-sm">Ouvrir sur YouTube</a>}
         <button type="button" disabled={!hasAlternative} onClick={() => choose(selectedId)}
