@@ -6,7 +6,7 @@ import { getVideoCountByDuration } from '../utils/videoFilters';
 import { VideoData } from '../types/video';
 import { ShuffleButton } from './ShuffleButton';
 import { getRandomVideo, playVideo } from '../utils/videoUtils';
-import { audioPlayer } from '../utils/audio';
+import { useSound } from '../hooks/useSound';
 
 interface DurationTabsProps {
   selectedTab: number;
@@ -16,6 +16,7 @@ interface DurationTabsProps {
 }
 
 export function DurationTabs({ selectedTab, onTabChange, videos, compact = false }: DurationTabsProps) {
+  const { playClick } = useSound();
   const tabCounts = React.useMemo(() =>
     SHEET_TABS.map(tab => getVideoCountByDuration(videos, tab)),
     [videos]
@@ -25,10 +26,10 @@ export function DurationTabs({ selectedTab, onTabChange, videos, compact = false
     const tab = index === -1 ? null : SHEET_TABS[index];
     const randomVideo = getRandomVideo(videos, tab);
     if (randomVideo) {
-      audioPlayer.play();
+      void playClick();
       playVideo(randomVideo);
     }
-  }, [videos]);
+  }, [videos, playClick]);
 
   if (compact) {
     const count = selectedTab === -1 ? videos.length : tabCounts[selectedTab];
