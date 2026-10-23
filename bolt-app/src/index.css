@@ -44,6 +44,9 @@
   .library-header, .library-search { margin-bottom: 0.5rem; }
   .library-filters-expanded, .library-durations-expanded { display: none; }
   .library-filters-compact { margin-bottom: 0.5rem; }
+  .library-controls { padding-top: 0.25rem; padding-bottom: 0.25rem; margin-bottom: 0.5rem; }
+  .library-controls .library-search { margin-bottom: 0.5rem; }
+  .library-controls .library-filters-expanded { margin-bottom: 0.5rem; }
   .library-header-content { display: flex; flex-direction: column; gap: 0.5rem; }
   .library-header-main { flex: 1; min-width: 0; }
   .video-choice-copy { margin-top: 0.75rem; }
@@ -54,7 +57,6 @@
   /* Keep in sync with MobileFilterBar's panel-close media query. */
   @media (min-width: 1024px) and (min-height: 600px) {
     .library-header, .library-search { margin-bottom: 1.5rem; }
-    .library-header-content { flex-direction: column; align-items: stretch; }
     .library-filters-expanded { display: grid; }
     .library-durations-expanded { display: block; }
     .library-filters-compact { display: none; }

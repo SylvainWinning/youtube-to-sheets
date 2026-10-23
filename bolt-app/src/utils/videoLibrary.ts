@@ -32,6 +32,10 @@ export function buildVideoLibrary(entries: VideoData[]): LibraryVideo[] {
       delete video.playlistId;
       delete video.playlistPosition;
       library.set(identity, video);
+    } else {
+      for (const facet of ['topics', 'collections'] as const) {
+        if (video[facet] || entry[facet]) video[facet] = [...new Set([...(video[facet] ?? []), ...(entry[facet] ?? [])])];
+      }
     }
     for (const membership of getPlaylistMemberships(entry)) {
       if (!video.playlistMemberships.some(existing => existing.playlistId === membership.playlistId && existing.position === membership.position)) {

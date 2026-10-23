@@ -2,7 +2,7 @@ import { getCategoryLabel } from '../utils/categoryLabels';
 import React from 'react';
 import { List } from 'lucide-react';
 import type { VideoData } from '../types/video';
-import { getUniqueCategories } from '../utils/getUniqueCategories';
+import { getUniqueCollections, getUniqueTopics } from '../utils/videoFacets';
 import { DropdownMenu } from './ui/DropdownMenu';
 import { DropdownItem } from './ui/DropdownItem';
 
@@ -21,6 +21,7 @@ interface CategorySelectProps {
   onCategoryChange: (category: string | null) => void;
   /** Optional additional class names applied to the button */
   className?: string;
+  facet?: 'topic' | 'collection';
 }
 
 export function CategorySelect({
@@ -28,17 +29,20 @@ export function CategorySelect({
   selectedCategory,
   onCategoryChange,
   className = '',
+  facet = 'topic',
 }: CategorySelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
 
   // Compute unique categories alphabetically once per `videos` change
-  const categories = React.useMemo(() => getUniqueCategories(videos).sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr')), [videos]);
+  const categories = React.useMemo(() => (facet === 'topic' ? getUniqueTopics(videos) : getUniqueCollections(videos))
+    .sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr')), [videos, facet]);
 
   // Don't render a button if there are no categories to choose from
   if (categories.length === 0) return null;
 
   // Determine the button label: show selected category or generic label
-  const label = selectedCategory ? getCategoryLabel(selectedCategory) : 'Toutes les catégories';
+  const allLabel = facet === 'topic' ? 'Tous les thèmes' : 'Toutes les collections';
+  const label = selectedCategory ? getCategoryLabel(selectedCategory) : allLabel;
 
   return (
     <DropdownMenu
@@ -56,7 +60,7 @@ export function CategorySelect({
         }}
         isSelected={selectedCategory === null}
       >
-        Toutes les catégories
+        {allLabel}
       </DropdownItem>
       {/* Render each category as its own item */}
       {categories.map((category) => (

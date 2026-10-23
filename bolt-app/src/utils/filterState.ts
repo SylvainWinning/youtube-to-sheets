@@ -1,12 +1,15 @@
 import type { SearchFilters } from '../types/search';
 import type { SortOptions } from '../types/sort';
 import { SHEET_TABS } from './constants.ts';
+import { isDurationLimit } from './durationSelection.ts';
+import { isCollection } from './videoFacets.ts';
 
 export interface FilterState {
   selectedTab: number;
   sortOptions: SortOptions | null;
   searchFilters: SearchFilters;
   selectedCategory: string | null;
+  selectedCollection: string | null;
   selectedPlaylistId: string | null;
 }
 export function readFilterState(search: string): FilterState {
@@ -14,12 +17,17 @@ export function readFilterState(search: string): FilterState {
   const duration = params.get('duration');
   const index = duration !== null && /^\d+$/.test(duration) ? Number(duration) : -1;
   const sort = params.get('sort');
+  const maxDuration = Number(params.get('maxDuration'));
+  const category = params.get('category') || null;
+  const legacyCollection = category && isCollection(category) ? category : null;
   return {
-    selectedTab: index >= 0 && index < SHEET_TABS.length ? index : -1,
+    selectedTab: isDurationLimit(maxDuration) ? -maxDuration
+      : index >= 0 && index < SHEET_TABS.length ? index : -1,
     sortOptions: sort === 'newest' || sort === 'oldest'
       ? { field: 'publishedAt', direction: sort === 'newest' ? 'desc' : 'asc' } : null,
     searchFilters: { query: params.get('q') ?? '', fields: ['title', 'channel', 'category'] },
-    selectedCategory: params.get('category') || null,
+    selectedCategory: legacyCollection ? null : category,
+    selectedCollection: params.get('collection') || legacyCollection,
     selectedPlaylistId: params.get('playlist') || null,
   };
 }
@@ -28,8 +36,10 @@ export function writeFilterURL(source: URL, state: FilterState): URL {
   const values: Record<string, string | null> = {
     q: state.searchFilters.query || null,
     category: state.selectedCategory,
+    collection: state.selectedCollection,
     playlist: state.selectedPlaylistId,
-    duration: state.selectedTab === -1 ? null : String(state.selectedTab),
+    duration: state.selectedTab >= 0 ? String(state.selectedTab) : null,
+    maxDuration: state.selectedTab < -1 && isDurationLimit(-state.selectedTab) ? String(-state.selectedTab) : null,
     sort: state.sortOptions ? (state.sortOptions.direction === 'desc' ? 'newest' : 'oldest') : null,
   };
   for (const [key, value] of Object.entries(values)) {

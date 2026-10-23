@@ -9,15 +9,15 @@ import { SortSelect } from './components/SortSelect';
 import { CategorySelect } from './components/CategorySelect';
 import { PlaylistSelect, getPlaylistLabel } from './components/PlaylistSelect';
 import { ActiveFilters, type ActiveFilter } from './components/ActiveFilters';
-import { getSelectedLabel } from './utils/sort/utils';
 import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
 import { SoundToggle } from './components/ui/SoundToggle';
 import { ThemeToggle } from './components/ui/ThemeToggle';
 import { MobileFilterBar } from './components/MobileFilterBar';
-import { SHEET_TABS } from './utils/constants';
-import { filterVideosByDuration } from './utils/videoFilters';
-import { filterVideosBySearch } from './utils/searchUtils';
+import { ReturnToTop } from './components/ReturnToTop';
+import { filterByDurationSelection, getDurationLabel } from './utils/durationSelection';
+import { filterVideoFacets } from './utils/videoFacets';
+import { filterVideosBySearch, rankVideosBySearch } from './utils/searchUtils';
 import { sortVideos } from './utils/sortUtils';
 import { useVideos } from './hooks/useVideos';
 import { useSound } from './hooks/useSound';
@@ -25,13 +25,6 @@ import { useLibraryFilters } from './hooks/useLibraryFilters';
 import { clearLibraryProgress } from './utils/libraryProgress';
 import { filterVideosByPlaylist } from './utils/videoLibrary';
 
-/**
- * Main React component for the Bolt‑app. This version adds a custom
- * touch handler for iOS that emulates the native behaviour of
- * scrolling back to the top of the page when the user taps the top
- * left corner of the screen. This supplements the Cordova/Ionic
- * `statusTap` event which is only available in certain contexts.
- */
 export default function App() {
   const library = useVideos();
   const { videos, isLoading, error: videosError, loadVideos } = library;
@@ -39,6 +32,7 @@ export default function App() {
   const { playClick } = useSound();
   const { selectedTab, setSelectedTab, sortOptions, setSortOptions,
     searchFilters, setSearchFilters, selectedCategory, setSelectedCategory,
+    selectedCollection, setSelectedCollection,
     selectedPlaylistId, setSelectedPlaylistId } = useLibraryFilters();
 
   const scrollToTop = React.useCallback(
@@ -52,26 +46,14 @@ export default function App() {
   }, [loadVideos]);
 
   // Permet de remonter en haut quand on tape la barre d'état iOS (Cordova/Ionic)
-  // ou lorsqu'on touche le coin supérieur gauche sur un appareil iOS.
   React.useEffect(() => {
     const handleStatusTap = () => {
       scrollToTop();
     };
 
-    const handleTouchEnd = (event: TouchEvent) => {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (!isIOS || event.changedTouches.length === 0) return;
-      const touch = event.changedTouches[0];
-      if (touch.clientY < 50 && touch.clientX < 100) {
-        scrollToTop();
-      }
-    };
-
     window.addEventListener('statusTap', handleStatusTap);
-    window.addEventListener('touchend', handleTouchEnd);
     return () => {
       window.removeEventListener('statusTap', handleStatusTap);
-      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [scrollToTop]);
 
@@ -81,11 +63,8 @@ export default function App() {
   );
 
   const filteredByCategory = React.useMemo(
-    () =>
-      selectedCategory
-        ? filteredBySearch.filter(v => v.myCategory === selectedCategory)
-        : filteredBySearch,
-    [filteredBySearch, selectedCategory],
+    () => filterVideoFacets(filteredBySearch, selectedCategory, selectedCollection),
+    [filteredBySearch, selectedCategory, selectedCollection],
   );
 
   const filteredByPlaylist = React.useMemo(
@@ -94,17 +73,40 @@ export default function App() {
   );
 
   const filteredByDuration = React.useMemo(
-    () =>
-      selectedTab === -1
-        ? filteredByPlaylist
-        : filterVideosByDuration(filteredByPlaylist, SHEET_TABS[selectedTab]),
+    () => filterByDurationSelection(filteredByPlaylist, selectedTab),
     [filteredByPlaylist, selectedTab],
   );
 
-  const sortedVideos = React.useMemo(
-    () => sortVideos(filteredByDuration, sortOptions, selectedPlaylistId),
-    [filteredByDuration, sortOptions, selectedPlaylistId],
-  );
+  const sortedVideos = React.useMemo(() => {
+    const ordered = sortVideos(filteredByDuration, sortOptions, selectedPlaylistId);
+    return sortOptions ? ordered : rankVideosBySearch(ordered, searchFilters);
+  }, [filteredByDuration, sortOptions, selectedPlaylistId, searchFilters]);
+
+  const home = React.useRef<HTMLButtonElement>(null);
+  const returnToTop = React.useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    home.current?.focus({ preventScroll: true });
+  }, []);
+  const controlsStart = React.useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = React.useState(false);
+  React.useEffect(() => {
+    const marker = controlsStart.current;
+    if (!marker) return;
+    const observer = new IntersectionObserver(([entry]) => setStuck(entry.boundingClientRect.top < 0));
+    observer.observe(marker);
+    return () => observer.disconnect();
+  }, [hasLibrary, videosError]);
+  const filterKey = JSON.stringify([searchFilters.query, selectedCategory, selectedCollection,
+    selectedPlaylistId, selectedTab, sortOptions]);
+  const previousFilterKey = React.useRef(filterKey);
+  React.useLayoutEffect(() => {
+    if (previousFilterKey.current === filterKey) return;
+    previousFilterKey.current = filterKey;
+    const start = controlsStart.current;
+    if (!start) return;
+    const top = start.getBoundingClientRect().top + window.scrollY;
+    if (window.scrollY > top) window.scrollTo({ top, behavior: 'instant' });
+  }, [filterKey]);
 
   const appError = videosError;
   const clearFilters = () => {
@@ -113,7 +115,7 @@ export default function App() {
     setSelectedTab(-1);
     setSelectedCategory(null);
     setSelectedPlaylistId(null);
-    setSortOptions(null);
+    setSelectedCollection(null);
   };
   const activeFilters: ActiveFilter[] = [];
   if (searchFilters.query.trim()) activeFilters.push({
@@ -121,26 +123,28 @@ export default function App() {
     onRemove: () => setSearchFilters(filters => ({ ...filters, query: '' })),
   });
   if (selectedCategory) activeFilters.push({
-    id: 'category', label: `Catégorie : ${getCategoryLabel(selectedCategory)}`, onRemove: () => setSelectedCategory(null),
+    id: 'category', label: `Thème : ${getCategoryLabel(selectedCategory)}`, onRemove: () => setSelectedCategory(null),
   });
   if (selectedPlaylistId) activeFilters.push({
     id: 'playlist', label: `Playlist : ${getPlaylistLabel(selectedPlaylistId)}`, onRemove: () => setSelectedPlaylistId(null),
   });
   if (selectedTab !== -1) activeFilters.push({
-    id: 'duration', label: `Durée : ${SHEET_TABS[selectedTab].name}`, onRemove: () => setSelectedTab(-1),
+    id: 'duration', label: `Durée : ${getDurationLabel(selectedTab)}`, onRemove: () => setSelectedTab(-1),
   });
-  if (sortOptions) activeFilters.push({
-    id: 'sort', label: `Tri : ${getSelectedLabel(sortOptions)}`, onRemove: () => setSortOptions(null),
+  if (selectedCollection) activeFilters.push({
+    id: 'collection', label: `Collection : ${getCategoryLabel(selectedCollection)}`,
+    onRemove: () => setSelectedCollection(null),
   });
 
   // Clip overflow without creating a scroll container that would trap the sticky header.
   return (
     <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-clip pt-2">
-      <header className="library-header bg-white dark:bg-neutral-800 shadow-xs sticky top-0 z-50">
+      <header className="library-header bg-white dark:bg-neutral-800 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="library-header-content">
             <div className="library-header-main flex items-center justify-between gap-2">
               <button
+                ref={home}
                 onClick={() => { playClick(); window.scrollTo({ top: 0, behavior: 'instant' }); }}
                 type="button"
                 aria-label="Revenir en haut de la page"
@@ -161,25 +165,6 @@ export default function App() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-3">
-              {(!isLoading || hasLibrary) && !appError && (
-                <div className="library-filters-expanded min-w-0 flex-1 grid-cols-3 items-stretch gap-2">
-                  <div className="w-full h-full">
-                    <SortSelect options={sortOptions} onOptionsChange={setSortOptions} />
-                  </div>
-                  <CategorySelect
-                    videos={videos}
-                    selectedCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
-                    className="w-full h-full"
-                  />
-                  <PlaylistSelect
-                    videos={videos}
-                    selectedPlaylistId={selectedPlaylistId}
-                    onPlaylistChange={setSelectedPlaylistId}
-                    className="w-full h-full"
-                  />
-                </div>
-              )}
               <button type="button" disabled={isLoading} aria-busy={isLoading}
                 onClick={() => { playClick(); void loadVideos(); }}
                 className="neu-button flex shrink-0 min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm text-gray-700 dark:text-gray-100 disabled:opacity-60">
@@ -201,22 +186,50 @@ export default function App() {
         )}
         {(!isLoading || hasLibrary) && !appError && (
           <>
-            <SearchBar
-              filters={searchFilters}
-              onFiltersChange={setSearchFilters}
-            />
-            <MobileFilterBar
-              videos={videos}
-              durationVideos={filteredByPlaylist}
-              selectedTab={selectedTab}
-              onTabChange={setSelectedTab}
-              sortOptions={sortOptions}
-              onSortOptionsChange={setSortOptions}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              selectedPlaylistId={selectedPlaylistId}
-              onPlaylistChange={setSelectedPlaylistId}
-            />
+            <div ref={controlsStart} aria-hidden="true" className="h-px" />
+            <div className="library-controls sticky top-0 z-40 bg-youtube-bg-light dark:bg-neutral-900">
+              <SearchBar
+                filters={searchFilters}
+                onFiltersChange={setSearchFilters}
+              />
+              <MobileFilterBar
+                stuck={stuck}
+                searching={Boolean(searchFilters.query.trim())}
+                onReturnTop={returnToTop}
+                videos={videos}
+                durationVideos={filteredByPlaylist}
+                selectedTab={selectedTab}
+                onTabChange={setSelectedTab}
+                sortOptions={sortOptions}
+                onSortOptionsChange={setSortOptions}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                selectedCollection={selectedCollection}
+                onCollectionChange={setSelectedCollection}
+                selectedPlaylistId={selectedPlaylistId}
+                onPlaylistChange={setSelectedPlaylistId}
+              />
+              <div className="library-filters-expanded min-w-0 flex-1 grid-cols-4 items-stretch gap-2">
+                <div className="w-full h-full">
+                  <SortSelect options={sortOptions} onOptionsChange={setSortOptions} searching={Boolean(searchFilters.query.trim())} />
+                </div>
+                <CategorySelect
+                  videos={videos}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
+                  className="w-full h-full"
+                />
+                <CategorySelect videos={videos} facet="collection" selectedCategory={selectedCollection}
+                  onCategoryChange={setSelectedCollection} className="w-full h-full" />
+                <PlaylistSelect
+                  videos={videos}
+                  selectedPlaylistId={selectedPlaylistId}
+                  onPlaylistChange={setSelectedPlaylistId}
+                  className="w-full h-full"
+                />
+              </div>
+              {stuck && <div className="library-durations-expanded absolute right-0 top-1"><ReturnToTop onReturn={returnToTop} /></div>}
+            </div>
             <div className="library-durations-expanded">
               <DurationTabs
                 selectedTab={selectedTab}

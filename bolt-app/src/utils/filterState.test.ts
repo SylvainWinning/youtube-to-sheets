@@ -24,3 +24,24 @@ test('les paramètres invalides sont ignorés et effacer conserve les paramètre
   assert.equal(url.search, '?ref=ok');
   assert.equal(url.hash, '#x');
 });
+
+test('les anciens liens de collections migrent sans perdre le choix personnel', () => {
+  const state = readFilterState('?category=Youtuber+pref&sort=newest');
+  assert.equal(state.selectedCategory, null);
+  assert.equal(state.selectedCollection, 'Youtuber pref');
+  const url = writeFilterURL(new URL('https://example.com/?category=Youtuber+pref'), state);
+  assert.equal(url.searchParams.get('collection'), 'Youtuber pref');
+  assert.equal(url.searchParams.has('category'), false);
+  assert.deepEqual(readFilterState(url.search), state);
+});
+
+test('thème, collection et durée maximale se partagent sans conflit de paramètres', () => {
+  const state = readFilterState('?category=Tech&collection=Youtuber+pref&maxDuration=20&duration=7');
+  assert.equal(state.selectedTab, -20);
+  const url = writeFilterURL(new URL('https://example.com/?duration=7'), state);
+  assert.equal(url.searchParams.has('duration'), false);
+  assert.deepEqual(readFilterState(url.search), state);
+  for (const invalid of ['0', '19', 'Infinity', '-20', '20x']) {
+    assert.equal(readFilterState('?maxDuration=' + invalid).selectedTab, -1);
+  }
+});

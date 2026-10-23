@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { filterVideosBySearch } from './searchUtils.ts';
+import { filterVideosBySearch, rankVideosBySearch } from './searchUtils.ts';
 import type { SearchFilters } from '../types/search.ts';
 import type { VideoData } from '../types/video.ts';
 
@@ -88,4 +88,26 @@ test('les libellés de catégories lisibles et les anciens noms retrouvent les m
     assert.deepEqual(filterVideosBySearch(videos, { query, fields: ['category'] }), [videos[1]]);
   }
   assert.deepEqual(videos.map(video => video.myCategory), ['Pause dej', 'Youtuber pref']);
+});
+
+test('IA est un mot ou sigle complet, y compris après apostrophe et avec des points', () => {
+  const videos = ['Sebastian Marx', 'Salaire médian', 'Un sujet chiant', "L’IA au quotidien", "L'I.A transforme le travail", 'IA et cinéma']
+    .map(title => ({ title, channel: '' }) as VideoData);
+  assert.deepEqual(filterVideosBySearch(videos, { query: 'IA', fields: ['title'] }), videos.slice(3));
+});
+
+test('les petits mots restent des débuts de mots, les noms se saisissent progressivement', () => {
+  const videos = ['Tu préfères', 'Tes YouTubers préférés', 'Éric Judor'].map(title => ({ title }) as VideoData);
+  assert.deepEqual(filterVideosBySearch(videos, { query: 'tu préfères', fields: ['title'] }), [videos[0]]);
+  for (const query of ['Ér', 'eri', 'Eric']) {
+    assert.deepEqual(filterVideosBySearch(videos, { query, fields: ['title'] }), [videos[2]]);
+  }
+});
+
+test('la pertinence privilégie mots et champs exacts, conserve les références et stabilise les égalités', () => {
+  const videos = ['Défigure', 'Figure à découvrir', 'Figure', 'Figure et forme'].map(title => ({ title }) as VideoData);
+  const filters = { query: 'figure', fields: ['title'] } satisfies SearchFilters;
+  const before = JSON.stringify(videos);
+  assert.deepEqual(rankVideosBySearch(filterVideosBySearch(videos, filters), filters), [videos[2], videos[1], videos[3], videos[0]]);
+  assert.equal(JSON.stringify(videos), before);
 });
