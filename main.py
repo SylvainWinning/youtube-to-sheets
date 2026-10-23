@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import re
 import time
@@ -390,37 +391,59 @@ def add_video_to_categories(entry: list, duration_category: str, videos_by_categ
     all_videos.append(entry)
 
 
-def write_category(service, spreadsheet_id: str, sheet_name: str, rows: list[list]) -> None:
-    """
-    Écrit les données de vidéos dans un onglet spécifique. Cette fonction assure
-    la création de l’onglet si nécessaire, efface son contenu actuel puis insère
-    les en‑têtes et les lignes fournies.
-    """
-    # Assure que l’onglet existe et obtient son ID
-    sheet_id = ensure_sheet_exists(service, spreadsheet_id, sheet_name)
-    # Efface tout le contenu de l’onglet
-    clear_body = {
-        "requests": [
-            {
-                "updateCells": {
-                    "range": {
-                        "sheetId": sheet_id,
-                    },
-                    "fields": "*",
-                }
-            }
-        ]
-    }
-    service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=clear_body).execute()
-    # Prépare les valeurs à insérer : en‑tête suivi des lignes
-    values = [HEADERS] + rows
-    body = {"values": values}
-    service.spreadsheets().values().update(
-        spreadsheetId=spreadsheet_id,
-        range=f"{sheet_name}!A1",
-        valueInputOption="RAW",
-        body=body,
-    ).execute()
+def write_library(service, spreadsheet_id: str, categories: dict[str, list[list]],
+                  sheet_name: str, all_rows: list[list]) -> None:
+    """Validate, replace every export atomically, then verify the committed values."""
+    from collections import Counter
+
+    if sheet_name in categories or not sheet_name.strip():
+        raise ValueError("L'onglet principal doit être distinct des catégories")
+    tables = {**categories, sheet_name: all_rows}
+    for rows in tables.values():
+        if any(len(row) != len(HEADERS) or any(not isinstance(cell, str) for cell in row) for row in rows):
+            raise ValueError("Lignes de publication invalides")
+    if Counter(tuple(row) for rows in categories.values() for row in rows) != Counter(map(tuple, all_rows)):
+        raise ValueError("Les catégories ne correspondent pas à AllVideos")
+
+    sheets = service.spreadsheets()
+    properties = sheets.get(spreadsheetId=spreadsheet_id,
+                            fields="sheets.properties").execute().get("sheets", [])
+    existing = {sheet["properties"]["title"]: sheet["properties"] for sheet in properties}
+    next_id = max((p["sheetId"] for p in existing.values()), default=0) + 1
+    requests_body = []
+    for title, rows in tables.items():
+        values = [HEADERS] + rows
+        prop = existing.get(title)
+        if prop is None:
+            prop = {"sheetId": next_id, "title": title,
+                    "gridProperties": {"rowCount": len(values), "columnCount": len(HEADERS)}}
+            next_id += 1
+            requests_body.append({"addSheet": {"properties": prop}})
+        else:
+            grid = prop.get("gridProperties", {})
+            requests_body.append({"updateSheetProperties": {"properties": {
+                "sheetId": prop["sheetId"], "gridProperties": {
+                    "rowCount": max(grid.get("rowCount", 0), len(values)),
+                    "columnCount": max(grid.get("columnCount", 0), len(HEADERS))}},
+                "fields": "gridProperties.rowCount,gridProperties.columnCount"}})
+        # An unbounded row range clears stale values below the new rows in A:P.
+        # Only values are replaced: formatting and other columns are preserved.
+        requests_body.append({"updateCells": {
+            "range": {"sheetId": prop["sheetId"], "startRowIndex": 0,
+                      "startColumnIndex": 0, "endColumnIndex": len(HEADERS)},
+            "rows": [{"values": [{"userEnteredValue": {"stringValue": cell}} for cell in row]}
+                     for row in values], "fields": "userEnteredValue"}})
+    # Google validates the entire batch and applies all requests atomically.
+    sheets.batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests_body}).execute()
+    ranges = ["'" + title.replace("'", "''") + "'!A:P" for title in tables]
+    result = sheets.values().batchGet(spreadsheetId=spreadsheet_id, ranges=ranges,
+                                     valueRenderOption="UNFORMATTED_VALUE").execute().get("valueRanges", [])
+    if len(result) != len(tables):
+        raise RuntimeError("Vérification Sheets incomplète : export local non publié")
+    for actual, rows in zip(result, tables.values()):
+        normalized = [row + [""] * (len(HEADERS) - len(row)) for row in actual.get("values", [])]
+        if normalized != [HEADERS] + rows:
+            raise RuntimeError("Contenu Sheets incohérent : export local non publié")
 
 
 def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | None:
@@ -569,19 +592,17 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | N
             metadata = {**previous_metadata, "status": "degraded", "source": "cache", "warnings": ["volume_drop_blocked"], "lastAttempt": attempt_at, "publishedAt": now()}
             write_snapshot("data/videos.json", previous_rows, metadata)
         raise
-    # Écriture des données dans chaque onglet de catégorie
-    for category_name, rows in videos_by_category.items():
-        write_category(service, SPREADSHEET_ID, category_name, rows)
-    # Enfin, écrire l’ensemble des vidéos dans l’onglet principal
-    write_category(service, SPREADSHEET_ID, SHEET_TAB_NAME, all_videos)
+    write_library(service, SPREADSHEET_ID, videos_by_category, SHEET_TAB_NAME, all_videos)
 
     if complete:
         metadata["lastSuccessfulSync"] = now()
     metadata["publishedAt"] = now()
     write_snapshot("data/videos.json", candidate, metadata)
     write_snapshot("bolt-app/public/data/videos.json", candidate, metadata)
-    with open("bolt-app/public/data/videos.csv", "w", newline="", encoding="utf-8") as public_csv:
+    csv_path = Path("bolt-app/public/data/videos.csv")
+    with open(csv_path.with_suffix(".csv.tmp"), "w", newline="", encoding="utf-8") as public_csv:
         csv.writer(public_csv).writerows(candidate)
+    csv_path.with_suffix(".csv.tmp").replace(csv_path)
     return True
 
 
