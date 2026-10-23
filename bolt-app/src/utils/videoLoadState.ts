@@ -2,6 +2,7 @@ import type { LibraryVideo, VideoData } from '../types/video.ts';
 import type { ApiResponse, SyncMetadata } from './api/sheets/types.ts';
 import { assignCategories } from './assignCategories.ts';
 import { buildVideoLibrary } from './videoLibrary.ts';
+import { getVideoCollections, getVideoTopics } from './videoFacets.ts';
 
 export interface VideoLoadState {
   videos: LibraryVideo[];
@@ -38,7 +39,10 @@ export function resolveVideoLoad(
     };
   }
 
-  const videos = buildVideoLibrary(assignCategories(response.data));
+  const normalized = response.data.map(video => ({
+    ...video, topics: getVideoTopics(video), collections: getVideoCollections(video),
+  }));
+  const videos = buildVideoLibrary(assignCategories(normalized));
   // A revalidated snapshot can be unchanged. Keep the array identity so the
   // grid retains its loaded batches, focus and reading position.
   const unchanged = JSON.stringify(videos) === JSON.stringify(previous.videos);

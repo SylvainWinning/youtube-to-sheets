@@ -10,9 +10,10 @@ interface SortSelectProps {
   options: SortOptions | null;
   onOptionsChange: (options: SortOptions | null) => void;
   className?: string;
+  searching?: boolean;
 }
 
-export function SortSelect({ options, onOptionsChange, className = '' }: SortSelectProps) {
+export function SortSelect({ options, onOptionsChange, className = '', searching = false }: SortSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const playlistValue = getOptionValue(null);
   const selectedValue = getOptionValue(options);
@@ -30,7 +31,7 @@ export function SortSelect({ options, onOptionsChange, className = '' }: SortSel
   return (
     <DropdownMenu
       icon={<ArrowUpDown className="w-5 h-5 text-gray-500 group-hover:text-youtube-red-accessible dark:group-hover:text-youtube-red-accessible-dark transition-colors shrink-0" />}
-      label={getSelectedLabel(options)}
+      label={!options && searching ? 'Pertinence' : getSelectedLabel(options)}
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}
       className={className}
@@ -44,7 +45,7 @@ export function SortSelect({ options, onOptionsChange, className = '' }: SortSel
         onClick={() => handleSelect(playlistValue)}
         isSelected={selectedValue === playlistValue}
       >
-        {SORT_LABELS[playlistValue]}
+        {searching ? 'Pertinence' : SORT_LABELS[playlistValue]}
       </DropdownItem>
 
       <div className="my-1 border-t border-gray-100 dark:border-neutral-700" />

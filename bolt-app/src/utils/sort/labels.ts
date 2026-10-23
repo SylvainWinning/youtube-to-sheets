@@ -5,6 +5,6 @@
 // Mapping of internal sort option keys to their French labels.
 export const SORT_LABELS: Record<string, string> = {
   '': 'Ordre de la playlist',
-  'publishedAt_desc': 'Plus récentes',
-  'publishedAt_asc': 'Plus anciennes',
+  'publishedAt_desc': 'Publication : plus récentes',
+  'publishedAt_asc': 'Publication : plus anciennes',
 };

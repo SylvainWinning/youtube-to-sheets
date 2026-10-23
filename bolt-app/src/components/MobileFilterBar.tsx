@@ -5,11 +5,11 @@ import { getPlaylistLabel, PRIMARY_PLAYLIST_ID } from './PlaylistSelect';
 import { SORT_OPTIONS } from '../types/sort';
 import type { SortOptions } from '../types/sort';
 import type { VideoData } from '../types/video';
-import { getUniqueCategories } from '../utils/getUniqueCategories';
+import { getUniqueCollections, getUniqueTopics } from '../utils/videoFacets';
 import { getOptionValue, getSelectedLabel } from '../utils/sort/utils';
-import { getVideoCountByDuration } from '../utils/videoFilters';
-import { SHEET_TABS } from '../utils/constants';
+import { filterByDurationSelection } from '../utils/durationSelection';
 import { getPlaylistIds } from '../utils/videoLibrary';
+import { ReturnToTop } from './ReturnToTop';
 
 interface MobileFilterBarProps {
   videos: VideoData[];
@@ -20,8 +20,13 @@ interface MobileFilterBarProps {
   onSortOptionsChange: (options: SortOptions | null) => void;
   selectedCategory: string | null;
   onCategoryChange: (category: string | null) => void;
+  selectedCollection: string | null;
+  onCollectionChange: (collection: string | null) => void;
   selectedPlaylistId: string | null;
   onPlaylistChange: (playlistId: string | null) => void;
+  stuck: boolean;
+  searching: boolean;
+  onReturnTop: () => void;
 }
 
 const sortChoices = [null, SORT_OPTIONS.PUBLISHED_DESC, SORT_OPTIONS.PUBLISHED_ASC];
@@ -30,20 +35,34 @@ const selectClass = 'neu-button w-full h-11 rounded-lg px-3 text-sm text-gray-70
 export function MobileFilterBar({
   videos, durationVideos, selectedTab, onTabChange, sortOptions, onSortOptionsChange,
   selectedCategory, onCategoryChange, selectedPlaylistId, onPlaylistChange,
+  selectedCollection, onCollectionChange,
+  stuck, searching, onReturnTop,
 }: MobileFilterBarProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const rootRef = React.useRef<HTMLDivElement>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelId = React.useId();
-  const categories = React.useMemo(() => getUniqueCategories(videos).sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr')), [videos]);
+  const [panelHeight, setPanelHeight] = React.useState(360);
+  React.useLayoutEffect(() => {
+    if (!isOpen) return;
+    const fitPanel = () => setPanelHeight(Math.max(120, window.innerHeight - (rootRef.current?.getBoundingClientRect().bottom ?? 0) - 12));
+    fitPanel();
+    window.addEventListener('resize', fitPanel);
+    window.addEventListener('scroll', fitPanel, { passive: true });
+    return () => {
+      window.removeEventListener('resize', fitPanel);
+      window.removeEventListener('scroll', fitPanel);
+    };
+  }, [isOpen]);
+  const categories = React.useMemo(() => getUniqueTopics(videos), [videos]);
+  const collections = React.useMemo(() => getUniqueCollections(videos), [videos]);
   const playlistIds = React.useMemo(() => getPlaylistIds(videos).sort((a, b) => {
       if (a === PRIMARY_PLAYLIST_ID) return -1;
       if (b === PRIMARY_PLAYLIST_ID) return 1;
       return getPlaylistLabel(a).localeCompare(getPlaylistLabel(b), 'fr');
     }), [videos]);
-  const resultCount = selectedTab === -1 ? durationVideos.length
-    : getVideoCountByDuration(durationVideos, SHEET_TABS[selectedTab]);
-  const activeFilters = Number(Boolean(selectedCategory)) + Number(Boolean(selectedPlaylistId)) + Number(Boolean(sortOptions));
+  const resultCount = filterByDurationSelection(durationVideos, selectedTab).length;
+  const activeFilters = Number(Boolean(selectedCategory)) + Number(Boolean(selectedCollection)) + Number(Boolean(selectedPlaylistId));
 
   const closePanel = () => {
     setIsOpen(false);
@@ -67,7 +86,7 @@ export function MobileFilterBar({
   }, []);
 
   return (
-    <div ref={rootRef} className="library-filters-compact" onKeyDown={event => {
+    <div ref={rootRef} className="library-filters-compact relative" onKeyDown={event => {
       if (isOpen && event.key === 'Escape' && !event.defaultPrevented) {
         event.preventDefault();
         closePanel();
@@ -85,23 +104,34 @@ export function MobileFilterBar({
         >
           Filtres{activeFilters > 0 && <span className="ml-1">({activeFilters})</span>}
         </button>
+        {stuck && <ReturnToTop onReturn={onReturnTop} />}
       </div>
       {isOpen && (
-        <section id={panelId} aria-label="Filtres des vidéos" className="mt-3 rounded-xl border border-gray-200 dark:border-neutral-700 p-3 bg-white dark:bg-neutral-800">
+        <section id={panelId} aria-label="Filtres des vidéos" style={{ maxHeight: panelHeight }}
+          className="absolute left-0 right-0 top-full mt-2 overflow-y-auto overscroll-contain rounded-xl border border-gray-200 dark:border-neutral-700 p-3 bg-white dark:bg-neutral-800 shadow-lg">
           <div className="grid gap-3">
             <label className="grid gap-1 text-sm text-gray-700 dark:text-gray-200">
               Trier par
               <select className={selectClass} value={getOptionValue(sortOptions)} onChange={event =>
                 onSortOptionsChange(sortChoices.find(choice => getOptionValue(choice) === event.target.value) ?? null)}>
-                {sortChoices.map(choice => <option key={getOptionValue(choice)} value={getOptionValue(choice)}>{getSelectedLabel(choice)}</option>)}
+                {sortChoices.map(choice => <option key={getOptionValue(choice)} value={getOptionValue(choice)}>{!choice && searching ? 'Pertinence' : getSelectedLabel(choice)}</option>)}
               </select>
             </label>
             {categories.length > 0 && (
               <label className="grid gap-1 text-sm text-gray-700 dark:text-gray-200">
-                Catégorie
+                Thème des vidéos
                 <select className={selectClass} value={selectedCategory ?? ''} onChange={event => onCategoryChange(event.target.value || null)}>
-                  <option value="">Toutes les catégories</option>
+                  <option value="">Tous les thèmes</option>
                   {categories.map(category => <option key={category} value={category}>{getCategoryLabel(category)}</option>)}
+                </select>
+              </label>
+            )}
+            {collections.length > 0 && (
+              <label className="grid gap-1 text-sm text-gray-700 dark:text-gray-200">
+                Collection
+                <select className={selectClass} value={selectedCollection ?? ''} onChange={event => onCollectionChange(event.target.value || null)}>
+                  <option value="">Toutes les collections</option>
+                  {collections.map(collection => <option key={collection} value={collection}>{getCategoryLabel(collection)}</option>)}
                 </select>
               </label>
             )}

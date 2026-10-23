@@ -131,10 +131,12 @@ Le lint couvre les fichiers JavaScript, TypeScript et TSX et les règles Hooks.
 Un contrôle avec des fixtures volontairement invalides en mémoire vérifie que
 les extensions TypeScript et les Hooks ne sont pas silencieusement ignorés.
 
-Les 24 parcours UI utilisent un catalogue synthétique intercepté dans le navigateur,
+Les 44 parcours UI utilisent un catalogue synthétique intercepté dans le navigateur,
 sans charger la bibliothèque personnelle ni ouvrir YouTube. Ils couvrent ordinateur,
 petit mobile, tablette et paysage : recherche, filtres, tirage, focus clair/sombre,
-chargement par lots, reprise et panne réseau. Les captures sont enregistrées dans
+chargement par lots, reprise et panne réseau. Ils vérifient aussi les sigles courts,
+la pertinence, thème + collection, les anciens liens, la durée maximale et ses bornes,
+le tri après effacement et la position de lecture avec les commandes fixes. Les captures sont enregistrées dans
 `bolt-app/test-results/` et jointes aux exécutions CI ; les assertions portent sur les
 parcours, le focus et la géométrie, pas sur une comparaison pixel par pixel.
 
@@ -170,7 +172,7 @@ anciens ne sont plus couverts par cette version du moteur CSS.
 
 Le JSON publié conserve une ligne par appartenance à une playlist. L’interface regroupe ces lignes par identifiant vidéo YouTube (les liens non ouvrables sont écartés et signalés) dans une bibliothèque de vidéos uniques. La première fiche fournit les métadonnées; toutes les appartenances et leurs positions sont conservées séparément, y compris les répétitions dans une même playlist.
 
-« Toutes les playlists », les compteurs de durée et le tirage aléatoire utilisent des vidéos distinctes. Une vidéo partagée porte la mention « 2 playlists ». Dans une playlist sélectionnée, le tri « Playlist d’origine » utilise sa position propre; en cas de répétition, la première position est retenue pour l’affichage unique. Les données sources ne sont pas supprimées ni réécrites par ce regroupement.
+« Toutes les playlists », les compteurs de durée et le tirage aléatoire utilisent des vidéos distinctes. Une vidéo partagée porte la mention « 2 playlists ». Dans une playlist sélectionnée, le tri « Ordre de la playlist » utilise sa position propre; en cas de répétition, la première position est retenue pour l’affichage unique. Les données sources ne sont pas supprimées ni réécrites par ce regroupement.
 
 « Choisir une vidéo » tire au sort parmi les résultats des filtres actifs, puis présente un aperçu. Seul le lien « Ouvrir sur YouTube » ouvre un nouvel onglet; « Autre choix » évite la proposition précédente lorsqu’une alternative existe.
 
@@ -200,7 +202,48 @@ mettre à jour l'information de panne sans publier une bibliothèque amputée.
 
 ### Libellés et présentation
 
-Le nom affiché est « Mes vidéos YouTube ». Le tri par défaut est « Ordre de la playlist », distinct du filtre « Playlist principale ». Les catégories historiques « Pause dej » et « Youtuber pref » sont affichées comme « Pause déjeuner » et « Créateurs favoris » ; leurs valeurs internes et les anciens liens de filtres sont conservés. La recherche accepte les deux versions. Les actions secondaires sont sobres, l’action principale ressort en rouge et la sélection associe fond teinté, contour et texte renforcé.
+Le nom affiché est « Mes vidéos YouTube ». Sans recherche, le tri par défaut est
+« Ordre de la playlist ». Avec une recherche, « Pertinence » privilégie les champs
+et mots complets, puis les préfixes et fragments ; un tri de publication explicite
+reste prioritaire. Les accents, apostrophes et ligatures restent normalisés. Les
+sigles courts IA, AI, UI, UX, VR et AR exigent un mot complet ; les initiales pointées
+comme I.A et les apostrophes comme l’IA sont reconnues. Les autres termes d’une ou
+deux lettres peuvent être des préfixes, pour conserver la saisie progressive des noms.
+La recherche reste textuelle et n’analyse pas le sujet réel des vidéos.
+
+Les thèmes et les collections sont indépendants. Les appartenances historiques à
+« Pause dej » et « Youtuber pref » sont conservées et affichées comme « Pause déjeuner »
+et « Créateurs favoris ». Elles se combinent avec un thème, une playlist et une durée.
+La colonne personnelle `myCategory` et les données publiées restent intactes.
+À l’entrée de la bibliothèque, les thèmes et collections sont calculés sans mutation.
+Un thème personnel explicite prime. Sinon, les exceptions de `topicRules.json`
+(vidéo puis identifiant stable de chaîne) priment sur le classement existant ;
+pour une ancienne collection, la catégorie YouTube de chaque vidéo fournit le thème
+par défaut. Sans correspondance, « Non classées » reste visible. La table de
+correspondance est une règle éditoriale large, pas une analyse sémantique garantie.
+Modifier ses entrées `videos`, `channels` ou `youtubeCategories` permet des ajustements
+sans renommer une chaîne ; une règle vidéo accepte plusieurs thèmes.
+
+Les anciens liens `category=Youtuber+pref` ou `category=Pause+dej` migrent vers
+`collection=…`. Les thèmes continuent d’utiliser `category=…`. Les paramètres tiers
+et l’ancre sont conservés. Les compteurs et le tirage utilisent toujours les vidéos
+uniques ; le regroupement conserve aussi l’union des thèmes/collections des occurrences.
+
+« Moins de 20 min » et les autres durées maximales incluent toutes les vidéos
+strictement plus courtes, sans durée inconnue. Les tranches historiques restent
+accessibles. Le paramètre partagé `maxDuration=20` remplace `duration` lorsque cette
+limite est active ; le tirage porte sur le même ensemble que les résultats.
+
+Le nombre de filtres exclut le tri, qui ne réduit pas les résultats. « Tout effacer »
+retire les restrictions et conserve le tri choisi. La recherche et les filtres restent
+accessibles pendant le défilement, avec un retour en haut explicite. Ouvrir/fermer un
+panneau sans changement conserve la position ; changer un critère replace le début
+des résultats dans la zone de lecture. Le clic générique dans le coin supérieur
+gauche d’iOS n’est plus intercepté : cette zone accueille maintenant la recherche.
+L’événement natif `statusTap` et les boutons explicites restent pris en charge.
+
+Les actions secondaires restent sobres, l’action principale ressort en rouge et la
+sélection associe fond teinté, contour et texte renforcé.
 
 ### Validation du chargement
 

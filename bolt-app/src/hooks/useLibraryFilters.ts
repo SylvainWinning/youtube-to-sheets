@@ -20,6 +20,7 @@ export function useLibraryFilters() {
   const setSortOptions = useCallback((value: SetStateAction<FilterState['sortOptions']>) => update('sortOptions', value), [update]);
   const setSearchFilters = useCallback((value: SetStateAction<FilterState['searchFilters']>) => update('searchFilters', value), [update]);
   const setSelectedCategory = useCallback((value: SetStateAction<FilterState['selectedCategory']>) => update('selectedCategory', value), [update]);
+  const setSelectedCollection = useCallback((value: SetStateAction<FilterState['selectedCollection']>) => update('selectedCollection', value), [update]);
   const setSelectedPlaylistId = useCallback((value: SetStateAction<FilterState['selectedPlaylistId']>) => update('selectedPlaylistId', value), [update]);
-  return { ...state, setSelectedTab, setSortOptions, setSearchFilters, setSelectedCategory, setSelectedPlaylistId };
+  return { ...state, setSelectedTab, setSortOptions, setSearchFilters, setSelectedCategory, setSelectedCollection, setSelectedPlaylistId };
 }

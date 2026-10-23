@@ -20,6 +20,9 @@ export interface VideoData {
   category?: string; // Colonne L (YouTube numeric category)
   thumbnail: string; // Colonne M
   myCategory?: string; // Colonne N (custom category)
+  /** Independent display facets; the source category and collections are preserved. */
+  topics?: string[];
+  collections?: string[];
   /**
    * Position de la vidéo dans la playlist YouTube d’origine.
    *

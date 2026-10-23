@@ -25,10 +25,10 @@ async function compact(page: Page) {
 async function selectCategory(page: Page, label: string) {
   if (await compact(page)) {
     await page.getByRole('button', { name: /^Filtres/ }).click();
-    await page.getByRole('combobox', { name: 'Catégorie', exact: true }).selectOption({ label });
+    await page.getByRole('combobox', { name: 'Thème des vidéos', exact: true }).selectOption({ label });
     await page.getByRole('button', { name: /^Voir \d+ vidéo/ }).click();
   } else {
-    await page.getByRole('button', { name: 'Toutes les catégories', exact: true }).click();
+    await page.getByRole('button', { name: 'Tous les thèmes', exact: true }).click();
     await page.getByRole('button', { name: label, exact: true }).click();
   }
 }
@@ -184,4 +184,159 @@ test('une panne d’actualisation conserve les vidéos et permet de réessayer',
   await page.getByRole('button', { name: 'Actualiser', exact: true }).click();
   await expect(page.getByText('Actualisation impossible. La dernière bibliothèque chargée reste disponible.', { exact: true })).toBeHidden();
   await expectCount(page, 50);
+});
+
+async function loadVariant(page: Page, edit: (videos: typeof rows) => void) {
+  const videos = rows.map(row => [...row]);
+  edit(videos);
+  await page.route('**/data/videos.json', route => route.fulfill({ json: {
+    schemaVersion: 1, videos: [columns, ...videos, [...videos[0].slice(0, 15), secondary, '']],
+  } }));
+  await page.reload();
+  await expectCount(page, 50);
+}
+
+async function selectCollection(page: Page, label: string) {
+  if (await compact(page)) {
+    await page.getByRole('button', { name: /^Filtres/ }).click();
+    await page.getByRole('combobox', { name: 'Collection', exact: true }).selectOption({ label });
+    await page.getByRole('button', { name: /^Voir \d+ vidéo/ }).click();
+  } else {
+    await page.getByRole('button', { name: 'Toutes les collections', exact: true }).click();
+    await page.getByRole('button', { name: label, exact: true }).click();
+  }
+}
+
+test('la recherche distingue IA des fragments et privilégie les correspondances exactes', async ({ page }) => {
+  await loadVariant(page, videos => {
+    ['L’IA au quotidien', "L'I.A transforme le travail", 'Sebastian Marx', 'Salaire médian', 'Un sujet chiant',
+      'Défigure', 'Figure et forme', 'Figure'].forEach((title, i) => { videos[i + 10][1] = title; });
+    videos[15][4] = '2026-12-01T12:00:00Z';
+    videos[17][4] = '2025-01-01T12:00:00Z';
+  });
+  const search = page.getByRole('textbox', { name: 'Rechercher des vidéos' });
+  await search.fill('IA');
+  await expectCount(page, 2);
+  await expect(cards(page).getByRole('heading')).toHaveText(['L’IA au quotidien', "L'I.A transforme le travail"]);
+  await search.fill('figure');
+  await expectCount(page, 3);
+  await expect(cards(page).getByRole('heading')).toHaveText(['Figure', 'Figure et forme', 'Défigure']);
+  if (await compact(page)) {
+    await page.getByRole('button', { name: /^Filtres/ }).click();
+    await page.getByRole('combobox', { name: 'Trier par', exact: true }).selectOption({ label: 'Publication : plus récentes' });
+    await page.getByRole('button', { name: 'Voir 3 vidéos', exact: true }).click();
+  } else {
+    await page.getByRole('button', { name: 'Pertinence', exact: true }).click();
+    await page.getByRole('button', { name: 'Publication : plus récentes', exact: true }).click();
+  }
+  await expect(cards(page).getByRole('heading')).toHaveText(['Défigure', 'Figure et forme', 'Figure']);
+  await search.fill('Ér');
+  await expectCount(page, 2);
+});
+
+test('un thème se combine aux collections et les anciens liens restent utilisables', async ({ page }) => {
+  await loadVariant(page, videos => {
+    for (const i of [10, 11]) {
+      videos[i][3] = 'Marques Brownlee';
+      videos[i][13] = 'Youtuber pref';
+      videos[i][16] = 'UCBJycsmduvYEL83R_U4JriQ';
+    }
+    videos[10][1] = 'Google Pixel — test synthétique';
+    videos[11][1] = 'Clip musical synthétique';
+    videos[11][11] = '10';
+  });
+  await selectCategory(page, 'Tech');
+  await expectCount(page, 3);
+  await selectCollection(page, 'Créateurs favoris');
+  await expectCount(page, 1);
+  await expect(cards(page).getByRole('heading')).toHaveText('Google Pixel — test synthétique');
+  await page.reload();
+  await expectCount(page, 1);
+  await page.getByRole('button', { name: /^Supprimer le filtre Thème/ }).click();
+  await expectCount(page, 2);
+  await page.goto('./?category=Youtuber+pref');
+  await expectCount(page, 2);
+  await expect(page).toHaveURL(/collection=Youtuber\+pref/);
+  await expect(page).not.toHaveURL(/[?&]category=/);
+});
+
+test('une durée maximale réunit les plages, survit au rechargement et borne le tirage', async ({ page }) => {
+  await loadVariant(page, videos => {
+    ['00:19:59', '00:20:00', '00:20:01', 'Inconnue'].forEach((duration, i) => { videos[i + 10][5] = duration; });
+  });
+  await page.getByRole('combobox', { name: await compact(page) ? 'Durée' : 'Durée maximale', exact: true })
+    .selectOption({ label: 'Moins de 20 min' });
+  await expectCount(page, 47);
+  await expect(page).toHaveURL(/maxDuration=20/);
+  await page.reload();
+  await expectCount(page, 47);
+  await page.getByRole('button', { name: 'Afficher 7 vidéos supplémentaires', exact: true }).click();
+  await expect(cards(page)).toHaveCount(47);
+  const urls = await cards(page).getByRole('link').evaluateAll(links => links.map(link => link.getAttribute('href')));
+  expect(new Set(urls).size).toBe(47);
+  for (const i of [11, 12, 13]) expect(urls).not.toContain(`https://www.youtube.com/watch?v=qa${String(i).padStart(9, '0')}`);
+  await page.getByRole('button', { name: 'Choisir une vidéo', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Le choix du hasard' });
+  for (let i = 0; i < 3; i++) {
+    expect(urls).toContain(await dialog.getByRole('link', { name: 'Ouvrir sur YouTube', exact: true }).getAttribute('href'));
+    await dialog.getByRole('button', { name: 'Autre choix', exact: true }).click();
+  }
+  await page.keyboard.press('Escape');
+});
+
+test('le tri ne compte pas comme filtre et reste choisi après effacement', async ({ page }) => {
+  if (await compact(page)) {
+    await page.getByRole('button', { name: /^Filtres/ }).click();
+    await page.getByRole('combobox', { name: 'Trier par', exact: true }).selectOption({ label: 'Publication : plus récentes' });
+    await page.getByRole('button', { name: 'Voir 50 vidéos', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Filtres', exact: true })).toBeVisible();
+  } else {
+    await page.getByRole('button', { name: 'Ordre de la playlist', exact: true }).click();
+    await page.getByRole('button', { name: 'Publication : plus récentes', exact: true }).click();
+  }
+  await expectCount(page, 50);
+  await expect(page.getByRole('button', { name: 'Tout effacer', exact: true })).toBeHidden();
+  await page.getByRole('textbox', { name: 'Rechercher des vidéos' }).fill('Eric');
+  await expectCount(page, 2);
+  await page.getByRole('button', { name: 'Tout effacer', exact: true }).click();
+  await expectCount(page, 50);
+  await expect(page).toHaveURL(/sort=newest/);
+  await expect(page.getByRole('button', { name: 'Tout effacer', exact: true })).toBeHidden();
+  await page.reload();
+  await expect(page).toHaveURL(/sort=newest/);
+});
+
+test('recherche et filtres restent accessibles en défilant, sans perdre la position à la fermeture', async ({ page }, testInfo) => {
+  await page.mouse.wheel(0, 1400);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(800);
+  const search = page.getByRole('textbox', { name: 'Rechercher des vidéos' });
+  await expectInViewport(page, search);
+  const before = await page.evaluate(() => window.scrollY);
+  if (await compact(page)) {
+    const trigger = page.getByRole('button', { name: 'Filtres', exact: true });
+    await expectInViewport(page, trigger);
+    await trigger.click();
+    await expect(page.getByRole('region', { name: 'Filtres des vidéos', exact: true })).toBeVisible();
+    await trigger.press('Escape');
+    await expect(page.getByRole('region', { name: 'Filtres des vidéos', exact: true })).toBeHidden();
+  } else {
+    const trigger = page.getByRole('button', { name: 'Tous les thèmes', exact: true });
+    await expectInViewport(page, trigger);
+    await trigger.click();
+    await page.keyboard.press('Escape');
+  }
+  await expectInViewport(page, page.getByRole('button', { name: 'Retour en haut', exact: true }));
+  expect(Math.abs((await page.evaluate(() => window.scrollY)) - before)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: testInfo.outputPath('commandes-pendant-defilement.png') });
+  await page.getByRole('button', { name: 'Retour en haut', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page.getByRole('button', { name: 'Revenir en haut de la page', exact: true })).toBeFocused();
+  await page.mouse.wheel(0, 1400);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(800);
+  await search.fill('Eric');
+  await expectCount(page, 2);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(before);
+  const first = await cards(page).first().boundingBox();
+  expect(first!.y).toBeGreaterThanOrEqual(0);
+  expect(first!.y).toBeLessThan(page.viewportSize()!.height - 40);
 });
