@@ -3,7 +3,7 @@ import { VideoData } from '../types/video';
 import { formatNumber } from '../utils/formatters';
 import { formatDuration } from '../utils/durationUtils';
 import { formatPublishDate } from '../utils/timeUtils';
-import { playVideo } from '../utils/videoUtils';
+import { getYouTubeUrl, saveVideoNavigation } from '../utils/videoUtils';
 import { useSound } from '../hooks/useSound';
 import { getPlaylistIds } from '../utils/videoLibrary';
 import { getPlaylistLabel } from './PlaylistSelect';
@@ -17,22 +17,21 @@ export function VideoCard({ video }: VideoCardProps) {
   const playlists = getPlaylistIds([video]);
   const membershipLabel = `Présente dans : ${playlists.map(getPlaylistLabel).join(', ')}`;
 
+  const href = getYouTubeUrl(video.link);
+  if (!href) return null;
+
   const handleClick = () => {
     playClick();
-    playVideo(video);
+    saveVideoNavigation();
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       aria-label={`Ouvrir ${video.title} sur YouTube`}
-      onKeyDown={event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          handleClick();
-        }
-      }}
+      onAuxClick={saveVideoNavigation}
       onClick={handleClick}
       className="group focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark cursor-pointer p-3 rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] bg-neu-base dark:bg-neutral-700/50 shadow-[2px_2px_4px_#d1d9e6,_-2px_-2px_4px_#ffffff] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.2),_-2px_-2px_4px_rgba(255,255,255,0.05)] hover:shadow-[4px_4px_8px_#d1d9e6,_-4px_-4px_8px_#ffffff] dark:hover:shadow-[4px_4px_8px_rgba(0,0,0,0.25),_-4px_-4px_8px_rgba(255,255,255,0.1)] flex flex-col"
     >
@@ -86,6 +85,6 @@ export function VideoCard({ video }: VideoCardProps) {
           <span>{formatPublishDate(video.publishedAt)}</span>
         </div>
       </div>
-    </div>
+    </a>
   );
 }
