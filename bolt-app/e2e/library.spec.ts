@@ -113,6 +113,10 @@ test('tirage filtré, changement, fermeture et focus visible dans les deux thèm
   for (const theme of ['Clair', 'Sombre']) {
     await page.getByRole('combobox', { name: 'Thème', exact: true }).selectOption({ label: theme });
     await page.keyboard.press('Tab');
+    const submit = page.getByRole('button', { name: 'Rechercher', exact: true });
+    await submit.focus();
+    await expect(submit).toHaveCSS('outline-style', 'solid');
+    await expect(submit).toHaveCSS('outline-color', theme === 'Clair' ? 'rgb(176, 0, 0)' : 'rgb(255, 133, 133)');
     await trigger.focus();
     await trigger.press('Enter');
     const dialog = page.getByRole('dialog', { name: 'Le choix du hasard' });

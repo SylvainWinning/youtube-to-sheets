@@ -102,7 +102,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
             <button
               type="submit"
               aria-label="Rechercher"
-              className="h-10 px-6 bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 text-youtube-black dark:text-white rounded-r-full border-l-[1.5px] border-youtube-border dark:border-neutral-600 transition-all duration-200 focus:outline-hidden group-focus-within:border-youtube-red"
+              className="h-10 px-6 bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 text-youtube-black dark:text-white rounded-r-full border-l-[1.5px] border-youtube-border dark:border-neutral-600 transition-all duration-200 group-focus-within:border-youtube-red"
             >
               <Search className="w-5 h-5" />
             </button>
