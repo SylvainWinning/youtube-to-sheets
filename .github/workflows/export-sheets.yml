@@ -28,7 +28,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: export-sheets
+  group: youtube-library-data-${{ github.event.pull_request.number || 'production' }}
   cancel-in-progress: false
 
 jobs:
@@ -38,6 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: main
 
       - uses: actions/setup-python@v6
         with:
@@ -60,13 +62,7 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add bolt-app/public/data/videos.csv bolt-app/public/data/videos.json
-          if git diff --cached --quiet; then
-            echo "Data files have not changed. Nothing to commit."
-            exit 0
-          fi
-          git commit -m "chore: update exported data"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          python scripts/publish_generated_data.py "chore: update exported data" \
+            bolt-app/public/data/videos.csv bolt-app/public/data/videos.json
   
     
