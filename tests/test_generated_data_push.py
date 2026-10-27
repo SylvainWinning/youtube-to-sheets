@@ -195,3 +195,17 @@ def test_pinned_detached_checkout_can_publish(repos):
     assert publish(publisher).returncode == 0
     assert git(remote, 'show', 'main:' + DATA).stdout == 'new snapshot\n'
     assert git(remote, 'show', 'main:app.txt').stdout == 'new code\n'
+
+
+def test_shallow_checkout_without_remote_tracking_ref_fetches_the_real_tip(repos):
+    publisher, other, remote = repos
+    base = git(publisher, 'rev-parse', 'HEAD').stdout.strip()
+    (publisher / '.git/shallow').write_text(base + '\n')
+    git(publisher, 'checkout', '--detach')
+    git(publisher, 'config', '--unset-all', 'remote.origin.fetch')
+    update(other, 'app.txt', 'latest code\n')
+    (publisher / DATA).write_text('new snapshot\n')
+    result = publish(publisher)
+    assert result.returncode == 0, result.stderr
+    assert git(remote, 'show', 'main:app.txt').stdout == 'latest code\n'
+    assert git(remote, 'show', 'main:' + DATA).stdout == 'new snapshot\n'

@@ -35,7 +35,7 @@ def publish(message, paths, attempts=4):
 
     for attempt in range(attempts):
         git("fetch", "--no-tags", "origin", "main")
-        upstream = git("rev-parse", "refs/remotes/origin/main").stdout.strip()
+        upstream = git("rev-parse", "FETCH_HEAD").stdout.strip()
         # A lost response to a successful push must not publish the same commit twice.
         if git("merge-base", "--is-ancestor", "HEAD", upstream, check=False).returncode == 0:
             print("Le commit est déjà présent sur main.")
@@ -54,7 +54,7 @@ def publish(message, paths, attempts=4):
             print("Données publiées sur main.")
             return
         git("fetch", "--no-tags", "origin", "main")
-        current = git("rev-parse", "refs/remotes/origin/main").stdout.strip()
+        current = git("rev-parse", "FETCH_HEAD").stdout.strip()
         if git("merge-base", "--is-ancestor", "HEAD", current, check=False).returncode == 0:
             print("Envoi confirmé par relecture de main.")
             return
