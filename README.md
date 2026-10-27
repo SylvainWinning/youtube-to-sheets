@@ -177,6 +177,27 @@ Le JSON publié conserve une ligne par appartenance à une playlist. L’interfa
 « Choisir une vidéo » tire au sort parmi les résultats des filtres actifs, puis présente un aperçu. Seul le lien « Ouvrir sur YouTube » ouvre un nouvel onglet; « Autre choix » évite la proposition précédente lorsqu’une alternative existe.
 
 
+### Publications concurrentes des données
+
+La synchronisation YouTube et l’export Sheets utilisent le même groupe de concurrence
+GitHub Actions. Une tâche déjà en cours n’est pas annulée par la suivante. GitHub peut
+remplacer une ancienne tâche encore en attente par la plus récente ; le checkout de
+production se fait donc sur `main` après l’obtention du verrou. La synchronisation
+exécute la révision exacte validée par son job de tests.
+
+Les deux producteurs appellent `scripts/publish_generated_data.py`, limité aux fichiers
+de données déclarés. Une absence de changement ne crée aucun commit. Une erreur de
+commit reste un échec. Avant l’envoi, le script récupère `main` et réapplique son seul
+commit sur les éventuelles modifications concurrentes. Une nouvelle avance pendant
+l’envoi déclenche au maximum quatre tentatives ; une réponse perdue est réconciliée
+par relecture du dépôt. Aucun envoi forcé n’est utilisé. Un conflit de données ou un
+refus sans avance de branche reste un échec explicite, pour conserver les changements
+distants et permettre une nouvelle synchronisation depuis la dernière révision.
+
+Les tests Git travaillent uniquement dans des dépôts temporaires locaux : collision
+avant l’envoi et entre récupération/envoi, conflit sur les données, refus Git, réponse
+perdue, limite de reprises et absence de fuite des fichiers privés dans le commit.
+
 ### Fraîcheur et exhaustivité de la bibliothèque
 
 Le JSON publié contient `schemaVersion: 1`, `videos` (en-têtes et lignes) et
