@@ -7,24 +7,22 @@ supplémentaire **AllVideos** regroupe l'intégralité des entrées.
 
 ## Planification
 
-Synchronisation automatique aux heures suivantes (heure de Paris) :
-- 00 h
-- 01 h
-- 02 h
-- 12 h
-- 13 h
-- 14 h
-- 20 h
-- 21 h
-- 22 h
-- 23 h
+Trois synchronisations automatiques par jour, à **12 h 30**, **20 h** et
+**22 h 30**, heure de Paris.
 
-Le fichier `.github/workflows/sync.yml` convertit ces heures en UTC suivant la saison :
-- CEST (heure d’été, UTC+2) pour avril à septembre, 1–24 octobre, 25–31 mars.
-- CET (heure d’hiver, UTC+1) pour novembre à février, 1–24 mars, 25–31 octobre.
+Le fichier `.github/workflows/sync.yml` utilise le fuseau `Europe/Paris` :
+les horaires restent identiques en heure d’été et en heure d’hiver. Chaque
+synchronisation met à jour Google Sheets et les fichiers publics du catalogue,
+puis déclenche la validation et la publication du site.
 
-Aucune exécution n’est programmée en dehors de ces créneaux.  
-Tu peux toujours déclencher manuellement via l’onglet **Actions**.
+L’export séparé `.github/workflows/export-sheets.yml` reste disponible en
+lancement manuel pour publier des modifications effectuées dans Sheets, sans
+planning supplémentaire. Les lancements manuels et ceux liés aux modifications
+du code restent disponibles via l’onglet **Actions**.
+
+GitHub Actions peut démarrer une exécution avec un peu de retard ; ces horaires
+sont les heures de déclenchement prévues, pas une garantie de publication à la
+minute près.
 
 ## Configuration
 
