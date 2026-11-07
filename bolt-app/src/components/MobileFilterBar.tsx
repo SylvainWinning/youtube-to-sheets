@@ -1,5 +1,9 @@
 import { getCategoryLabel } from '../utils/categoryLabels';
 import React from 'react';
+import { X } from 'lucide-react';
+import { DURATION_LIMITS, getDurationLabel } from '../utils/durationSelection';
+import { SHEET_TABS } from '../utils/constants';
+import { formatDurationRange } from '../utils/durationUtils';
 import { DurationTabs } from './DurationTabs';
 import { getPlaylistLabel, PRIMARY_PLAYLIST_ID } from './PlaylistSelect';
 import { SORT_OPTIONS } from '../types/sort';
@@ -42,18 +46,6 @@ export function MobileFilterBar({
   const rootRef = React.useRef<HTMLDivElement>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelId = React.useId();
-  const [panelHeight, setPanelHeight] = React.useState(360);
-  React.useLayoutEffect(() => {
-    if (!isOpen) return;
-    const fitPanel = () => setPanelHeight(Math.max(120, window.innerHeight - (rootRef.current?.getBoundingClientRect().bottom ?? 0) - 12));
-    fitPanel();
-    window.addEventListener('resize', fitPanel);
-    window.addEventListener('scroll', fitPanel, { passive: true });
-    return () => {
-      window.removeEventListener('resize', fitPanel);
-      window.removeEventListener('scroll', fitPanel);
-    };
-  }, [isOpen]);
   const categories = React.useMemo(() => getUniqueTopics(videos), [videos]);
   const collections = React.useMemo(() => getUniqueCollections(videos), [videos]);
   const playlistIds = React.useMemo(() => getPlaylistIds(videos).sort((a, b) => {
@@ -107,9 +99,23 @@ export function MobileFilterBar({
         {stuck && <ReturnToTop onReturn={onReturnTop} />}
       </div>
       {isOpen && (
-        <section id={panelId} aria-label="Filtres des vidéos" style={{ maxHeight: panelHeight }}
-          className="absolute left-0 right-0 top-full mt-2 overflow-y-auto overscroll-contain rounded-xl border border-gray-200 dark:border-neutral-700 p-3 bg-white dark:bg-neutral-800 shadow-lg">
-          <div className="grid gap-3">
+        <section id={panelId} aria-label="Filtres des vidéos" style={{ maxHeight: 'min(80dvh, 640px)' }}
+          className="fixed z-50 left-4 right-4 bottom-4 flex flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+          <div className="flex shrink-0 items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-neutral-700">
+            <h2 className="font-medium text-youtube-black dark:text-white">Filtres</h2>
+            <button type="button" aria-label="Fermer les filtres" onClick={closePanel} className="neu-button rounded-lg w-11 h-11 flex items-center justify-center"><X aria-hidden="true" className="w-4 h-4" /></button>
+          </div>
+          <div className="min-h-0 overflow-y-auto overscroll-contain grid gap-4 p-3">
+            <fieldset className="grid grid-cols-2 gap-2">
+              <legend className="text-sm text-gray-700 dark:text-gray-200 mb-2">Temps disponible</legend>
+              {[-1, ...DURATION_LIMITS.map(limit => -limit)].map(value => <button key={value} type="button" aria-pressed={selectedTab === value} onClick={() => onTabChange(value)}
+                className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === value ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>{getDurationLabel(value)}</button>)}
+            </fieldset>
+            <fieldset className="grid grid-cols-2 gap-2">
+              <legend className="text-sm text-gray-700 dark:text-gray-200 mb-2">Par tranche</legend>
+              {SHEET_TABS.map((tab, index) => <button key={tab.name} type="button" aria-pressed={selectedTab === index} onClick={() => onTabChange(index)}
+                className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === index ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>{formatDurationRange(tab.durationRange.min, tab.durationRange.max)}</button>)}
+            </fieldset>
             <label className="grid gap-1 text-sm text-gray-700 dark:text-gray-200">
               Trier par
               <select className={selectClass} value={getOptionValue(sortOptions)} onChange={event =>
@@ -144,7 +150,9 @@ export function MobileFilterBar({
                 </select>
               </label>
             )}
-            <button type="button" className="primary-action rounded-lg px-3 min-h-11 text-sm" onClick={closePanel}>
+          </div>
+          <div className="shrink-0 p-3 border-t border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
+            <button type="button" className="primary-action w-full rounded-lg px-3 min-h-11 text-sm" onClick={closePanel}>
               Voir {resultCount} vidéo{resultCount === 1 ? '' : 's'}
             </button>
           </div>

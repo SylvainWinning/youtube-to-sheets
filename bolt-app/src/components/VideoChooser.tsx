@@ -1,3 +1,4 @@
+import { formatDuration } from '../utils/durationUtils';
 import { SafeImage } from './ui/SafeImage';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Shuffle, X } from 'lucide-react';
@@ -41,12 +42,12 @@ export function VideoChooser({ videos }: { videos: VideoData[] }) {
         <button type="button" aria-label="Fermer l’aperçu" onClick={() => dialog.current?.close()}
           className="neu-button rounded-lg min-h-11 min-w-11 flex items-center justify-center"><X aria-hidden="true" className="w-5 h-5" /></button>
       </div>
-      <p id="video-choice-scope" className="text-sm mb-3">Le tirage respecte les filtres actifs. La vidéo s’ouvre uniquement avec « Ouvrir sur YouTube ».</p>
+      <p id="video-choice-scope" className="text-sm mb-3 text-gray-600 dark:text-neutral-300">Parmi les vidéos filtrées</p>
       {selected && <div className="video-choice-preview" aria-live="polite" aria-atomic="true">
         <SafeImage src={selected.thumbnail} alt="" width={480} height={270} className="video-choice-image w-full aspect-video object-cover rounded-lg" />
         <div className="video-choice-copy min-w-0">
           <h3 className="font-semibold break-words">{selected.title}</h3>
-          <p className="text-sm mt-1">{selected.channel} · {selected.duration}</p>
+          <p className="text-sm mt-1 text-gray-600 dark:text-neutral-300 tabular-nums">{selected.channel} · {formatDuration(selected.duration)}</p>
         </div>
       </div>}
       {!selected && <p role="status">Aucune vidéo ne correspond aux filtres actifs.</p>}

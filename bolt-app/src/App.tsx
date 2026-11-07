@@ -1,6 +1,6 @@
 import { getCategoryLabel } from './utils/categoryLabels';
 import React from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Settings } from 'lucide-react';
 import { VideoChooser } from './components/VideoChooser';
 import { VideoGrid } from './components/VideoGrid';
 import { DurationTabs } from './components/DurationTabs';
@@ -82,6 +82,17 @@ export default function App() {
     return sortOptions ? ordered : rankVideosBySearch(ordered, searchFilters);
   }, [filteredByDuration, sortOptions, selectedPlaylistId, searchFilters]);
 
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const settingsRoot = React.useRef<HTMLDivElement>(null);
+  const settingsTrigger = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    if (!settingsOpen) return;
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !settingsRoot.current?.contains(event.target)) setSettingsOpen(false);
+    };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [settingsOpen]);
   const home = React.useRef<HTMLButtonElement>(null);
   const returnToTop = React.useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -138,10 +149,10 @@ export default function App() {
 
   // Clip overflow without creating a scroll container that would trap the sticky header.
   return (
-    <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-clip pt-2">
+    <div className="min-h-screen bg-youtube-bg-light dark:bg-neutral-900 overflow-x-clip pt-1 sm:pt-2">
       <header className="library-header bg-white dark:bg-neutral-800 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-          <div className="library-header-content">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 sm:py-3">
+          <div className="library-header-content relative">
             <div className="library-header-main flex items-center justify-between gap-2">
               <button
                 ref={home}
@@ -159,17 +170,25 @@ export default function App() {
                   <span className="text-left leading-tight">Mes vidéos YouTube</span>
                 </h1>
               </button>
-              <div className="flex shrink-0 items-center gap-2">
-                <ThemeToggle />
-                <SoundToggle />
+              <div ref={settingsRoot} className="header-settings" onKeyDown={event => {
+                if (event.key === 'Escape') { setSettingsOpen(false); settingsTrigger.current?.focus(); }
+              }}>
+                <button ref={settingsTrigger} type="button" aria-label="Réglages d’affichage et de son" aria-expanded={settingsOpen}
+                  aria-controls="header-preferences" onClick={() => setSettingsOpen(open => !open)} className="header-settings-trigger neu-button rounded-lg w-11 h-11 items-center justify-center">
+                  <Settings aria-hidden="true" className="w-5 h-5" />
+                </button>
+                <div id="header-preferences" className={`header-preferences ${settingsOpen ? 'is-open' : ''}`}>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200"><span className="header-setting-label">Affichage</span><ThemeToggle /></label>
+                  <SoundToggle />
+                </div>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3">
-              <button type="button" disabled={isLoading} aria-busy={isLoading}
+            <div className="header-refresh flex items-center justify-end gap-3">
+              <button type="button" aria-label={isLoading && hasLibrary ? 'Actualisation…' : 'Actualiser'} title="Actualiser" disabled={isLoading} aria-busy={isLoading}
                 onClick={() => { playClick(); void loadVideos(); }}
                 className="neu-button flex shrink-0 min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm text-gray-700 dark:text-gray-100 disabled:opacity-60">
                 <RefreshCw aria-hidden="true" className={`h-4 w-4 ${isLoading ? 'animate-spin motion-reduce:animate-none' : ''}`} />
-                {isLoading && hasLibrary ? 'Actualisation…' : 'Actualiser'}
+                <span className="header-refresh-label">{isLoading && hasLibrary ? 'Actualisation…' : 'Actualiser'}</span>
               </button>
             </div>
           </div>
