@@ -1,6 +1,6 @@
 import { getCategoryLabel } from './utils/categoryLabels';
 import React from 'react';
-import { RefreshCw, Settings } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { VideoChooser } from './components/VideoChooser';
 import { VideoGrid } from './components/VideoGrid';
 import { DurationTabs } from './components/DurationTabs';
@@ -11,8 +11,7 @@ import { PlaylistSelect, getPlaylistLabel } from './components/PlaylistSelect';
 import { ActiveFilters, type ActiveFilter } from './components/ActiveFilters';
 import { LoadingState } from './components/LoadingState';
 import { ErrorState } from './components/ErrorState';
-import { SoundToggle } from './components/ui/SoundToggle';
-import { ThemeToggle } from './components/ui/ThemeToggle';
+import { useTheme } from './hooks/useTheme';
 import { MobileFilterBar } from './components/MobileFilterBar';
 import { ReturnToTop } from './components/ReturnToTop';
 import { filterByDurationSelection, getDurationLabel } from './utils/durationSelection';
@@ -26,6 +25,7 @@ import { clearLibraryProgress } from './utils/libraryProgress';
 import { filterVideosByPlaylist } from './utils/videoLibrary';
 
 export default function App() {
+  useTheme();
   const library = useVideos();
   const { videos, isLoading, error: videosError, loadVideos } = library;
   const hasLibrary = videos.length > 0;
@@ -82,17 +82,6 @@ export default function App() {
     return sortOptions ? ordered : rankVideosBySearch(ordered, searchFilters);
   }, [filteredByDuration, sortOptions, selectedPlaylistId, searchFilters]);
 
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const settingsRoot = React.useRef<HTMLDivElement>(null);
-  const settingsTrigger = React.useRef<HTMLButtonElement>(null);
-  React.useEffect(() => {
-    if (!settingsOpen) return;
-    const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !settingsRoot.current?.contains(event.target)) setSettingsOpen(false);
-    };
-    document.addEventListener('pointerdown', outside);
-    return () => document.removeEventListener('pointerdown', outside);
-  }, [settingsOpen]);
   const home = React.useRef<HTMLButtonElement>(null);
   const returnToTop = React.useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -170,18 +159,6 @@ export default function App() {
                   <span className="text-left leading-tight">Mes vidéos YouTube</span>
                 </h1>
               </button>
-              <div ref={settingsRoot} className="header-settings" onKeyDown={event => {
-                if (event.key === 'Escape') { setSettingsOpen(false); settingsTrigger.current?.focus(); }
-              }}>
-                <button ref={settingsTrigger} type="button" aria-label="Réglages d’affichage et de son" aria-expanded={settingsOpen}
-                  aria-controls="header-preferences" onClick={() => setSettingsOpen(open => !open)} className="header-settings-trigger neu-button rounded-lg w-11 h-11 items-center justify-center">
-                  <Settings aria-hidden="true" className="w-5 h-5" />
-                </button>
-                <div id="header-preferences" className={`header-preferences ${settingsOpen ? 'is-open' : ''}`}>
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200"><span className="header-setting-label">Affichage</span><ThemeToggle /></label>
-                  <SoundToggle />
-                </div>
-              </div>
             </div>
             <div className="header-refresh flex items-center justify-end gap-3">
               <button type="button" aria-label={isLoading && hasLibrary ? 'Actualisation…' : 'Actualiser'} title="Actualiser" disabled={isLoading} aria-busy={isLoading}

@@ -125,18 +125,14 @@ input { accent-color: #b00000; caret-color: #b00000; }
   background-color: #64748b;
 }
 
-/* Mobile controls keep the catalogue within reach; settings remain available. */
+/* Mobile controls keep the catalogue within reach. */
 @layer components {
-  .header-settings-trigger { display: flex; }
   .library-header-content { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
   .library-header-main { display: flex; gap: 8px; }
   .library-header-main > button { min-height: 44px; }
   .header-refresh { grid-column: 2; grid-row: 1; }
   .header-refresh > button { width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 8px; }
   .header-refresh-label { display: none; }
-  .header-preferences { display: none; }
-  .header-preferences.is-open { display: flex; position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; align-items: center; gap: 12px; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; background: white; box-shadow: 0 8px 24px #00000014; }
-  .dark .header-preferences.is-open { background: #2b2b2b; border-color: #444; }
   .dark .neu-button, .dark .neu-input, .dark .neu-select { background-color: #2b2b2b; border-color: #444; }
   .dark .neu-button:hover { background-color: #333; }
   .dark .library-header, .dark article, .dark dialog, .dark dialog[aria-label="Filtres des vidéos"] { background-color: #222; }
@@ -145,8 +141,6 @@ input { accent-color: #b00000; caret-color: #b00000; }
   .dark dialog[aria-label="Filtres des vidéos"] > div:last-child { background-color: #222; }
   @media (min-width: 640px) {
     .library-header-content { display: flex; }
-    .header-settings-trigger, .header-setting-label { display: none; }
-    .header-preferences, .header-preferences.is-open { display: flex; position: static; padding: 0; border: 0; background: transparent; box-shadow: none; gap: 8px; }
     .header-refresh > button { width: auto; padding: 8px 16px; }
     .header-refresh-label { display: inline; }
   }
