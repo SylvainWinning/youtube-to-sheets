@@ -86,14 +86,14 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
                 aria-label="Rechercher des vidéos"
                 value={filters.query}
                 onChange={(e) => { if (voice.active) stopListening(); onFiltersChange({ ...filters, query: e.target.value }); }}
-                className="w-full pl-4 pr-10 h-10 rounded-l-full bg-transparent text-youtube-black dark:text-white placeholder-youtube-gray-dark dark:placeholder-gray-400 text-[16px] sm:text-sm focus:outline-hidden"
+                className="w-full pl-4 pr-14 h-11 rounded-l-full bg-transparent text-youtube-black dark:text-white placeholder-youtube-gray-dark dark:placeholder-gray-400 text-[16px] sm:text-sm focus:outline-hidden"
               />
               {filters.query && (
                 <button
                   type="button"
                   aria-label="Effacer la recherche"
                   onClick={handleClear}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-600 text-youtube-gray-dark dark:text-gray-400 hover:text-youtube-black dark:hover:text-white transition-colors"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-neutral-600 text-youtube-gray-dark dark:text-gray-400 hover:text-youtube-black dark:hover:text-white transition-colors"
                 >
                   <XCircle className="w-4 h-4" />
                 </button>
@@ -102,7 +102,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
             <button
               type="submit"
               aria-label="Rechercher"
-              className="h-10 px-6 bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 text-youtube-black dark:text-white rounded-r-full border-l-[1.5px] border-youtube-border dark:border-neutral-600 transition-colors duration-150 group-focus-within:border-youtube-red"
+              className="h-11 px-6 bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 text-youtube-black dark:text-white rounded-r-full border-l-[1.5px] border-youtube-border dark:border-neutral-600 transition-colors duration-150 group-focus-within:border-youtube-red"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -116,7 +116,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
           disabled={!supported}
           aria-describedby={voiceStatusId}
           onClick={voice.active ? stopListening : startListening}
-          className={`disabled:opacity-50 disabled:cursor-not-allowed shrink-0 w-10 h-10 rounded-full transition-colors duration-150 flex items-center justify-center border-[1.5px] border-transparent ${
+          className={`disabled:opacity-50 disabled:cursor-not-allowed shrink-0 w-11 h-11 rounded-full transition-colors duration-150 flex items-center justify-center border-[1.5px] border-transparent ${
             voice.active
               ? 'bg-youtube-red-accessible text-white border-youtube-red'
               : 'bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 hover:border-youtube-red text-youtube-black dark:text-white'
