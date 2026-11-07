@@ -111,10 +111,7 @@ test('tirage filtré, changement, fermeture et focus visible dans les deux thèm
   await selectCategory(page, 'Tech');
   const trigger = page.getByRole('button', { name: 'Choisir une vidéo', exact: true });
   for (const theme of ['Clair', 'Sombre']) {
-    const settings = page.getByRole('button', { name: 'Réglages d’affichage et de son', exact: true });
-    if (await settings.isVisible()) await settings.click();
-    await page.getByRole('combobox', { name: 'Thème', exact: true }).selectOption({ label: theme });
-    if (await settings.isVisible()) await settings.click();
+    await page.evaluate(dark => document.documentElement.classList.toggle('dark', dark), theme === 'Sombre');
     await page.keyboard.press('Tab');
     const submit = page.getByRole('button', { name: 'Rechercher', exact: true });
     await submit.focus();
@@ -344,19 +341,10 @@ test('recherche et filtres restent accessibles en défilant, sans perdre la posi
 });
 
 
-test('commandes tactiles, réglages et validation des durées restent accessibles sur mobile', async ({ page }) => {
+test('commandes tactiles et validation des durées restent accessibles sur mobile', async ({ page }) => {
   test.skip(!(await compact(page)), 'Parcours mobile uniquement');
-  const settings = page.getByRole('button', { name: 'Réglages d’affichage et de son', exact: true });
-  if (await settings.isVisible()) {
-    const box = await settings.boundingBox();
-    expect(box!.height).toBeGreaterThanOrEqual(44);
-    await settings.click();
-    await page.getByRole('combobox', { name: 'Thème', exact: true }).selectOption('dark');
-    await page.keyboard.press('Escape');
-    await expect(settings).toBeFocused();
-    await expect(page.getByRole('combobox', { name: 'Thème', exact: true })).toBeHidden();
-    expect(await page.locator('header').evaluate(e => e.getBoundingClientRect().height)).toBeLessThanOrEqual(72);
-  }
+  await expect(page.getByRole('button', { name: 'Réglages d’affichage et de son', exact: true })).toHaveCount(0);
+  await expect(page.locator('#header-preferences')).toHaveCount(0);
   await page.getByRole('button', { name: 'Filtres', exact: true }).click();
   const panel = page.getByRole('dialog', { name: 'Filtres des vidéos', exact: true });
   const apply = panel.getByRole('button', { name: /^Voir \d+ vidéo/ });
