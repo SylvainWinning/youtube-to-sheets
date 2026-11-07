@@ -139,10 +139,10 @@ input { accent-color: #b00000; caret-color: #b00000; }
   .dark .header-preferences.is-open { background: #2b2b2b; border-color: #444; }
   .dark .neu-button, .dark .neu-input, .dark .neu-select { background-color: #2b2b2b; border-color: #444; }
   .dark .neu-button:hover { background-color: #333; }
-  .dark .library-header, .dark article, .dark dialog, .dark section[aria-label="Filtres des vidéos"] { background-color: #222; }
+  .dark .library-header, .dark article, .dark dialog, .dark dialog[aria-label="Filtres des vidéos"] { background-color: #222; }
   .dark article { box-shadow: none; border: 1px solid #ffffff0d; }
   .dark article a > div:last-child > div { color: #b5b5b5; }
-  .dark section[aria-label="Filtres des vidéos"] > div:last-child { background-color: #222; }
+  .dark dialog[aria-label="Filtres des vidéos"] > div:last-child { background-color: #222; }
   @media (min-width: 640px) {
     .library-header-content { display: flex; }
     .header-settings-trigger, .header-setting-label { display: none; }
@@ -153,3 +153,15 @@ input { accent-color: #b00000; caret-color: #b00000; }
 }
 
 @media (max-width: 639px) { .library-search > p:empty { display: none; } }
+
+@layer components {
+  .duration-options .neu-button { border-color: transparent; background-color: #f4f4f5; }
+  .dark .duration-options .neu-button { border-color: transparent; background-color: #2b2b2b; }
+  .duration-mode-active { background: white; color: #171717; box-shadow: 0 1px 2px #0000000d; }
+  .dark .duration-mode-active { background: #333; color: #ededed; box-shadow: none; }
+}
+@media (max-width: 359px) and (max-height: 600px) {
+  .video-choice-preview { display: block; }
+  .video-choice-image { max-height: 120px; width: 100%; }
+  .video-choice-copy { margin-top: 12px; }
+}

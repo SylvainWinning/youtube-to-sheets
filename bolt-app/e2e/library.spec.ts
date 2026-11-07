@@ -162,7 +162,7 @@ test('premier contenu visible et adaptation à une faible hauteur', async ({ pag
   expect(shortFirst!.y).toBeLessThan(350);
   await page.getByRole('button', { name: /^Filtres/ }).click();
   await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(page.getByRole('region', { name: 'Filtres des vidéos', exact: true })).toBeHidden();
+  await expect(page.getByRole('dialog', { name: 'Filtres des vidéos', exact: true })).toBeHidden();
   await expect(page.getByRole('button', { name: 'Ordre de la playlist', exact: true })).toBeVisible();
 });
 
@@ -319,9 +319,9 @@ test('recherche et filtres restent accessibles en défilant, sans perdre la posi
     const trigger = page.getByRole('button', { name: 'Filtres', exact: true });
     await expectInViewport(page, trigger);
     await trigger.click();
-    await expect(page.getByRole('region', { name: 'Filtres des vidéos', exact: true })).toBeVisible();
-    await trigger.press('Escape');
-    await expect(page.getByRole('region', { name: 'Filtres des vidéos', exact: true })).toBeHidden();
+    await expect(page.getByRole('dialog', { name: 'Filtres des vidéos', exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Filtres des vidéos', exact: true })).toBeHidden();
   } else {
     const trigger = page.getByRole('button', { name: 'Tous les thèmes', exact: true });
     await expectInViewport(page, trigger);
@@ -359,18 +359,25 @@ test('commandes tactiles, réglages et validation des durées restent accessible
     expect(await page.locator('header').evaluate(e => e.getBoundingClientRect().height)).toBeLessThanOrEqual(72);
   }
   await page.getByRole('button', { name: 'Filtres', exact: true }).click();
-  const panel = page.getByRole('region', { name: 'Filtres des vidéos', exact: true });
+  const panel = page.getByRole('dialog', { name: 'Filtres des vidéos', exact: true });
   const apply = panel.getByRole('button', { name: /^Voir \d+ vidéo/ });
   await expectInViewport(page, apply);
+  await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
+  await expect(panel.getByRole('button', { name: 'Fermer les filtres', exact: true })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  expect(await panel.evaluate(e => e.contains(document.activeElement))).toBe(true);
+  await expect(panel.getByRole('group', { name: 'Par tranche', exact: true })).toBeHidden();
   await panel.getByRole('group', { name: 'Temps disponible', exact: true }).getByRole('button', { name: 'Moins de 20 min', exact: true }).click();
   await expect(page).toHaveURL(/maxDuration=20/);
   await expectInViewport(page, apply);
+  await panel.getByRole('group', { name: 'Mode de durée', exact: true }).getByRole('button', { name: 'Par tranche', exact: true }).click();
   await panel.getByRole('group', { name: 'Par tranche', exact: true }).getByRole('button', { name: '60+ min', exact: true }).click();
   await expect(page).toHaveURL(/duration=7/);
   await expectInViewport(page, apply);
   await panel.getByRole('button', { name: 'Fermer les filtres', exact: true }).click();
   await expect(panel).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Filtres', exact: true })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Filtres (1)', exact: true })).toBeFocused();
+  await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
   await page.reload();
   await expect(page).toHaveURL(/duration=7/);
 });

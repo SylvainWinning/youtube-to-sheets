@@ -43,7 +43,8 @@ export function MobileFilterBar({
   stuck, searching, onReturnTop,
 }: MobileFilterBarProps) {
   const [isOpen, setIsOpen] = React.useState(false);
-  const rootRef = React.useRef<HTMLDivElement>(null);
+  const dialogRef = React.useRef<HTMLDialogElement>(null);
+  const [durationMode, setDurationMode] = React.useState<'maximum' | 'range'>(selectedTab >= 0 ? 'range' : 'maximum');
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelId = React.useId();
   const categories = React.useMemo(() => getUniqueTopics(videos), [videos]);
@@ -54,20 +55,16 @@ export function MobileFilterBar({
       return getPlaylistLabel(a).localeCompare(getPlaylistLabel(b), 'fr');
     }), [videos]);
   const resultCount = filterByDurationSelection(durationVideos, selectedTab).length;
-  const activeFilters = Number(Boolean(selectedCategory)) + Number(Boolean(selectedCollection)) + Number(Boolean(selectedPlaylistId));
+  const activeFilters = Number(Boolean(selectedCategory)) + Number(Boolean(selectedCollection)) + Number(Boolean(selectedPlaylistId)) + Number(selectedTab !== -1);
 
-  const closePanel = () => {
-    setIsOpen(false);
-    triggerRef.current?.focus({ preventScroll: true });
-  };
+  const closePanel = () => dialogRef.current?.close();
 
   React.useEffect(() => {
     if (!isOpen) return;
-    const handleOutside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !rootRef.current?.contains(event.target)) setIsOpen(false);
-    };
-    document.addEventListener('pointerdown', handleOutside);
-    return () => document.removeEventListener('pointerdown', handleOutside);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    if (!dialogRef.current?.open) dialogRef.current?.showModal();
+    return () => { document.body.style.overflow = previousOverflow; };
   }, [isOpen]);
 
   React.useEffect(() => {
@@ -78,20 +75,16 @@ export function MobileFilterBar({
   }, []);
 
   return (
-    <div ref={rootRef} className="library-filters-compact relative" onKeyDown={event => {
-      if (isOpen && event.key === 'Escape' && !event.defaultPrevented) {
-        event.preventDefault();
-        closePanel();
-      }
-    }}>
+    <div className="library-filters-compact relative">
       <div className="flex items-stretch gap-2">
         <DurationTabs compact selectedTab={selectedTab} onTabChange={onTabChange} videos={durationVideos} />
         <button
           ref={triggerRef}
           type="button"
+          aria-label={activeFilters > 0 ? `Filtres (${activeFilters})` : 'Filtres'}
           aria-expanded={isOpen}
           aria-controls={isOpen ? panelId : undefined}
-          onClick={() => setIsOpen(open => !open)}
+          onClick={() => { setDurationMode(selectedTab >= 0 ? 'range' : 'maximum'); setIsOpen(true); }}
           className="neu-button shrink-0 rounded-lg px-3 min-h-11 text-sm text-gray-700 dark:text-gray-100"
         >
           Filtres{activeFilters > 0 && <span className="ml-1">({activeFilters})</span>}
@@ -99,23 +92,45 @@ export function MobileFilterBar({
         {stuck && <ReturnToTop onReturn={onReturnTop} />}
       </div>
       {isOpen && (
-        <section id={panelId} aria-label="Filtres des vidéos" style={{ maxHeight: 'min(80dvh, 640px)' }}
-          className="fixed z-50 left-4 right-4 bottom-4 flex flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg">
+        <dialog ref={dialogRef} id={panelId} aria-label="Filtres des vidéos"
+          onClose={() => { setIsOpen(false); triggerRef.current?.focus({ preventScroll: true }); }}
+          onCancel={event => { event.preventDefault(); closePanel(); }}
+          onKeyDown={event => {
+            if (event.key !== 'Tab') return;
+            const controls = event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), select:not([disabled]), a[href], input:not([disabled])');
+            const first = controls[0];
+            const last = controls[controls.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+          }}
+          onClick={event => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            if (event.target === event.currentTarget && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) closePanel();
+          }} style={{ maxHeight: 'min(80dvh, 640px)' }}
+          className="mobile-filter-dialog fixed left-4 right-4 bottom-4 top-auto m-0 w-[calc(100%-2rem)] max-w-none flex flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-lg backdrop:bg-black/50 text-youtube-black dark:text-white">
           <div className="flex shrink-0 items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-neutral-700">
             <h2 className="font-medium text-youtube-black dark:text-white">Filtres</h2>
-            <button type="button" aria-label="Fermer les filtres" onClick={closePanel} className="neu-button rounded-lg w-11 h-11 flex items-center justify-center"><X aria-hidden="true" className="w-4 h-4" /></button>
+            <button type="button" aria-label="Fermer les filtres" autoFocus onClick={closePanel} className="neu-button rounded-lg w-11 h-11 flex items-center justify-center"><X aria-hidden="true" className="w-4 h-4" /></button>
           </div>
           <div className="min-h-0 overflow-y-auto overscroll-contain grid gap-4 p-3">
-            <fieldset className="grid grid-cols-2 gap-2">
-              <legend className="text-sm text-gray-700 dark:text-gray-200 mb-2">Temps disponible</legend>
+            <fieldset className="duration-mode-switch grid grid-cols-2 gap-1 rounded-lg p-1 bg-gray-100 dark:bg-neutral-900">
+              <legend className="sr-only">Mode de durée</legend>
+              <button type="button" aria-pressed={durationMode === 'maximum'} onClick={() => setDurationMode('maximum')}
+                className={`min-h-11 rounded-md px-2 text-sm ${durationMode === 'maximum' ? 'duration-mode-active' : 'text-gray-600 dark:text-neutral-300'}`}>Temps disponible</button>
+              <button type="button" aria-pressed={durationMode === 'range'} onClick={() => setDurationMode('range')}
+                className={`min-h-11 rounded-md px-2 text-sm ${durationMode === 'range' ? 'duration-mode-active' : 'text-gray-600 dark:text-neutral-300'}`}>Par tranche</button>
+            </fieldset>
+            <p className="text-xs text-gray-600 dark:text-neutral-300">Durée active : {getDurationLabel(selectedTab)}</p>
+            {durationMode === 'maximum' && <fieldset className="duration-options grid grid-cols-3 gap-2">
+              <legend className="sr-only">Temps disponible</legend>
               {[-1, ...DURATION_LIMITS.map(limit => -limit)].map(value => <button key={value} type="button" aria-pressed={selectedTab === value} onClick={() => onTabChange(value)}
                 className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === value ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>{getDurationLabel(value)}</button>)}
-            </fieldset>
-            <fieldset className="grid grid-cols-2 gap-2">
-              <legend className="text-sm text-gray-700 dark:text-gray-200 mb-2">Par tranche</legend>
+            </fieldset>}
+            {durationMode === 'range' && <fieldset className="duration-options grid grid-cols-2 gap-2">
+              <legend className="sr-only">Par tranche</legend>
               {SHEET_TABS.map((tab, index) => <button key={tab.name} type="button" aria-pressed={selectedTab === index} onClick={() => onTabChange(index)}
                 className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === index ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>{formatDurationRange(tab.durationRange.min, tab.durationRange.max)}</button>)}
-            </fieldset>
+            </fieldset>}
             <label className="grid gap-1 text-sm text-gray-700 dark:text-gray-200">
               Trier par
               <select className={selectClass} value={getOptionValue(sortOptions)} onChange={event =>
@@ -156,7 +171,7 @@ export function MobileFilterBar({
               Voir {resultCount} vidéo{resultCount === 1 ? '' : 's'}
             </button>
           </div>
-        </section>
+        </dialog>
       )}
     </div>
   );
