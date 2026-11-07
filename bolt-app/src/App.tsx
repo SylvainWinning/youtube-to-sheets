@@ -209,7 +209,7 @@ export default function App() {
                 selectedPlaylistId={selectedPlaylistId}
                 onPlaylistChange={setSelectedPlaylistId}
               />
-              <div className="library-filters-expanded min-w-0 flex-1 grid-cols-4 items-stretch gap-2">
+              <div className="library-filters-expanded min-w-0 flex-1 items-stretch gap-2">
                 <div className="w-full h-full">
                   <SortSelect options={sortOptions} onOptionsChange={setSortOptions} searching={Boolean(searchFilters.query.trim())} />
                 </div>

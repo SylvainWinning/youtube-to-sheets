@@ -37,7 +37,7 @@ export function VideoCard({ video }: VideoCardProps) {
         onClick={handleClick}
         className="flex flex-col flex-1 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark"
       >
-        <div className="relative aspect-video rounded-xl overflow-hidden mb-3">
+        <div className="relative aspect-video rounded overflow-hidden mb-3">
           <SafeImage
             src={video.thumbnail}
             alt={video.title}
@@ -47,7 +47,7 @@ export function VideoCard({ video }: VideoCardProps) {
             height={270}
             className="w-full h-full object-cover "
           />
-          <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 text-white text-xs font-medium rounded-sm">
+          <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-0.5 text-white text-xs font-medium rounded-sm tabular-nums">
             {formatDuration(video.duration)}
           </div>
         </div>
@@ -76,10 +76,10 @@ export function VideoCard({ video }: VideoCardProps) {
             </span>
           )}
 
-          <div className="mt-auto flex items-center gap-1 text-[13px] text-youtube-gray-dark dark:text-gray-400">
+          <div className="mt-auto flex flex-wrap items-center gap-1 text-[13px] tabular-nums text-youtube-gray-dark dark:text-gray-400">
             <span className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
-              {formatNumber(video.views)}
+              {formatNumber(video.views)} vues
             </span>
             <span className="mx-1">•</span>
             <span>{formatPublishDate(video.publishedAt)}</span>

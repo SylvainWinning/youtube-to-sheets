@@ -2,13 +2,9 @@ export const formatNumber = (num: string): string => {
   const number = parseInt(num, 10);
   if (isNaN(number)) return num;
   
-  if (number >= 1000000) {
-    return `${(number / 1000000).toFixed(1)}M`;
-  }
-  if (number >= 1000) {
-    return `${(number / 1000).toFixed(1)}K`;
-  }
-  return number.toString();
+  return new Intl.NumberFormat('fr-FR', {
+    notation: 'compact', maximumFractionDigits: 1,
+  }).format(number);
 };
 
 export const formatDuration = (duration: string): string => {

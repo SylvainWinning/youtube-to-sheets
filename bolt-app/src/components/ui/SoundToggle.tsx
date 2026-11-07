@@ -18,7 +18,7 @@ export function SoundToggle() {
       aria-label={isEnabled ? 'Désactiver le son' : 'Activer le son'}
       onClick={handleToggle}
       className={`
-        p-2 rounded-full transition-all duration-200
+        p-2 rounded-full transition-colors duration-150
         ${isEnabled
           ? 'text-youtube-red-accessible dark:text-youtube-red-accessible-dark hover:bg-youtube-red/10'
           : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-neutral-700'
