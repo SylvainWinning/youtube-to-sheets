@@ -263,12 +263,11 @@ test('un thème se combine aux collections et les anciens liens restent utilisab
   await expect(page).not.toHaveURL(/[?&]category=/);
 });
 
-test('une durée maximale réunit les plages, survit au rechargement et borne le tirage', async ({ page }) => {
+test('un ancien lien de durée maximale reste compatible avec le tirage', async ({ page }) => {
   await loadVariant(page, videos => {
     ['00:19:59', '00:20:00', '00:20:01', 'Inconnue'].forEach((duration, i) => { videos[i + 10][5] = duration; });
   });
-  await page.getByRole('combobox', { name: await compact(page) ? 'Durée' : 'Durée maximale', exact: true })
-    .selectOption({ label: 'Moins de 20 min' });
+  await page.goto('./?maxDuration=20');
   await expectCount(page, 47);
   await expect(page).toHaveURL(/maxDuration=20/);
   await page.reload();
@@ -366,12 +365,8 @@ test('commandes tactiles, réglages et validation des durées restent accessible
   await expect(panel.getByRole('button', { name: 'Fermer les filtres', exact: true })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   expect(await panel.evaluate(e => e.contains(document.activeElement))).toBe(true);
-  await expect(panel.getByRole('group', { name: 'Par tranche', exact: true })).toBeHidden();
-  await panel.getByRole('group', { name: 'Temps disponible', exact: true }).getByRole('button', { name: 'Moins de 20 min', exact: true }).click();
-  await expect(page).toHaveURL(/maxDuration=20/);
-  await expectInViewport(page, apply);
-  await panel.getByRole('group', { name: 'Mode de durée', exact: true }).getByRole('button', { name: 'Par tranche', exact: true }).click();
-  await panel.getByRole('group', { name: 'Par tranche', exact: true }).getByRole('button', { name: '60+ min', exact: true }).click();
+  await expect(panel.getByText('Temps disponible', { exact: true })).toHaveCount(0);
+  await panel.getByRole('group', { name: 'Tranches de durée', exact: true }).getByRole('button', { name: '60+ min', exact: true }).click();
   await expect(page).toHaveURL(/duration=7/);
   await expectInViewport(page, apply);
   await panel.getByRole('button', { name: 'Fermer les filtres', exact: true }).click();

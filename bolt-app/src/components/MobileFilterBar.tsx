@@ -1,7 +1,6 @@
 import { getCategoryLabel } from '../utils/categoryLabels';
 import React from 'react';
 import { X } from 'lucide-react';
-import { DURATION_LIMITS, getDurationLabel } from '../utils/durationSelection';
 import { SHEET_TABS } from '../utils/constants';
 import { formatDurationRange } from '../utils/durationUtils';
 import { DurationTabs } from './DurationTabs';
@@ -44,7 +43,6 @@ export function MobileFilterBar({
 }: MobileFilterBarProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const dialogRef = React.useRef<HTMLDialogElement>(null);
-  const [durationMode, setDurationMode] = React.useState<'maximum' | 'range'>(selectedTab >= 0 ? 'range' : 'maximum');
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelId = React.useId();
   const categories = React.useMemo(() => getUniqueTopics(videos), [videos]);
@@ -84,7 +82,7 @@ export function MobileFilterBar({
           aria-label={activeFilters > 0 ? `Filtres (${activeFilters})` : 'Filtres'}
           aria-expanded={isOpen}
           aria-controls={isOpen ? panelId : undefined}
-          onClick={() => { setDurationMode(selectedTab >= 0 ? 'range' : 'maximum'); setIsOpen(true); }}
+          onClick={() => setIsOpen(true)}
           className="neu-button shrink-0 rounded-lg px-3 min-h-11 text-sm text-gray-700 dark:text-gray-100"
         >
           Filtres{activeFilters > 0 && <span className="ml-1">({activeFilters})</span>}
@@ -113,24 +111,13 @@ export function MobileFilterBar({
             <button type="button" aria-label="Fermer les filtres" autoFocus onClick={closePanel} className="neu-button rounded-lg w-11 h-11 flex items-center justify-center"><X aria-hidden="true" className="w-4 h-4" /></button>
           </div>
           <div className="min-h-0 overflow-y-auto overscroll-contain grid gap-4 p-3">
-            <fieldset className="duration-mode-switch grid grid-cols-2 gap-1 rounded-lg p-1 bg-gray-100 dark:bg-neutral-900">
-              <legend className="sr-only">Mode de durée</legend>
-              <button type="button" aria-pressed={durationMode === 'maximum'} onClick={() => setDurationMode('maximum')}
-                className={`min-h-11 rounded-md px-2 text-sm ${durationMode === 'maximum' ? 'duration-mode-active' : 'text-gray-600 dark:text-neutral-300'}`}>Temps disponible</button>
-              <button type="button" aria-pressed={durationMode === 'range'} onClick={() => setDurationMode('range')}
-                className={`min-h-11 rounded-md px-2 text-sm ${durationMode === 'range' ? 'duration-mode-active' : 'text-gray-600 dark:text-neutral-300'}`}>Par tranche</button>
-            </fieldset>
-            <p className="text-xs text-gray-600 dark:text-neutral-300">Durée active : {getDurationLabel(selectedTab)}</p>
-            {durationMode === 'maximum' && <fieldset className="duration-options grid grid-cols-3 gap-2">
-              <legend className="sr-only">Temps disponible</legend>
-              {[-1, ...DURATION_LIMITS.map(limit => -limit)].map(value => <button key={value} type="button" aria-pressed={selectedTab === value} onClick={() => onTabChange(value)}
-                className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === value ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>{getDurationLabel(value)}</button>)}
-            </fieldset>}
-            {durationMode === 'range' && <fieldset className="duration-options grid grid-cols-2 gap-2">
-              <legend className="sr-only">Par tranche</legend>
+            <fieldset className="duration-options grid grid-cols-2 gap-2">
+              <legend className="text-sm text-gray-700 dark:text-gray-200 mb-2">Tranches de durée</legend>
+              <button type="button" aria-pressed={selectedTab === -1} onClick={() => onTabChange(-1)}
+                className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === -1 ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>Toutes durées</button>
               {SHEET_TABS.map((tab, index) => <button key={tab.name} type="button" aria-pressed={selectedTab === index} onClick={() => onTabChange(index)}
                 className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === index ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>{formatDurationRange(tab.durationRange.min, tab.durationRange.max)}</button>)}
-            </fieldset>}
+            </fieldset>
             <label className="grid gap-1 text-sm text-gray-700 dark:text-gray-200">
               Trier par
               <select className={selectClass} value={getOptionValue(sortOptions)} onChange={event =>
