@@ -62,7 +62,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
 
   return (
     <div className="library-search">
-      <div className="relative max-w-[640px] mx-auto flex items-center gap-4">
+      <div className="relative w-full flex items-center gap-2">
         <div className="relative flex-1 min-w-0 group">
           {/* Calque visuel séparé pour éviter le décalage du curseur iOS quand backdrop-filter est appliqué au formulaire */}
           <div
@@ -76,7 +76,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
           {/* Form container with Liquid Glass styling */}
           <form
             onSubmit={handleSubmit}
-            className="relative z-[1] flex-1 flex items-center border-[1.5px] border-youtube-border dark:border-neutral-600 rounded-full transition-all duration-200 focus-within:border-youtube-red-accessible dark:focus-within:border-youtube-red-accessible-dark"
+            className="relative z-[1] flex-1 flex items-center border-[1.5px] border-youtube-border dark:border-neutral-600 rounded-full transition-colors duration-150 focus-within:border-youtube-red-accessible dark:focus-within:border-youtube-red-accessible-dark"
           >
             <div className="relative flex-1 min-w-0">
               <input
@@ -102,7 +102,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
             <button
               type="submit"
               aria-label="Rechercher"
-              className="h-10 px-6 bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 text-youtube-black dark:text-white rounded-r-full border-l-[1.5px] border-youtube-border dark:border-neutral-600 transition-all duration-200 group-focus-within:border-youtube-red"
+              className="h-10 px-6 bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 text-youtube-black dark:text-white rounded-r-full border-l-[1.5px] border-youtube-border dark:border-neutral-600 transition-colors duration-150 group-focus-within:border-youtube-red"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -116,7 +116,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
           disabled={!supported}
           aria-describedby={voiceStatusId}
           onClick={voice.active ? stopListening : startListening}
-          className={`disabled:opacity-50 disabled:cursor-not-allowed shrink-0 w-10 h-10 rounded-full transition-all duration-200 flex items-center justify-center border-[1.5px] border-transparent ${
+          className={`disabled:opacity-50 disabled:cursor-not-allowed shrink-0 w-10 h-10 rounded-full transition-colors duration-150 flex items-center justify-center border-[1.5px] border-transparent ${
             voice.active
               ? 'bg-youtube-red-accessible text-white border-youtube-red'
               : 'bg-youtube-button dark:bg-neutral-700 hover:bg-youtube-button-hover dark:hover:bg-neutral-600 hover:border-youtube-red text-youtube-black dark:text-white'
@@ -125,7 +125,7 @@ export function SearchBar({ filters, onFiltersChange }: SearchBarProps) {
           <Mic className="w-5 h-5" />
         </button>
       </div>
-      <p id={voiceStatusId} role="status" aria-live="polite" aria-atomic="true" className="max-w-[640px] mx-auto mt-2 text-sm text-youtube-gray-dark dark:text-gray-300">
+      <p id={voiceStatusId} role="status" aria-live="polite" aria-atomic="true" className="w-full mt-2 text-sm text-youtube-gray-dark dark:text-gray-300">
         {supported ? voice.message : unsupportedVoice}
       </p>
     </div>
