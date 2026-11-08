@@ -154,13 +154,13 @@ test('premier contenu visible et adaptation à une faible hauteur', async ({ pag
   await page.screenshot({ path: testInfo.outputPath('catalogue.png') });
   await page.setViewportSize({ width: 1280, height: 390 });
   await expect(page.getByRole('button', { name: /^Filtres/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Ordre de la playlist', exact: true })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Plus récentes', exact: true })).toBeHidden();
   const shortFirst = await cards(page).first().boundingBox();
   expect(shortFirst!.y).toBeLessThan(350);
   await page.getByRole('button', { name: /^Filtres/ }).click();
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.getByRole('dialog', { name: 'Filtres des vidéos', exact: true })).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Ordre de la playlist', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Plus récentes', exact: true })).toBeVisible();
 });
 
 test('chargement de la suite sans doublons et reprise après rechargement', async ({ page }) => {
@@ -290,7 +290,7 @@ test('le tri ne compte pas comme filtre et reste choisi après effacement', asyn
     await page.getByRole('button', { name: 'Voir 50 vidéos', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Filtres', exact: true })).toBeVisible();
   } else {
-    await page.getByRole('button', { name: 'Ordre de la playlist', exact: true }).click();
+    await page.getByRole('button', { name: 'Plus récentes', exact: true }).click();
     await page.getByRole('button', { name: 'Publication : plus récentes', exact: true }).click();
   }
   await expectCount(page, 50);

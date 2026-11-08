@@ -25,9 +25,10 @@ function sortByPlaylistPosition(videos: VideoData[], playlistId: string | null):
 }
 
 export function sortVideos(videos: VideoData[], options: SortOptions | null, playlistId: string | null = null): VideoData[] {
-  if (!options) {
+  if (!options && playlistId) {
     return sortByPlaylistPosition(videos, playlistId);
   }
+  options ??= { field: 'publishedAt', direction: 'desc' };
 
   console.log('Sorting videos:', {
     totalVideos: videos.length,

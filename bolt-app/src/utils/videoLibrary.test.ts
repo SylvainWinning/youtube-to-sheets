@@ -58,7 +58,7 @@ test('le JSON réel conserve toutes les appartenances et l’ordre de chaque pla
   assert.equal(state.videos.length, new Set(entries.map(getVideoIdentity)).size);
   assert.deepEqual(getPlaylistIds(state.videos).sort(), [...new Set(entries.map(v => v.playlistId))].sort());
   for (const id of getPlaylistIds(state.videos)) {
-    const expected = sortVideos(entries.filter(v => v.playlistId === id), null);
+    const expected = sortVideos(entries.filter(v => v.playlistId === id), null, id);
     const actual = sortVideos(filterVideosByPlaylist(state.videos, id), null, id);
     assert.deepEqual(actual.map(getVideoIdentity), [...new Set(expected.map(getVideoIdentity))]);
   }

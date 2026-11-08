@@ -207,7 +207,7 @@ export default function App() {
               />
               <div className="library-filters-expanded min-w-0 flex-1 items-stretch gap-2">
                 <div className="w-full h-full">
-                  <SortSelect options={sortOptions} onOptionsChange={setSortOptions} searching={Boolean(searchFilters.query.trim())} />
+                  <SortSelect playlistSelected={Boolean(selectedPlaylistId)} options={sortOptions} onOptionsChange={setSortOptions} searching={Boolean(searchFilters.query.trim())} />
                 </div>
                 <CategorySelect
                   videos={videos}
