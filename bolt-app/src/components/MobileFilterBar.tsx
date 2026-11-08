@@ -122,7 +122,7 @@ export function MobileFilterBar({
               Trier par
               <select className={selectClass} value={getOptionValue(sortOptions)} onChange={event =>
                 onSortOptionsChange(sortChoices.find(choice => getOptionValue(choice) === event.target.value) ?? null)}>
-                {sortChoices.map(choice => <option key={getOptionValue(choice)} value={getOptionValue(choice)}>{!choice && searching ? 'Pertinence' : getSelectedLabel(choice)}</option>)}
+                {sortChoices.map(choice => <option key={getOptionValue(choice)} value={getOptionValue(choice)}>{!choice ? (searching ? 'Pertinence' : selectedPlaylistId ? 'Ordre de la playlist' : 'Plus récentes') : getSelectedLabel(choice)}</option>)}
               </select>
             </label>
             {categories.length > 0 && (
