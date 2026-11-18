@@ -1,6 +1,5 @@
 export type ThemePreference = 'auto' | 'light' | 'dark';
 export const THEME_KEY = 'youtube.theme';
-export const SOUND_KEY = 'youtube.sound';
 export function readPreference(key: string): string | null {
   try { return window.localStorage.getItem(key); } catch { return null; }
 }

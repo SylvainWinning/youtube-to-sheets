@@ -6,7 +6,7 @@ import csv
 import pathlib
 import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from sync_metadata import export_snapshot
+from sync_metadata import export_snapshot, validate_table
 from typing import List
 
 from google.oauth2 import service_account
@@ -67,7 +67,7 @@ creds = service_account.Credentials.from_service_account_info(
 service = build("sheets", "v4", credentials=creds)
 
 all_values: List[List[str]] = []
-for idx, sheet_range in enumerate(sheet_ranges):
+for sheet_range in sheet_ranges:
     if "!" not in sheet_range:
         raise ValueError(
             f"SHEET_RANGE '{sheet_range}' must include a sheet name (e.g., 'Sheet1!A1:Z1000')"
@@ -78,7 +78,10 @@ for idx, sheet_range in enumerate(sheet_ranges):
     values = resp.get("values", [])
     if not values:
         continue
-    if idx == 0:
+    validate_table(values)
+    if all_values and values[0] != all_values[0]:
+        raise ValueError("Colonnes différentes entre plages exportées")
+    if not all_values:
         all_values.extend(values)
     else:
         all_values.extend(values[1:])
@@ -98,6 +101,8 @@ export_snapshot(out_dir / "videos.json", all_values)
 
 
 csv_path = out_dir / "videos.csv"
-with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
+with open(csv_path.with_suffix(".csv.tmp"), "w", newline="", encoding="utf-8") as csvfile:
     writer = csv.writer(csvfile)
     writer.writerows(all_values)
+
+csv_path.with_suffix(".csv.tmp").replace(csv_path)

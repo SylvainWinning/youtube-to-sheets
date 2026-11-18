@@ -8,6 +8,39 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+# Colonnes attendues pour l’export CSV/Google Sheets
+HEADERS = [
+    "channelAvatar",
+    "title",
+    "link",
+    "channel",
+    "publishedAt",
+    "duration",
+    "views",
+    "likes",
+    "comments",
+    "shortDescription",
+    "tags",
+    "category",
+    "thumbnail",
+    "myCategory",
+    "playlistPosition",
+    "playlistId",
+    "channelId",
+]
+
+
+def validate_table(rows):
+    """Require the current header or its supported pre-channelId version."""
+    if not rows or rows[0] not in (HEADERS, HEADERS[:-1]):
+        raise ValueError("Colonnes de l’export incompatibles")
+    for index, row in enumerate(rows[1:], start=2):
+        if (not isinstance(row, list) or not 3 <= len(row) <= len(rows[0])
+                or not isinstance(row[1], str) or not row[1].strip()
+                or not isinstance(row[2], str) or not row[2].strip()):
+            raise ValueError(f"Ligne d’export invalide : {index}")
+
+
 def now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -39,9 +72,16 @@ def counts(rows):
     return {key: len(value) for key, value in groups.items()}
 
 
+def _normalized_rows(rows):
+    return sorted([str(cell) for cell in row] + [""] * max(0, len(rows[0]) - len(row)) for row in rows[1:])
+
+
+def _hash(value):
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False).encode()).hexdigest()
+
+
 def fingerprint(rows):
-    normalized = sorted([str(cell) for cell in row] + [""] * max(0, len(rows[0]) - len(row)) for row in rows[1:])
-    return hashlib.sha256(json.dumps(normalized, ensure_ascii=False).encode()).hexdigest()
+    return _hash([rows[0], _normalized_rows(rows)])
 
 
 def check_volume(candidate, previous, max_drop=None):
@@ -67,11 +107,17 @@ def write_snapshot(path, rows, metadata):
 
 
 def export_snapshot(path, rows, reference="data/videos.json"):
+    validate_table(rows)
     previous, old = read_snapshot(path)
     reference_rows, provenance = read_snapshot(reference)
     check_volume(rows, previous)
     check_volume(rows, reference_rows)
-    matched = provenance.get("dataHash") == fingerprint(rows)
+    matched = False
+    if reference_rows:
+        # Accept historical hashes only after comparing both headers and rows.
+        reference_hash = fingerprint(reference_rows)
+        matched = (reference_hash == fingerprint(rows)
+                   and provenance.get("dataHash") in (reference_hash, _hash(_normalized_rows(reference_rows))))
     metadata = dict(provenance if matched else old)
     if not matched:
         metadata.pop("privateVideoCount", None)
@@ -82,12 +128,14 @@ def export_snapshot(path, rows, reference="data/videos.json"):
 
 def preserve_failed_sync(reason="sync_failed", root="data/videos.json", public="bolt-app/public/data/videos.json"):
     """Publie l'échec sans remplacer les vidéos ni inventer un succès."""
-    rows, metadata = read_snapshot(root)
-    if not counts(rows).get("all"):
-        rows, metadata = read_snapshot(public)
-    if not counts(rows).get("all"):
-        return False
-    metadata.update(status="degraded", source="cache", lastAttempt=now(), publishedAt=now(), warnings=[reason])
-    write_snapshot(root, rows, metadata)
-    write_snapshot(public, rows, metadata)
-    return True
+    root_snapshot, public_snapshot = read_snapshot(root), read_snapshot(public)
+    written = False
+    for path, snapshot, fallback in (
+        (root, root_snapshot, public_snapshot), (public, public_snapshot, root_snapshot)
+    ):
+        rows, metadata = snapshot if counts(snapshot[0]).get("all") else fallback
+        if counts(rows).get("all"):
+            write_snapshot(path, rows, {**metadata, "status": "degraded", "source": "cache",
+                                        "lastAttempt": now(), "publishedAt": now(), "warnings": [reason]})
+            written = True
+    return written

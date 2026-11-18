@@ -5,7 +5,7 @@ import time
 import logging
 import json
 import csv
-from sync_metadata import read_snapshot, check_volume, write_snapshot, now, preserve_failed_sync
+from sync_metadata import HEADERS, read_snapshot, check_volume, write_snapshot, now, preserve_failed_sync, validate_table
 from category_rules import migrate_channel_rules
 from datetime import datetime
 import argparse
@@ -26,27 +26,6 @@ github.com/SylvainWinning/youtube-to-sheets,
 mais le comportement a été adapté pour écrire dans tous les onglets de
 catégories plutôt que de fusionner toutes les vidéos dans une seule feuille.
 """
-
-# Colonnes attendues pour l’export CSV/Google Sheets
-HEADERS = [
-    "channelAvatar",
-    "title",
-    "link",
-    "channel",
-    "publishedAt",
-    "duration",
-    "views",
-    "likes",
-    "comments",
-    "shortDescription",
-    "tags",
-    "category",
-    "thumbnail",
-    "myCategory",
-    "playlistPosition",
-    "playlistId",
-    "channelId",
-]
 
 # Valeurs par défaut pour les miniatures et avatars en cas d’absence de données
 DEFAULT_AVATAR_URL = "https://via.placeholder.com/48"
@@ -393,6 +372,30 @@ def add_video_to_categories(entry: list, duration_category: str, videos_by_categ
     all_videos.append(entry)
 
 
+def read_sheet_categories(service, spreadsheet_id: str, sheet_name: str) -> dict:
+    sheets = service.spreadsheets()
+    properties = sheets.get(spreadsheetId=spreadsheet_id, fields="sheets.properties.title").execute()
+    if not any(sheet["properties"]["title"] == sheet_name for sheet in properties["sheets"]):
+        return {}
+    tab = "'" + sheet_name.replace("'", "''") + "'"
+    rows = sheets.values().get(spreadsheetId=spreadsheet_id, range=f"{tab}!A:Q").execute(
+        num_retries=5
+    ).get("values", [])
+    if not rows:
+        return {}
+    validate_table(rows)
+    categories = {}
+    for row in rows[1:]:
+        link = row[2]
+        playlist = row[15] if len(row) > 15 else ""
+        category = str(row[13]) if len(row) > 13 else ""
+        key = (link, playlist)
+        if key in categories and categories[key] != category:
+            raise ValueError("Catégories contradictoires pour une même vidéo dans la playlist")
+        categories[key] = category
+    return categories
+
+
 def write_library(service, spreadsheet_id: str, categories: dict[str, list[list]],
                   sheet_name: str, all_rows: list[list]) -> None:
     """Validate, replace every export atomically, then verify the committed values."""
@@ -613,6 +616,18 @@ def sync_videos(playlist_id: str, sheet_tab_name: str = "AllVideos") -> bool | N
     rules_path = Path(__file__).parent / "bolt-app/src/data/categoryRules.json"
     rules = json.loads(rules_path.read_text(encoding="utf-8"))
     migrated = migrate_channel_rules(rules, videos_data) if complete else rules
+    # AllVideos is the editorial source. A present blank cell is an explicit deletion.
+    sheet_categories = read_sheet_categories(service, SPREADSHEET_ID, SHEET_TAB_NAME)
+    by_link: dict[str, set[str]] = {}
+    for (link, _playlist), category in sheet_categories.items():
+        by_link.setdefault(link, set()).add(category)
+    for row in all_videos:
+        key = (row[2], row[15])
+        choices = by_link.get(row[2], set())
+        if key in sheet_categories:
+            row[13] = sheet_categories[key]
+        elif len(choices) == 1:
+            row[13] = next(iter(choices))
     write_library(service, SPREADSHEET_ID, videos_by_category, SHEET_TAB_NAME, all_videos)
 
     if migrated != rules:

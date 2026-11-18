@@ -19,7 +19,6 @@ import { filterVideoFacets } from './utils/videoFacets';
 import { filterVideosBySearch, rankVideosBySearch } from './utils/searchUtils';
 import { sortVideos } from './utils/sortUtils';
 import { useVideos } from './hooks/useVideos';
-import { useSound } from './hooks/useSound';
 import { useLibraryFilters } from './hooks/useLibraryFilters';
 import { clearLibraryProgress } from './utils/libraryProgress';
 import { filterVideosByPlaylist } from './utils/videoLibrary';
@@ -29,7 +28,6 @@ export default function App() {
   const library = useVideos();
   const { videos, isLoading, error: videosError, loadVideos } = library;
   const hasLibrary = videos.length > 0;
-  const { playClick } = useSound();
   const { selectedTab, setSelectedTab, sortOptions, setSortOptions,
     searchFilters, setSearchFilters, selectedCategory, setSelectedCategory,
     selectedCollection, setSelectedCollection,
@@ -145,7 +143,7 @@ export default function App() {
             <div className="library-header-main flex items-center justify-between gap-2">
               <button
                 ref={home}
-                onClick={() => { playClick(); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); }}
                 type="button"
                 aria-label="Revenir en haut de la page"
                 className="flex items-center gap-2 sm:gap-3 min-w-0 group"
@@ -162,7 +160,7 @@ export default function App() {
             </div>
             <div className="header-refresh flex items-center justify-end gap-3">
               <button type="button" aria-label={isLoading && hasLibrary ? 'Actualisation…' : 'Actualiser'} title="Actualiser" disabled={isLoading} aria-busy={isLoading}
-                onClick={() => { playClick(); void loadVideos(); }}
+                onClick={() => { void loadVideos(); }}
                 className="neu-button flex shrink-0 min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm text-gray-700 dark:text-gray-100 disabled:opacity-60">
                 <RefreshCw aria-hidden="true" className={`h-4 w-4 ${isLoading ? 'animate-spin motion-reduce:animate-none' : ''}`} />
                 <span className="header-refresh-label">{isLoading && hasLibrary ? 'Actualisation…' : 'Actualiser'}</span>

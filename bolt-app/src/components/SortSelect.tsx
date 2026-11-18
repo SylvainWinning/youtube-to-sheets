@@ -1,8 +1,7 @@
 import React from 'react';
 import { ArrowUpDown } from 'lucide-react';
-import { SortOptions, SORT_OPTIONS } from '../types/sort';
-import { getOptionValue, getSelectedLabel } from '../utils/sort/utils';
-import { SORT_LABELS } from '../utils/sort/labels';
+import { type SortOptions } from '../types/sort';
+import { getOptionValue, getSortMenu } from '../utils/sort/utils';
 import { DropdownMenu } from './ui/DropdownMenu';
 import { DropdownItem } from './ui/DropdownItem';
 
@@ -16,24 +15,12 @@ interface SortSelectProps {
 
 export function SortSelect({ options, onOptionsChange, className = '', searching = false, playlistSelected = false }: SortSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false);
-  const defaultLabel = searching ? 'Pertinence' : playlistSelected ? 'Ordre de la playlist' : 'Plus récentes';
-  const playlistValue = getOptionValue(null);
-  const selectedValue = getOptionValue(options);
-
-  const handleSelect = (value: string) => {
-    if (!value) {
-      onOptionsChange(null);
-    } else {
-      const [field, direction] = value.split('_');
-      onOptionsChange({ field, direction } as SortOptions);
-    }
-    setIsOpen(false);
-  };
+  const { selectedValue, choices } = getSortMenu(options, searching, playlistSelected);
 
   return (
     <DropdownMenu
       icon={<ArrowUpDown className="w-5 h-5 text-gray-500 group-hover:text-youtube-red-accessible dark:group-hover:text-youtube-red-accessible-dark transition-colors shrink-0" />}
-      label={!options ? defaultLabel : getSelectedLabel(options)}
+      label={choices.find(choice => getOptionValue(choice.options) === selectedValue)?.label ?? 'Trier'}
       isOpen={isOpen}
       onToggle={() => setIsOpen(!isOpen)}
       className={className}
@@ -42,23 +29,13 @@ export function SortSelect({ options, onOptionsChange, className = '', searching
         <div className="text-xs font-medium text-gray-500 uppercase">Trier les vidéos</div>
       </div>
 
-      <DropdownItem
-        key="playlist-order"
-        onClick={() => handleSelect(playlistValue)}
-        isSelected={selectedValue === playlistValue}
-      >
-        {defaultLabel}
-      </DropdownItem>
-
-      <div className="my-1 border-t border-gray-100 dark:border-neutral-700" />
-
-      {[SORT_OPTIONS.PUBLISHED_DESC, SORT_OPTIONS.PUBLISHED_ASC].map((option) => (
+      {choices.map(choice => (
         <DropdownItem
-          key={getOptionValue(option)}
-          onClick={() => handleSelect(getOptionValue(option))}
-          isSelected={selectedValue === getOptionValue(option)}
+          key={getOptionValue(choice.options)}
+          onClick={() => { onOptionsChange(choice.options); setIsOpen(false); }}
+          isSelected={selectedValue === getOptionValue(choice.options)}
         >
-          {SORT_LABELS[getOptionValue(option)]}
+          {choice.label}
         </DropdownItem>
       ))}
     </DropdownMenu>

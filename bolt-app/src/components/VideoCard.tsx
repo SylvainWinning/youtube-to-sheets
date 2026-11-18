@@ -5,7 +5,6 @@ import { formatNumber } from '../utils/formatters';
 import { formatDuration } from '../utils/durationUtils';
 import { formatPublishDate } from '../utils/timeUtils';
 import { getYouTubeUrl, saveVideoNavigation } from '../utils/videoUtils';
-import { useSound } from '../hooks/useSound';
 import { getPlaylistIds } from '../utils/videoLibrary';
 import { getPlaylistLabel } from './PlaylistSelect';
 
@@ -14,17 +13,11 @@ interface VideoCardProps {
 }
 
 export function VideoCard({ video }: VideoCardProps) {
-  const { playClick } = useSound();
   const playlists = getPlaylistIds([video]);
   const membershipLabel = `Présente dans : ${playlists.map(getPlaylistLabel).join(', ')}`;
 
   const href = getYouTubeUrl(video.link);
   if (!href) return null;
-
-  const handleClick = () => {
-    playClick();
-    saveVideoNavigation();
-  };
 
   return (
     <article className="group p-3 rounded-xl bg-white dark:bg-neutral-800 shadow-[0_1px_3px_rgba(15,23,42,0.08)] flex flex-col">
@@ -34,7 +27,7 @@ export function VideoCard({ video }: VideoCardProps) {
         rel="noopener noreferrer"
         aria-label={`Ouvrir ${video.title} sur YouTube`}
         onAuxClick={saveVideoNavigation}
-        onClick={handleClick}
+        onClick={saveVideoNavigation}
         className="flex flex-col flex-1 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-youtube-red-accessible dark:focus-visible:outline-youtube-red-accessible-dark"
       >
         <div className="relative aspect-video rounded overflow-hidden mb-3">

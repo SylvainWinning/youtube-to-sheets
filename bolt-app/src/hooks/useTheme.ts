@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { readThemePreference, writePreference, THEME_KEY, type ThemePreference } from '../utils/preferences';
+import { useEffect, useState } from 'react';
+import { readThemePreference, THEME_KEY } from '../utils/preferences';
 
 export function useTheme() {
   const [preference, setPreference] = useState(readThemePreference);
@@ -22,9 +22,4 @@ export function useTheme() {
       window.removeEventListener('storage', storage);
     };
   }, []);
-  const setThemePreference = useCallback((value: ThemePreference) => {
-    setPreference(value);
-    writePreference(THEME_KEY, value);
-  }, []);
-  return { theme, preference, setThemePreference };
 }

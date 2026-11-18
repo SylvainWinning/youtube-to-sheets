@@ -1,10 +1,10 @@
 import pytest
 
-from sync_metadata import check_volume, export_snapshot, read_snapshot, write_snapshot
+from sync_metadata import HEADERS, check_volume, export_snapshot, read_snapshot, write_snapshot
 
 
 def rows(count, playlist="primary"):
-    return [["link", "playlistId"]] + [[f"video-{i}", playlist] for i in range(count)]
+    return [HEADERS.copy()] + [["", f"Video {i}", f"video-{i}"] + [""] * 12 + [playlist] for i in range(count)]
 
 
 def test_volume_guard_rejects_empty_and_large_drop():
@@ -61,3 +61,55 @@ def test_fingerprint_includes_new_channel_id_and_normalizes_missing_trailing_cel
     headers = [''] * 17
     assert fingerprint([headers, ['a'] * 16]) == fingerprint([headers, ['a'] * 16 + ['']])
     assert fingerprint([headers, ['a'] * 16 + ['UCfirst']]) != fingerprint([headers, ['a'] * 16 + ['UCsecond']])
+
+@pytest.mark.parametrize("replacement", ["wrongHeader", "title"])
+def test_export_rejects_incompatible_header_and_keeps_existing_file(tmp_path, replacement):
+    destination = tmp_path / "videos.json"
+    original = rows(2)
+    write_snapshot(destination, original, {"status": "complete"})
+    before = destination.read_bytes()
+    changed = rows(2)
+    changed[0][0] = replacement
+    with pytest.raises(ValueError, match="Colonnes"):
+        export_snapshot(destination, changed, destination)
+    assert destination.read_bytes() == before
+
+
+def test_failed_sync_preserves_the_public_editorial_version(tmp_path):
+    from sync_metadata import preserve_failed_sync
+    root, public = tmp_path / "root.json", tmp_path / "public.json"
+    write_snapshot(root, rows(2), {})
+    edited = rows(2)
+    edited[1][13] = "Choix Sheets"
+    write_snapshot(public, edited, {})
+    assert preserve_failed_sync(root=root, public=public)
+    assert read_snapshot(public)[0] == edited
+    assert read_snapshot(root)[0] == rows(2)
+
+def test_multirange_export_refuses_bad_second_header_without_touching_csv_or_json(tmp_path, monkeypatch):
+    from pathlib import Path
+    from runpy import run_path
+    from unittest.mock import Mock
+
+    script = Path(__file__).resolve().parents[1] / "scripts/export_sheet.py"
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("SPREADSHEET_ID", "A" * 25)
+    monkeypatch.setenv("SERVICE_ACCOUNT_JSON", "{}")
+    monkeypatch.setattr("sys.argv", [str(script), "--sheet-range", "First!A:Q,Second!A:Q"])
+    monkeypatch.setattr("google.oauth2.service_account.Credentials.from_service_account_info", Mock())
+    api = Mock()
+    monkeypatch.setattr("googleapiclient.discovery.build", Mock(return_value=api))
+    bad = rows(2)
+    bad[0][0] = "wrongHeader"
+    api.spreadsheets.return_value.values.return_value.get.return_value.execute.side_effect = [
+        {"values": rows(2)}, {"values": bad}
+    ]
+    path = Path("bolt-app/public/data/videos.json")
+    write_snapshot(path, rows(2), {})
+    csv_path = path.with_suffix(".csv")
+    csv_path.write_text("existing CSV", encoding="utf-8")
+    before = path.read_bytes()
+    with pytest.raises(ValueError, match="Colonnes"):
+        run_path(str(script), run_name="__main__")
+    assert path.read_bytes() == before
+    assert csv_path.read_text(encoding="utf-8") == "existing CSV"
