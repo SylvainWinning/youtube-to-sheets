@@ -286,12 +286,14 @@ test('un ancien lien de durée maximale reste compatible avec le tirage', async 
 test('le tri ne compte pas comme filtre et reste choisi après effacement', async ({ page }) => {
   if (await compact(page)) {
     await page.getByRole('button', { name: /^Filtres/ }).click();
-    await page.getByRole('combobox', { name: 'Trier par', exact: true }).selectOption({ label: 'Publication : plus récentes' });
+    await expect(page.getByRole('combobox', { name: 'Trier par', exact: true }).locator('option')).toHaveText(['Plus récentes', 'Publication : plus anciennes']);
+    await page.getByRole('combobox', { name: 'Trier par', exact: true }).selectOption({ label: 'Publication : plus anciennes' });
     await page.getByRole('button', { name: 'Voir 50 vidéos', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Filtres', exact: true })).toBeVisible();
   } else {
     await page.getByRole('button', { name: 'Plus récentes', exact: true }).click();
-    await page.getByRole('button', { name: 'Publication : plus récentes', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Publication : plus récentes', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Publication : plus anciennes', exact: true }).click();
   }
   await expectCount(page, 50);
   await expect(page.getByRole('button', { name: 'Tout effacer', exact: true })).toBeHidden();
@@ -299,10 +301,10 @@ test('le tri ne compte pas comme filtre et reste choisi après effacement', asyn
   await expectCount(page, 2);
   await page.getByRole('button', { name: 'Tout effacer', exact: true }).click();
   await expectCount(page, 50);
-  await expect(page).toHaveURL(/sort=newest/);
+  await expect(page).toHaveURL(/sort=oldest/);
   await expect(page.getByRole('button', { name: 'Tout effacer', exact: true })).toBeHidden();
   await page.reload();
-  await expect(page).toHaveURL(/sort=newest/);
+  await expect(page).toHaveURL(/sort=oldest/);
 });
 
 test('recherche et filtres restent accessibles en défilant, sans perdre la position à la fermeture', async ({ page }, testInfo) => {
@@ -347,6 +349,8 @@ test('commandes tactiles et validation des durées restent accessibles sur mobil
   await expect(page.locator('#header-preferences')).toHaveCount(0);
   await page.getByRole('button', { name: 'Filtres', exact: true }).click();
   const panel = page.getByRole('dialog', { name: 'Filtres des vidéos', exact: true });
+  await expectInViewport(page, panel.getByRole('combobox', { name: 'Thème des vidéos', exact: true }));
+  await expectInViewport(page, panel.getByRole('combobox', { name: 'Playlist', exact: true }));
   const apply = panel.getByRole('button', { name: /^Voir \d+ vidéo/ });
   await expectInViewport(page, apply);
   await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');

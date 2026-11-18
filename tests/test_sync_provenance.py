@@ -1,5 +1,6 @@
 import pytest
 import main
+from main import read_sheet_categories as actual_read_sheet_categories
 from sync_metadata import read_snapshot, write_snapshot
 
 
@@ -12,6 +13,7 @@ def synchronization(monkeypatch, tmp_path):
     monkeypatch.setattr(main.service_account.Credentials, 'from_service_account_info', lambda *a, **k: object())
     monkeypatch.setattr(main, 'build', lambda *a, **k: object())
     monkeypatch.setattr(main, 'get_channel_avatar', lambda *a: '')
+    monkeypatch.setattr(main, 'read_sheet_categories', lambda *args: {})
     writes = []
     monkeypatch.setattr(main, 'write_library', lambda service, spreadsheet, categories, title, rows: writes.extend([*categories, title]))
     return writes
@@ -138,3 +140,36 @@ def test_fresh_sync_transports_channel_id_and_preserves_personal_category(synchr
     assert rows[1][13] == 'Personnel'
     assert rows[1][16] == 'UC' + 'x' * 22
     assert all(len(row) == len(main.HEADERS) for row in rows)
+
+def test_live_sheet_edit_and_clear_override_cache_on_successive_syncs(synchronization, monkeypatch):
+    from unittest.mock import Mock
+
+    old = [main.HEADERS, entry('0'), entry('1')]
+    old[1][13] = old[2][13] = 'Ancien'
+    write_snapshot('data/videos.json', old, {})
+    sheets_rows = [main.HEADERS, entry('0'), entry('1')]
+    sheets_rows[1][13] = 'Correction Sheets'
+    service = Mock()
+    client = service.spreadsheets.return_value
+    client.get.return_value.execute.return_value = {"sheets": [{"properties": {"title": "AllVideos"}}]}
+    client.values.return_value.get.return_value.execute.return_value = {"values": sheets_rows}
+    monkeypatch.setattr(main, 'build', lambda *args, **kwargs: service)
+    # Use the actual reader, including its header check.
+    monkeypatch.setattr(main, 'read_sheet_categories', actual_read_sheet_categories)
+    monkeypatch.setattr(main, 'fetch_all_playlist_items', fetch_items(2))
+    monkeypatch.setattr(main, 'fetch_videos_details', lambda *args: details(['0']))
+    writes = []
+    monkeypatch.setattr(main, 'write_library', lambda service, spreadsheet, categories, title, rows:
+                        writes.append([row[13] for row in rows]))
+    for _ in range(2):
+        assert main.sync_videos('PL123')
+        for path in ('data/videos.json', 'bolt-app/public/data/videos.json'):
+            rows, _ = read_snapshot(path)
+            assert [row[13] for row in rows[1:]] == ['Correction Sheets', '']
+    assert writes == [['Correction Sheets', ''], ['Correction Sheets', '']]
+    assert client.values.return_value.get.call_count == 2
+
+    sheets_rows[0] = ['wrongHeader', *main.HEADERS[1:]]
+    with pytest.raises(ValueError, match='Colonnes'):
+        main.sync_videos('PL123')
+    assert len(writes) == 2

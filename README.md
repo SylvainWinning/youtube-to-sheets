@@ -20,6 +20,11 @@ lancement manuel pour publier des modifications effectuées dans Sheets, sans
 planning supplémentaire. Les lancements manuels et ceux liés aux modifications
 du code restent disponibles via l’onglet **Actions**.
 
+La colonne `myCategory` de l’onglet principal (`AllVideos` par défaut) fait foi
+pour les catégories manuelles. La synchronisation relit les valeurs avant
+l’écriture, y compris les cellules volontairement vidées. Les onglets de
+durée sont des copies générées. Un en-tête incompatible annule la publication.
+
 GitHub Actions peut démarrer une exécution avec un peu de retard ; ces horaires
 sont les heures de déclenchement prévues, pas une garantie de publication à la
 minute près.

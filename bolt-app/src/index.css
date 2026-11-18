@@ -151,8 +151,6 @@ input { accent-color: #b00000; caret-color: #b00000; }
 @layer components {
   .duration-options .neu-button { border-color: transparent; background-color: #f4f4f5; }
   .dark .duration-options .neu-button { border-color: transparent; background-color: #2b2b2b; }
-  .duration-mode-active { background: white; color: #171717; box-shadow: 0 1px 2px #0000000d; }
-  .dark .duration-mode-active { background: #333; color: #ededed; box-shadow: none; }
 }
 @media (max-width: 359px) and (max-height: 600px) {
   .video-choice-preview { display: block; }

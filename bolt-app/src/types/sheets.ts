@@ -6,13 +6,3 @@ export interface SheetTab {
     max: number | null;
   };
 }
-
-export interface SheetData {
-  id: string;
-  values: unknown[][];
-}
-
-export interface SheetResponse {
-  data: SheetData;
-  error?: string;
-}

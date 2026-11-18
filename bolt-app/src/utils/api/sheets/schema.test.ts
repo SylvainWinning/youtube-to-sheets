@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { VIDEO_COLUMNS, readVideoSnapshot, readSheetValues, readSyncMetadata } from './schema.ts';
+import { VIDEO_COLUMNS, readVideoSnapshot, readSyncMetadata } from './schema.ts';
 import { transformVideoRows } from './transform.ts';
 
 const row = ['', 'Fixture', 'https://youtu.be/aBcDeFgHiJk', 'Channel', '2024-02-29T12:30:00Z', '00:03:00', 0, 0, 0, '', '', '', '', '', 4, 'PL_fixture', 'UC_fixture'];
 
 test('copie v1, tableau historique et enveloppe sans version utilisent exactement la même transformation', () => {
   const table = [[...VIDEO_COLUMNS], row];
-  const direct = transformVideoRows(readSheetValues({ values: table }));
+  const direct = transformVideoRows(table);
   for (const value of [table, { videos: table }, { schemaVersion: 1, videos: table }, [row]]) {
     assert.deepEqual(transformVideoRows(readVideoSnapshot(value).rows), direct);
   }
@@ -27,13 +27,6 @@ test('versions futures et colonnes v1 déplacées sont refusées, sans interpré
   for (const value of [null, {}, { videos: {} }, [[], { title: 'invalid' }]]) {
     assert.throws(() => readVideoSnapshot(value), /Format/);
   }
-});
-
-test('réponses Sheets mal formées ou orientées en colonnes sont refusées; un onglet vide reste permis', () => {
-  for (const value of [null, [], { error: 'quota' }, { values: 'bad' }, { values: [{}] }, { majorDimension: 'COLUMNS', values: [[1]] }]) {
-    assert.throws(() => readSheetValues(value));
-  }
-  assert.deepEqual(readSheetValues({ range: 'A:Q', majorDimension: 'ROWS' }), []);
 });
 
 test('dates et compte incohérents ne peuvent pas attester une synchronisation complète', () => {

@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { assignCategories, getVideoCategory } from './assignCategories.ts';
-import { getUniqueCategories } from './getUniqueCategories.ts';
 import { filterVideosBySearch } from './searchUtils.ts';
 import { mapRowToVideo } from './api/sheets/transform.ts';
 import type { VideoData } from '../types/video.ts';
@@ -41,7 +40,6 @@ test('préserve les catégories personnelles et ne modifie pas les données sour
   assert.equal(result[1].myCategory, 'Divertissement');
   assert.equal(missing.myCategory, ' ');
   assert.notEqual(result[0], existing);
-  assert.deepEqual(getUniqueCategories([...videos]), ['Culture', 'Divertissement']);
 });
 
 test('classe avant la recherche, sans dépendre du rendu du menu catégories', () => {
@@ -70,7 +68,6 @@ test('les non classées sont retrouvables et la lecture des catégories reste pu
   const video = Object.freeze({ channelId: 'UCunknown', channel: 'Unknown', category: '22', myCategory: '' }) as VideoData;
   const normalized = assignCategories([video]);
   assert.equal(normalized[0].myCategory, 'Non classées');
-  assert.deepEqual(getUniqueCategories([video]), ['Non classées']);
   assert.equal(video.myCategory, '');
 });
 

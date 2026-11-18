@@ -28,12 +28,6 @@ export function readVideoSnapshot(value: unknown): { rows: unknown[][]; metadata
   const hasHeader = envelope?.schemaVersion === VIDEO_SCHEMA_VERSION || !validateRow(table[0]);
   return { rows: hasHeader ? table.slice(1) : table, metadata: envelope?.metadata };
 }
-export function readSheetValues(value: unknown): unknown[][] {
-  if (!isRecord(value) || 'error' in value || (value.majorDimension !== undefined && value.majorDimension !== 'ROWS')) {
-    throw new Error('Réponse Google Sheets invalide');
-  }
-  return value.values === undefined ? [] : readTable(value.values);
-}
 export function readSyncMetadata(value: unknown, videos: VideoData[]): SyncMetadata | undefined {
   if (!isRecord(value)) return;
   const status = value.status, source = value.source;

@@ -5,11 +5,10 @@ import { SHEET_TABS } from '../utils/constants';
 import { formatDurationRange } from '../utils/durationUtils';
 import { DurationTabs } from './DurationTabs';
 import { getPlaylistLabel, PRIMARY_PLAYLIST_ID } from './PlaylistSelect';
-import { SORT_OPTIONS } from '../types/sort';
 import type { SortOptions } from '../types/sort';
 import type { VideoData } from '../types/video';
 import { getUniqueCollections, getUniqueTopics } from '../utils/videoFacets';
-import { getOptionValue, getSelectedLabel } from '../utils/sort/utils';
+import { getOptionValue, getSortMenu } from '../utils/sort/utils';
 import { filterByDurationSelection } from '../utils/durationSelection';
 import { getPlaylistIds } from '../utils/videoLibrary';
 import { ReturnToTop } from './ReturnToTop';
@@ -32,7 +31,6 @@ interface MobileFilterBarProps {
   onReturnTop: () => void;
 }
 
-const sortChoices = [null, SORT_OPTIONS.PUBLISHED_DESC, SORT_OPTIONS.PUBLISHED_ASC];
 const selectClass = 'neu-button w-full h-11 rounded-lg px-3 text-sm text-gray-700 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark]';
 
 export function MobileFilterBar({
@@ -52,6 +50,7 @@ export function MobileFilterBar({
       if (b === PRIMARY_PLAYLIST_ID) return 1;
       return getPlaylistLabel(a).localeCompare(getPlaylistLabel(b), 'fr');
     }), [videos]);
+  const { selectedValue, choices } = getSortMenu(sortOptions, searching, Boolean(selectedPlaylistId));
   const resultCount = filterByDurationSelection(durationVideos, selectedTab).length;
   const activeFilters = Number(Boolean(selectedCategory)) + Number(Boolean(selectedCollection)) + Number(Boolean(selectedPlaylistId)) + Number(selectedTab !== -1);
 
@@ -111,20 +110,6 @@ export function MobileFilterBar({
             <button type="button" aria-label="Fermer les filtres" autoFocus onClick={closePanel} className="neu-button rounded-lg w-11 h-11 flex items-center justify-center"><X aria-hidden="true" className="w-4 h-4" /></button>
           </div>
           <div className="min-h-0 overflow-y-auto overscroll-contain grid gap-4 p-3">
-            <fieldset className="duration-options grid grid-cols-2 gap-2">
-              <legend className="text-sm text-gray-700 dark:text-gray-200 mb-2">Tranches de durée</legend>
-              <button type="button" aria-pressed={selectedTab === -1} onClick={() => onTabChange(-1)}
-                className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === -1 ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>Toutes durées</button>
-              {SHEET_TABS.map((tab, index) => <button key={tab.name} type="button" aria-pressed={selectedTab === index} onClick={() => onTabChange(index)}
-                className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === index ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>{formatDurationRange(tab.durationRange.min, tab.durationRange.max)}</button>)}
-            </fieldset>
-            <label className="grid gap-1 text-sm text-gray-700 dark:text-gray-200">
-              Trier par
-              <select className={selectClass} value={getOptionValue(sortOptions)} onChange={event =>
-                onSortOptionsChange(sortChoices.find(choice => getOptionValue(choice) === event.target.value) ?? null)}>
-                {sortChoices.map(choice => <option key={getOptionValue(choice)} value={getOptionValue(choice)}>{!choice ? (searching ? 'Pertinence' : selectedPlaylistId ? 'Ordre de la playlist' : 'Plus récentes') : getSelectedLabel(choice)}</option>)}
-              </select>
-            </label>
             {categories.length > 0 && (
               <label className="grid gap-1 text-sm text-gray-700 dark:text-gray-200">
                 Thème des vidéos
@@ -152,6 +137,20 @@ export function MobileFilterBar({
                 </select>
               </label>
             )}
+            <label className="grid gap-1 text-sm text-gray-700 dark:text-gray-200">
+              Trier par
+              <select className={selectClass} value={selectedValue} onChange={event =>
+                onSortOptionsChange(choices.find(choice => getOptionValue(choice.options) === event.target.value)?.options ?? null)}>
+                {choices.map(choice => <option key={getOptionValue(choice.options)} value={getOptionValue(choice.options)}>{choice.label}</option>)}
+              </select>
+            </label>
+            <fieldset className="duration-options grid grid-cols-2 gap-2">
+              <legend className="text-sm text-gray-700 dark:text-gray-200 mb-2">Tranches de durée</legend>
+              <button type="button" aria-pressed={selectedTab === -1} onClick={() => onTabChange(-1)}
+                className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === -1 ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>Toutes durées</button>
+              {SHEET_TABS.map((tab, index) => <button key={tab.name} type="button" aria-pressed={selectedTab === index} onClick={() => onTabChange(index)}
+                className={`min-h-11 rounded-lg px-2 text-sm ${selectedTab === index ? 'filter-selected' : 'neu-button text-gray-700 dark:text-gray-200'}`}>{formatDurationRange(tab.durationRange.min, tab.durationRange.max)}</button>)}
+            </fieldset>
           </div>
           <div className="shrink-0 p-3 border-t border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800">
             <button type="button" className="primary-action w-full rounded-lg px-3 min-h-11 text-sm" onClick={closePanel}>

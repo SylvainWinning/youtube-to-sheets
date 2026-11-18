@@ -7,11 +7,6 @@ export interface SyncMetadata {
   privateVideoCount?: number;
 }
 
-export interface SheetResponse {
-  values?: unknown[][];
-  error?: string;
-}
-
 export interface ApiResponse<T> {
   data: T;
   error?: string;
